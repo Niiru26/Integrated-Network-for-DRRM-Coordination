@@ -118,6 +118,33 @@ cd Integrated-Network-for-DRRM-Coordination
 pip install -r requirements.txt
 streamlit run app.py
 
+🔒 Security
+Database credentials stored as Streamlit secrets
+No sensitive data exposed in code
+.gitignore protects secrets from version control
+
+👥 Intended Users
+PDRRMO personnel, Municipal DRRM officers, Disaster response planners, Researchers, Provincial government officials
+
+🎯 Future Enhancements
+✅ Plan Management (Completed)
+✅ Enhanced Situation Report with PAGASA (Completed)
+✅ Auto-sync to Supabase (Completed)
+🚧 Climate Change Adaptation
+🚧 Project Portfolio
+🚧 Policy Guidelines
+🚧 Strategic Plans
+🚧 Geospatial Library
+🚧 Risk Profiles
+🚧 Performance Management System
+🚧 Gender and Development
+🚧 Gawad Kalasag
+🚧 Knowledge Repository
+🚧 Quick Guide
+🚧 Settings
+🚧 Document Studio (AI-powered report generation)
+🚧 Mobile app for field reporting
+
 📞 Contact
 Mountain Province PDRRMO
 Office: Mountain Province Disaster Risk Reduction and Management Office
@@ -131,3 +158,23 @@ for the academic validation and governance framework development.
 
 📖 "From Data to Decision, From Risk to Resilience"
 © 2026 I.N.D.C. - Integrated Network for DRRM Coordination | Mountain Province PDRRMO
+
+=============================================================================================
+
+Timeline Narrative: Evolution of 3D PRISM to ADST and into the INDC Platform
+
+The evolution of the Analytical and Decision Support Tool (ADST) and its expansion into the Integrated Network for DRRM Coordination (INDC) traces its origins to the Three-Dimensional Precision Risk and Susceptibility Mapping (3D PRISM) initiative launched in 2018. What began as a geospatial innovation to enhance disaster risk visualization has progressively developed into a comprehensive, data-driven system for decision-making and governance. This transformation reflects a deliberate shift, from understanding disaster risk, to acting on it, and ultimately to coordinating it across all levels of the province.
+
+The initial phase, 3D PRISM, focused on strengthening the province’s capacity to visualize disaster risk spatially and scientifically. By integrating hazard, exposure, and vulnerability data through Geographic Information Systems (GIS), satellite imagery, and early machine learning applications, the system enabled local decision-makers to identify high-risk areas with greater precision. It introduced the foundational concept of layered risk analysis and real-time hazard awareness, addressing the fundamental question: Where are the risks?
+
+Building on this foundation, the system evolved into the Analytical and Decision Support Tool (ADST), marking a transition from visualization to decision support. ADST introduced a centralized digital repository that consolidates disaster-related information, including DRRM and CCA plans, situation reports, hazard advisories, geospatial datasets, and operational templates. Leveraging artificial intelligence, machine learning, and integration with the Pre-Disaster Risk Assessment (PDRA) process, the system enables automated data analysis, anticipatory action triggers, and rapid generation of context-specific reports and advisories. This phase significantly enhanced the ability of local governments to respond proactively, answering the critical question: What should we do?
+
+The concept was further refined through its integration into a broader disaster risk governance framework, including its development and validation through applied research and systems design under the Executive Master in Disaster Risk and Crisis Management (EMDRCM) program at the Stephen Zuellig Graduate School of Development Management, Asian Institute of Management. At this stage, ADST was repositioned from a technical tool into a governance platform that connects planning, operations, and performance management systems. It integrates key instruments such as the Provincial Climate and Disaster Risk Reduction and Management Plan (PCDRRMP), Climate and Disaster Risk Assessment (CDRA), Emergency Operations Center (EOC) workflows, and performance systems including IPCR and OPCR. This alignment ensures that policies, programs, and actual operations are synchronized, addressing the systemic question: How do we govern disaster risk better?
+
+This progression culminates in the vision of the Integrated Network for DRRM Coordination (INDC), a province-wide, interoperable ecosystem that unifies data, analytics, and operations into a single coordinated platform. INDC integrates historical hazard data, predictive analytics, geospatial intelligence, resource and financial tracking, and real-time communication systems across barangay, municipal, and provincial levels. It enables seamless coordination, strengthens interoperability, and supports evidence-based decision-making at all levels of governance. At this stage, the system answers the ultimate question: How do we act as one coordinated system?
+
+In summary, the evolution from 3D PRISM to ADST and into INDC represents a strategic transformation from risk visualization → decision support → governance integration → full system coordination. This trajectory positions Mountain Province at the forefront of anticipatory, data-driven, and integrated disaster risk governance, capable of transforming fragmented information into timely action, and risk into resilience.
+
+
+
+
