@@ -1,0 +1,41 @@
+# Node modules (REACT/Node.js files - NOT needed for Python app)
+node_modules/
+package.json
+package-lock.json
+npm-debug.log
+
+# Python
+__pycache__/
+*.pyc
+venv/
+venv_310/
+.venv/
+*.pyo
+*.pyd
+
+# Secrets - NEVER commit these!
+.streamlit/secrets.toml
+.env
+*.env
+
+# Local session data
+*.db
+*.sqlite
+*.sqlite3
+project_state.json
+session_state.json
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE files
+.vscode/
+.idea/
+*.sublime-*
+
+# Backup files (not needed in repo)
+*_backup_*.py
+*.bak
+*.tmp
