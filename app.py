@@ -5,19 +5,26 @@ Main Application Entry Point
 
 import streamlit as st
 import pandas as pd
-from tabs.drrm_intelligence import show as show_drrm    
+from tabs.drrm_intelligence import show as show_drrm
 from utils.database import init_session_state
 from tabs.plan_management import show as show_plan_management
-from tabs.about_indc import show as show_about_indc     
+from tabs.about_indc import show as show_about_indc
 from tabs.situation_report import show as show_situation_report
-from tabs.trainings import show as show_trainings       
-from tabs.ldrrmf_utilization import show as show_ldrrmf 
+from tabs.trainings import show as show_trainings
+from tabs.ldrrmf_utilization import show as show_ldrrmf
+from tabs.climate_change import show as show_climate_change
+from tabs.performance_management import show as show_performance_management
+from tabs.ndc_personal import show as show_ndc_personal
+from tabs.knowledge_repository import show as show_knowledge_repository
+from tabs.geospatial_library import show as show_geospatial_library
+from tabs.risk_profiles import show as show_risk_profiles
+from tabs.quick_guide import show as show_quick_guide
 from utils.project_state import create_state_snapshot_button
 from utils.supabase_client import is_connected, sync_all
 
 # Page configuration
 st.set_page_config(
-    page_title="INDC - DRRM Coordination System",       
+    page_title="INDC - DRRM Coordination System",
     page_icon="🛡️",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -53,10 +60,10 @@ st.markdown("""
 
 # Sidebar Navigation
 with st.sidebar:
-    # ===== LOGO AND TITLE SECTION =====
+    # Logo section
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
-        st.image("mpdrrmc_logo.png", width=100, use_container_width=False)
+        st.image("mpdrrmc_logo.png", width=100)
 
     st.markdown("""
     <div style='text-align: center; margin-top: 5px; margin-bottom: 10px;'>
@@ -69,15 +76,22 @@ with st.sidebar:
 
     st.markdown("---")
 
-    # Navigation menu - all tabs available
+    # Navigation menu
     menu_options = {
         "🎯 COMMAND CENTER": "dashboard",
         "📊 DRRM INTELLIGENCE": "drrm_intelligence",
-        "📋 PLAN MANAGEMENT": "plan_management",  
+        "🌍 CLIMATE CHANGE": "climate_change",
+        "📋 PLAN MANAGEMENT": "plan_management",
+        "📊 PERFORMANCE MANAGEMENT": "performance_management",
         "📚 TRAININGS": "trainings",
-        "💰 LDRRMF UTILIZATION": "ldrrmf",        
+        "💰 LDRRMF UTILIZATION": "ldrrmf",
         "📡 SITUATION REPORT": "situation_report",
-        "📄 DOCUMENT STUDIO": "document_studio",  
+        "📄 DOCUMENT STUDIO": "document_studio",
+        "📁 KNOWLEDGE REPOSITORY": "knowledge_repository",
+        "🗺️ GEOSPATIAL LIBRARY": "geospatial_library",
+        "📊 RISK PROFILES": "risk_profiles",
+        "👤 NDC PERSONAL": "ndc_personal",
+        "❓ QUICK GUIDE": "quick_guide",
         "🏛️ ABOUT INDC": "about_indc"
     }
 
@@ -90,11 +104,7 @@ with st.sidebar:
         st.markdown("### 📊 Quick Stats")
         st.metric("Total Events", len(st.session_state.disaster_events))
 
-        if 'fatalities' in st.session_state.disaster_events.columns:
-            st.metric("Total Fatalities", int(st.session_state.disaster_events['fatalities'].sum()))
-
-    # Cloud connection status (just for info)
-    st.markdown("---")
+    # Cloud connection status
     try:
         if is_connected():
             st.success("☁️ Cloud Connected")
@@ -103,11 +113,11 @@ with st.sidebar:
     except:
         st.warning("⚠️ Checking connection...")
 
-    # Add the chat continuity button
+    # Chat continuity button
     create_state_snapshot_button()
 
     st.markdown("---")
-    st.caption("© 2026 MPDRRMO | Mountain Province")   
+    st.caption("© 2026 MPDRRMO | Mountain Province")
 
 # Main content routing
 if choice == "🎯 COMMAND CENTER":
@@ -127,26 +137,23 @@ if choice == "🎯 COMMAND CENTER":
 
     st.markdown("### 📋 Recent Activities")
 
-    # Safely show activities if there are events        
     if 'disaster_events' in st.session_state and not st.session_state.disaster_events.empty:
-        df = st.session_state.disaster_events.head(5)   
+        df = st.session_state.disaster_events.head(5)
         activities = pd.DataFrame({
             'Time': df.get('start_date', ['N/A'] * len(df)),
             'Activity': df.get('local_name', ['N/A'] * len(df)),
             'Status': ['Recorded'] * len(df)
         })
-        st.dataframe(activities, width='stretch', hide_index=True)
+        st.dataframe(activities, hide_index=True)
     else:
         st.info("No recent activities. Add events in DRRM Intelligence tab.")
 
-    # Training Summary on Dashboard
     if "trainings" in st.session_state and st.session_state.trainings:
-        st.markdown("### 📚 Recent Trainings")    
+        st.markdown("### 📚 Recent Trainings")
         recent_trainings = st.session_state.trainings[-3:]
         for t in recent_trainings:
-            st.write(f"**{t.get('title')}** - {t.get('date')} ({t.get('participants')} participants)")      
+            st.write(f"**{t.get('title')}** - {t.get('date')} ({t.get('participants')} participants)")
 
-    # Fund Summary on Dashboard
     if "ldrrmf_records" in st.session_state and st.session_state.ldrrmf_records:
         total_fund = sum(r.get("amount", 0) for r in st.session_state.ldrrmf_records)
         st.metric("Total LDRRMF Utilized", f"₱{total_fund:,.2f}")
@@ -154,8 +161,14 @@ if choice == "🎯 COMMAND CENTER":
 elif choice == "📊 DRRM INTELLIGENCE":
     show_drrm()
 
+elif choice == "🌍 CLIMATE CHANGE":
+    show_climate_change()
+
 elif choice == "📋 PLAN MANAGEMENT":
     show_plan_management()
+
+elif choice == "📊 PERFORMANCE MANAGEMENT":
+    show_performance_management()
 
 elif choice == "📚 TRAININGS":
     show_trainings()
@@ -166,9 +179,15 @@ elif choice == "💰 LDRRMF UTILIZATION":
 elif choice == "📡 SITUATION REPORT":
     show_situation_report()
 
+elif choice == "🗺️ GEOSPATIAL LIBRARY":
+    show_geospatial_library()
+
+elif choice == "📊 RISK PROFILES":
+    show_risk_profiles()
+
 elif choice == "📄 DOCUMENT STUDIO":
     st.markdown("<h1 class='main-header'>📄 DOCUMENT STUDIO</h1>", unsafe_allow_html=True)
-    st.info("Document Studio tab - Coming Soon")    
+    st.info("Document Studio tab - Coming Soon")
     st.markdown("""
     ### Features Coming Soon:
     - AI-powered report generation
@@ -176,6 +195,15 @@ elif choice == "📄 DOCUMENT STUDIO":
     - Auto-fill from database
     - PDF export
     """)
+
+elif choice == "📁 KNOWLEDGE REPOSITORY":
+    show_knowledge_repository()
+
+elif choice == "👤 NDC PERSONAL":
+    show_ndc_personal()
+
+elif choice == "❓ QUICK GUIDE":
+    show_quick_guide()
 
 elif choice == "🏛️ ABOUT INDC":
     show_about_indc()

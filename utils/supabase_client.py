@@ -1,12 +1,29 @@
 # utils/supabase_client.py
 import streamlit as st
-from supabase import create_client, Client
 import pandas as pd
 from datetime import datetime
 import time
 
-def get_supabase_client() -> Client:
+# Fix: Use correct supabase import
+try:
+    from supabase import create_client, Client
+    SUPABASE_AVAILABLE = True
+    print("✅ Imported supabase successfully")
+except ImportError:
+    try:
+        from supabase_py import create_client, Client
+        SUPABASE_AVAILABLE = True
+        print("✅ Imported supabase_py successfully")
+    except ImportError:
+        SUPABASE_AVAILABLE = False
+        print("❌ Supabase import failed. Run: pip install supabase")
+
+def get_supabase_client():
     """Get Supabase client from session state or create new"""
+    if not SUPABASE_AVAILABLE:
+        st.session_state.supabase_connected = False
+        return None
+    
     if 'supabase_client' not in st.session_state:
         try:
             supabase_url = st.secrets["SUPABASE_URL"]
@@ -20,13 +37,25 @@ def get_supabase_client() -> Client:
             print(f"⚠️ Supabase connection failed: {e}")
     return st.session_state.supabase_client
 
+# ... rest of your existing code remains the same ...
+
 def is_connected():
     """Check if Supabase is connected"""
     return st.session_state.get('supabase_connected', False)
 
-# =============================================================================
-# AUTO-SYNC FUNCTIONS - This is the automation you want!
-# =============================================================================
+def test_connection():
+    """Test if Supabase connection works"""
+    client = get_supabase_client()
+    if not client:
+        return False
+    
+    try:
+        # Try to list tables
+        response = client.table('provincial_plans').select('count', count='exact').limit(1).execute()
+        return True
+    except Exception as e:
+        print(f"Connection test failed: {e}")
+        return False
 
 def auto_sync_table(table_name, session_key, data=None):
     """
@@ -133,10 +162,6 @@ def auto_sync_update(table_name, session_key, item_id, updates):
     auto_sync_table(table_name, session_key, current)
     
     return True
-
-# =============================================================================
-# TABLE-SPECIFIC AUTO-SYNC FUNCTIONS
-# =============================================================================
 
 def sync_plans():
     """Auto-sync all plan data"""

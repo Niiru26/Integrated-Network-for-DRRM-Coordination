@@ -177,9 +177,9 @@ def show():
             'Status': ['Active', 'Draft', 'Active', 'In Progress', 'In Progress', 'Draft', 'Draft']
         })
         
-        st.dataframe(timeline, width='stretch', hide_index=True)
+        st.dataframe(timeline, use_container_width=True, hide_index=True)
         
         fig = px.bar(timeline, x='Plan', y='Progress', title="Plan Implementation Progress",
                     color='Status',
                     color_discrete_map={'Active': '#1E3A8A', 'In Progress': '#FFA500', 'Draft': '#6c757d'})
-        st.plotly_chart(fig, width='stretch')
+        st.plotly_chart(fig, use_container_width=True)

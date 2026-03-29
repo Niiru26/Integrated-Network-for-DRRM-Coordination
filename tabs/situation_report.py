@@ -3,9 +3,8 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime, date
 from utils.supabase_client import auto_sync_add, auto_sync_delete, auto_sync_update, is_connected, auto_sync_table
-from utils.pagasa_api import fetch_weather_data, refresh_weather_data, get_weather_summary
+from utils.pagasa_api import fetch_weather_data, refresh_weather_data
 import plotly.express as px
-import plotly.graph_objects as go
 import json
 
 def show():
@@ -56,7 +55,7 @@ def show():
                 st.caption(f"🌡️ {today_forecast.get('temp_min', 'N/A')}°C - {today_forecast.get('temp_max', 'N/A')}°C")
                 st.caption(f"💨 {today_forecast.get('wind_speed', 'N/A')}")
             
-            if st.button("🔄 Refresh", key="refresh_weather_top", use_container_width=True):
+            if st.button("🔄 Refresh", key="refresh_weather_top"):
                 refresh_weather_data()
                 st.rerun()
     
@@ -111,16 +110,16 @@ def show_mdrrmo_data_entry():
     with st.form("sitrep_entry_form", clear_on_submit=False):
         col1, col2 = st.columns(2)
         with col1:
-            municipality = st.selectbox("Select Municipality *", municipalities)
-            report_date = st.date_input("Report Date *", date.today())
-            report_time = st.time_input("Report Time *", datetime.now().time())
-            sitrep_number = st.number_input("SITREP Number *", min_value=1, value=1, step=1)
+            municipality = st.selectbox("Select Municipality *", municipalities, key="sitrep_municipality")
+            report_date = st.date_input("Report Date *", date.today(), key="sitrep_date")
+            report_time = st.time_input("Report Time *", datetime.now().time(), key="sitrep_time")
+            sitrep_number = st.number_input("SITREP Number *", min_value=1, value=1, step=1, key="sitrep_number")
         
         with col2:
-            incident_name = st.text_input("Incident Name *", placeholder="e.g., SITREP #01: Effects of TS PAENG (NALGAE)")
-            alert_level = st.selectbox("Alert Level *", ["Alpha", "Blue", "Red", "White"])
-            submitted_by = st.text_input("Reported By *", placeholder="Name and Position")
-            contact_number = st.text_input("Contact Number", placeholder="Mobile number for follow-up")
+            incident_name = st.text_input("Incident Name *", placeholder="e.g., SITREP #01: Effects of TS PAENG (NALGAE)", key="sitrep_incident")
+            alert_level = st.selectbox("Alert Level *", ["Alpha", "Blue", "Red", "White"], key="sitrep_alert")
+            submitted_by = st.text_input("Reported By *", placeholder="Name and Position", key="sitrep_submitted_by")
+            contact_number = st.text_input("Contact Number", placeholder="Mobile number for follow-up", key="sitrep_contact")
         
         st.markdown("---")
         st.markdown("### I. SITUATION OVERVIEW")
@@ -157,30 +156,35 @@ def show_mdrrmo_data_entry():
         with col1:
             cloud_condition = st.selectbox("Cloud Condition",
                 ["Clear", "Partly Cloudy", "Cloudy", "Light Rains", "Moderate Rains", "Heavy Rains", "Torrential Rains"],
-                index=["Clear", "Partly Cloudy", "Cloudy", "Light Rains", "Moderate Rains", "Heavy Rains", "Torrential Rains"].index(default_cloud) if default_cloud in ["Clear", "Partly Cloudy", "Cloudy", "Light Rains", "Moderate Rains", "Heavy Rains", "Torrential Rains"] else 3)
+                key="sitrep_cloud")
         with col2:
             wind_condition = st.selectbox("Wind Condition",
-                ["Calm", "Light Wind", "Moderate Wind", "Strong Wind", "Gale Force", "Storm Force"])
+                ["Calm", "Light Wind", "Moderate Wind", "Strong Wind", "Gale Force", "Storm Force"],
+                key="sitrep_wind")
         with col3:
             precipitation = st.selectbox("Precipitation",
-                ["None", "Light", "Moderate", "Heavy", "Torrential"])
+                ["None", "Light", "Moderate", "Heavy", "Torrential"],
+                key="sitrep_precip")
         
         st.markdown("#### 📢 PAGASA Advisories")
         pagasa_bulletin = st.text_area("Latest PAGASA Tropical Cyclone Bulletin",
                                         placeholder="Paste or summarize the latest PAGASA bulletin...",
-                                        height=100)
-        pagasa_link = st.text_input("PAGASA Reference Link", placeholder="https://www.pagasa.dost.gov.ph/tropical-cyclone/severe-weather-bulletin")
+                                        height=100,
+                                        key="sitrep_pagasa_bulletin")
+        pagasa_link = st.text_input("PAGASA Reference Link", 
+                                    placeholder="https://www.pagasa.dost.gov.ph/tropical-cyclone/severe-weather-bulletin",
+                                    key="sitrep_pagasa_link")
         
         st.markdown("---")
         st.markdown("### II. INCIDENTS MONITORED")
         
         col1, col2 = st.columns(2)
         with col1:
-            incidents_reported = st.text_area("Incident/s Reported", placeholder="List all incidents per barangay", height=100)
-            casualties = st.text_input("Casualties", placeholder="e.g., 0 dead, 2 injured, 1 missing")
+            incidents_reported = st.text_area("Incident/s Reported", placeholder="List all incidents per barangay", height=100, key="sitrep_incidents")
+            casualties = st.text_input("Casualties", placeholder="e.g., 0 dead, 2 injured, 1 missing", key="sitrep_casualties")
         with col2:
-            affected_areas = st.text_area("Affected Areas/Barangays", placeholder="List barangays affected", height=100)
-            actions_taken = st.text_area("Initial Actions Taken", placeholder="Response actions already implemented", height=100)
+            affected_areas = st.text_area("Affected Areas/Barangays", placeholder="List barangays affected", height=100, key="sitrep_affected_areas")
+            actions_taken = st.text_area("Initial Actions Taken", placeholder="Response actions already implemented", height=100, key="sitrep_actions")
         
         st.markdown("---")
         st.markdown("### III. STATUS OF LIFELINES")
@@ -188,76 +192,83 @@ def show_mdrrmo_data_entry():
         st.markdown("#### Roads")
         col1, col2 = st.columns(2)
         with col1:
-            national_roads_status = st.selectbox("National Roads Status", ["Fully Passable", "One Lane Passable", "Not Passable", "Closed"])
-            national_roads_remarks = st.text_input("Remarks", placeholder="Specific sections affected")
+            national_roads_status = st.selectbox("National Roads Status", 
+                ["Fully Passable", "One Lane Passable", "Not Passable", "Closed"], 
+                key="sitrep_national_roads")
+            national_roads_remarks = st.text_input("Remarks", placeholder="Specific sections affected", key="sitrep_national_remarks")
         with col2:
-            provincial_roads_status = st.selectbox("Provincial Roads Status", ["Fully Passable", "One Lane Passable", "Not Passable", "Closed"])
-            provincial_roads_remarks = st.text_input("Remarks", placeholder="Specific sections affected")
+            provincial_roads_status = st.selectbox("Provincial Roads Status", 
+                ["Fully Passable", "One Lane Passable", "Not Passable", "Closed"], 
+                key="sitrep_provincial_roads")
+            provincial_roads_remarks = st.text_input("Remarks", placeholder="Specific sections affected", key="sitrep_provincial_remarks")
         
         st.markdown("#### Utilities")
         col1, col2, col3 = st.columns(3)
         with col1:
-            power_status = st.selectbox("Power Status", ["Normal", "Intermittent", "No Power"])
-            power_remarks = st.text_input("Remarks", placeholder="Areas affected")
+            power_status = st.selectbox("Power Status", ["Normal", "Intermittent", "No Power"], key="sitrep_power")
+            power_remarks = st.text_input("Remarks", placeholder="Areas affected", key="sitrep_power_remarks")
         with col2:
-            water_status = st.selectbox("Water Status", ["Normal", "Intermittent", "No Supply"])
-            water_remarks = st.text_input("Remarks", placeholder="Areas affected")
+            water_status = st.selectbox("Water Status", ["Normal", "Intermittent", "No Supply"], key="sitrep_water")
+            water_remarks = st.text_input("Remarks", placeholder="Areas affected", key="sitrep_water_remarks")
         with col3:
-            comm_status = st.selectbox("Communication Status", ["Normal", "Intermittent", "No Signal"])
-            comm_remarks = st.text_input("Remarks", placeholder="Network/s affected")
+            comm_status = st.selectbox("Communication Status", ["Normal", "Intermittent", "No Signal"], key="sitrep_comm")
+            comm_remarks = st.text_input("Remarks", placeholder="Network/s affected", key="sitrep_comm_remarks")
         
         st.markdown("---")
         st.markdown("### IV. DISPLACED POPULATION")
         
         col1, col2 = st.columns(2)
         with col1:
-            families_in_ec = st.number_input("Families in ECs", min_value=0, value=0)
-            persons_in_ec = st.number_input("Persons in ECs", min_value=0, value=0)
+            families_in_ec = st.number_input("Families in ECs", min_value=0, value=0, key="sitrep_families_ec")
+            persons_in_ec = st.number_input("Persons in ECs", min_value=0, value=0, key="sitrep_persons_ec")
         with col2:
-            families_outside = st.number_input("Families Outside ECs", min_value=0, value=0)
-            persons_outside = st.number_input("Persons Outside ECs", min_value=0, value=0)
+            families_outside = st.number_input("Families Outside ECs", min_value=0, value=0, key="sitrep_families_out")
+            persons_outside = st.number_input("Persons Outside ECs", min_value=0, value=0, key="sitrep_persons_out")
         
         st.markdown("---")
         st.markdown("### V. DAMAGE ASSESSMENT")
         
         col1, col2 = st.columns(2)
         with col1:
-            totally_damaged = st.number_input("Totally Damaged Houses", min_value=0, value=0)
-            partially_damaged = st.number_input("Partially Damaged Houses", min_value=0, value=0)
+            totally_damaged = st.number_input("Totally Damaged Houses", min_value=0, value=0, key="sitrep_totally_damaged")
+            partially_damaged = st.number_input("Partially Damaged Houses", min_value=0, value=0, key="sitrep_partially_damaged")
         with col2:
-            affected_families = st.number_input("Affected Families", min_value=0, value=0)
-            affected_persons = st.number_input("Affected Persons", min_value=0, value=0)
+            affected_families = st.number_input("Affected Families", min_value=0, value=0, key="sitrep_affected_families")
+            affected_persons = st.number_input("Affected Persons", min_value=0, value=0, key="sitrep_affected_persons")
         
         st.markdown("---")
         st.markdown("### VI. RESOURCES PROVIDED")
         
         col1, col2, col3 = st.columns(3)
         with col1:
-            food_packs = st.number_input("Food Packs Distributed", min_value=0, value=0)
+            food_packs = st.number_input("Food Packs Distributed", min_value=0, value=0, key="sitrep_food_packs")
         with col2:
-            hygiene_kits = st.number_input("Hygiene Kits Distributed", min_value=0, value=0)
+            hygiene_kits = st.number_input("Hygiene Kits Distributed", min_value=0, value=0, key="sitrep_hygiene_kits")
         with col3:
-            family_kits = st.number_input("Family Kits Distributed", min_value=0, value=0)
+            family_kits = st.number_input("Family Kits Distributed", min_value=0, value=0, key="sitrep_family_kits")
         
         st.markdown("---")
         st.markdown("### VII. RESPONSE ACTIVITIES")
         
-        response_activities = st.text_area("Response Actions Taken", placeholder="List response activities, deployments, and operations", height=100)
+        response_activities = st.text_area("Response Actions Taken", 
+            placeholder="List response activities, deployments, and operations", 
+            height=100,
+            key="sitrep_response")
         
         st.markdown("### VIII. NEEDS ASSESSMENT")
         
         col1, col2, col3 = st.columns(3)
         with col1:
-            priority1 = st.text_area("Priority 1 Needs", placeholder="Search & Rescue, Food, Medical, Water", height=80)
+            priority1 = st.text_area("Priority 1 Needs", placeholder="Search & Rescue, Food, Medical, Water", height=80, key="sitrep_priority1")
         with col2:
-            priority2 = st.text_area("Priority 2 Needs", placeholder="Shelter, Clothing, Non-food items", height=80)
+            priority2 = st.text_area("Priority 2 Needs", placeholder="Shelter, Clothing, Non-food items", height=80, key="sitrep_priority2")
         with col3:
-            priority3 = st.text_area("Priority 3 Needs", placeholder="Cash for Work, Rehabilitation", height=80)
+            priority3 = st.text_area("Priority 3 Needs", placeholder="Cash for Work, Rehabilitation", height=80, key="sitrep_priority3")
         
         st.markdown("### IX. REMARKS")
-        remarks = st.text_area("Additional Remarks", placeholder="Other relevant information", height=80)
+        remarks = st.text_area("Additional Remarks", placeholder="Other relevant information", height=80, key="sitrep_remarks")
         
-        submitted = st.form_submit_button("💾 Submit Situation Report", type="primary", use_container_width=True)
+        submitted = st.form_submit_button("💾 Submit Situation Report", type="primary")
         
         if submitted:
             if not municipality or not incident_name:
@@ -450,17 +461,17 @@ def show_photo_documentation():
     
     col1, col2 = st.columns(2)
     with col1:
-        photo_municipality = st.selectbox("Municipality", municipalities)
-        photo_location = st.text_input("Location", placeholder="Specific barangay or sitio")
-        photo_description = st.text_area("Description", placeholder="What does this photo show?")
+        photo_municipality = st.selectbox("Municipality", municipalities, key="photo_municipality")
+        photo_location = st.text_input("Location", placeholder="Specific barangay or sitio", key="photo_location")
+        photo_description = st.text_area("Description", placeholder="What does this photo show?", key="photo_description")
     with col2:
-        photo_incident = st.text_input("Related Incident", placeholder="e.g., Landslide")
-        photo_date = st.date_input("Photo Date", date.today())
-        photographer = st.text_input("Photographer", placeholder="Name")
+        photo_incident = st.text_input("Related Incident", placeholder="e.g., Landslide", key="photo_incident")
+        photo_date = st.date_input("Photo Date", date.today(), key="photo_date")
+        photographer = st.text_input("Photographer", placeholder="Name", key="photo_photographer")
     
-    uploaded_files = st.file_uploader("Select photos", type=['jpg', 'jpeg', 'png'], accept_multiple_files=True)
+    uploaded_files = st.file_uploader("Select photos", type=['jpg', 'jpeg', 'png'], accept_multiple_files=True, key="photo_upload")
     
-    if uploaded_files and st.button("📸 Add Photos"):
+    if uploaded_files and st.button("📸 Add Photos", key="add_photos"):
         for file in uploaded_files:
             photo = {
                 "id": int(datetime.now().timestamp() * 1000),
@@ -564,19 +575,19 @@ def show_related_modules():
     
     col1, col2, col3, col4 = st.columns(4)
     with col1:
-        if st.button("📊 Go to DRRM Intelligence", use_container_width=True):
+        if st.button("📊 Go to DRRM Intelligence", use_container_width=True, key="link_drrm"):
             st.session_state.navigation = "📊 DRRM INTELLIGENCE"
             st.rerun()
     with col2:
-        if st.button("📋 Go to Plan Management", use_container_width=True):
+        if st.button("📋 Go to Plan Management", use_container_width=True, key="link_plan"):
             st.session_state.navigation = "📋 PLAN MANAGEMENT"
             st.rerun()
     with col3:
-        if st.button("📚 Go to Trainings", use_container_width=True):
+        if st.button("📚 Go to Trainings", use_container_width=True, key="link_trainings"):
             st.session_state.navigation = "📚 TRAININGS"
             st.rerun()
     with col4:
-        if st.button("💰 Go to LDRRMF", use_container_width=True):
+        if st.button("💰 Go to LDRRMF", use_container_width=True, key="link_ldrrmf"):
             st.session_state.navigation = "💰 LDRRMF UTILIZATION"
             st.rerun()
     

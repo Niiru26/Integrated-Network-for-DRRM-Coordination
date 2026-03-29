@@ -3,9 +3,11 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime
 from utils.supabase_client import auto_sync_add, auto_sync_delete, auto_sync_update, sync_plans, is_connected
+from utils.local_storage import save_file, delete_file, get_file_info, get_file_size, file_exists
+import os
 
 def show():
-    """Display Plan Management Tab - Fully Functional with Auto-Sync"""
+    """Display Plan Management Tab - Fully Functional with Auto-Sync and Local File Storage"""
     
     st.markdown("# 📋 Plan Management")
     st.caption("Comprehensive planning and implementation tracking with automatic cloud sync")
@@ -44,8 +46,33 @@ def show():
     with tab6:
         show_related_modules()
 
+
+def upload_plan_file(plan_id, plan_type, uploaded_file):
+    """Upload a file for a plan - stored locally, metadata in session state"""
+    if not uploaded_file:
+        return None
+    
+    # Save to local storage
+    category = "plan_management"
+    subcategory = f"{plan_type}_plans"
+    
+    # Create custom filename with plan ID and timestamp
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename = f"plan_{plan_id}_{timestamp}_{uploaded_file.name}"
+    
+    file_path = save_file(uploaded_file, category, subcategory, filename)
+    
+    return {
+        "file_path": file_path,
+        "filename": uploaded_file.name,
+        "file_size": get_file_size(file_path),
+        "file_type": uploaded_file.type,
+        "uploaded_at": datetime.now().isoformat()
+    }
+
+
 def show_provincial_plans():
-    """Display provincial plans with auto-sync"""
+    """Display provincial plans with auto-sync and file attachments"""
     
     st.markdown("### Provincial DRRM Plans")
     st.caption("Comprehensive plans at the provincial level for disaster risk reduction")
@@ -70,6 +97,15 @@ def show_provincial_plans():
             description = st.text_area("Description", placeholder="Brief description of the plan and its key objectives")
             key_priorities = st.text_area("Key Priorities", placeholder="List key priorities and focus areas")
             
+            # ========== NEW: FILE UPLOAD SECTION ==========
+            st.markdown("#### 📎 Attach Plan Document")
+            uploaded_file = st.file_uploader(
+                "Upload Plan Document", 
+                type=['pdf', 'docx', 'doc', 'xlsx', 'pptx'],
+                help="Upload the official plan document (PDF, Word, Excel, or PowerPoint)"
+            )
+            # ==============================================
+            
             submitted = st.form_submit_button("💾 Save Plan")
             
             if submitted and title:
@@ -84,7 +120,19 @@ def show_provincial_plans():
                     "key_priorities": key_priorities,
                     "level": "provincial"
                 }
-                auto_sync_add('provincial_plans', 'provincial_plans', new_plan)
+                
+                # First add to get an ID
+                result = auto_sync_add('provincial_plans', 'provincial_plans', new_plan)
+                
+                # ========== NEW: Handle file upload after getting ID ==========
+                if uploaded_file and result:
+                    file_info = upload_plan_file(result.get('id'), "provincial", uploaded_file)
+                    if file_info:
+                        # Update the plan with file info
+                        result['attached_file'] = file_info
+                        auto_sync_update('provincial_plans', 'provincial_plans', result.get('id'), result)
+                # ============================================================
+                
                 st.success(f"✅ Plan '{title}' saved and synced to cloud!")
                 st.rerun()
     
@@ -106,23 +154,58 @@ def show_provincial_plans():
             total_budget = df['budget'].sum() if 'budget' in df.columns else 0
             st.metric("Total Budget", f"₱{total_budget:,.2f}")
         
-        # Display table
-        display_cols = ['plan_type', 'title', 'year', 'status', 'lead_agency']
-        available_cols = [col for col in display_cols if col in df.columns]
-        st.dataframe(df[available_cols], use_container_width=True, hide_index=True)
+        # Display table with file indicators
+        display_df = df[['plan_type', 'title', 'year', 'status', 'lead_agency']].copy()
+        # Add file indicator column
+        display_df['Has File'] = df['attached_file'].apply(lambda x: "📎 Yes" if x else "No") if 'attached_file' in df.columns else "No"
+        st.dataframe(display_df, use_container_width=True, hide_index=True)
         
-        # Delete functionality
+        # Detailed view with download links
         st.markdown("---")
-        st.markdown("### 🗑️ Delete Plan")
+        st.markdown("### 📄 Plan Documents")
+        
         for plan in st.session_state.provincial_plans:
-            with st.expander(f"Delete: {plan.get('title', 'Untitled')}"):
-                st.warning(f"⚠️ Are you sure you want to delete '{plan.get('title')}'? This action cannot be undone.")
-                if st.button(f"Confirm Delete", key=f"del_prov_{plan.get('id')}"):
+            with st.expander(f"📋 {plan.get('title', 'Untitled')} - {plan.get('status', 'Draft')}"):
+                col1, col2 = st.columns(2)
+                with col1:
+                    st.markdown(f"**Type:** {plan.get('plan_type', 'N/A')}")
+                    st.markdown(f"**Year:** {plan.get('year', 'N/A')}")
+                    st.markdown(f"**Lead Agency:** {plan.get('lead_agency', 'N/A')}")
+                    st.markdown(f"**Budget:** ₱{plan.get('budget', 0):,.2f}")
+                with col2:
+                    st.markdown(f"**Status:** {plan.get('status', 'N/A')}")
+                    st.markdown(f"**Created:** {plan.get('created_at', 'N/A')[:10] if plan.get('created_at') else 'N/A'}")
+                
+                st.markdown(f"**Description:** {plan.get('description', 'No description')}")
+                
+                # ========== NEW: Display attached file with download button ==========
+                attached_file = plan.get('attached_file')
+                if attached_file and attached_file.get('file_path') and file_exists(attached_file.get('file_path')):
+                    st.markdown("**Attached Document:**")
+                    file_path = attached_file['file_path']
+                    with open(file_path, "rb") as f:
+                        st.download_button(
+                            label=f"📎 Download {attached_file.get('filename', 'file')} ({attached_file.get('file_size', 'N/A')})",
+                            data=f,
+                            file_name=attached_file.get('filename', 'document'),
+                            key=f"download_{plan.get('id')}"
+                        )
+                elif attached_file:
+                    st.warning("⚠️ File not found on local storage")
+                # ================================================================
+                
+                st.markdown("---")
+                st.warning(f"⚠️ Delete this plan? This action cannot be undone.")
+                if st.button(f"🗑️ Delete Plan", key=f"del_prov_{plan.get('id')}"):
+                    # Delete attached file if exists
+                    if plan.get('attached_file') and plan['attached_file'].get('file_path'):
+                        delete_file(plan['attached_file']['file_path'])
                     auto_sync_delete('provincial_plans', 'provincial_plans', plan.get('id'))
                     st.success("✅ Deleted and synced!")
                     st.rerun()
     else:
         st.info("📭 No provincial plans yet. Click 'Add New Provincial Plan' to get started.")
+
 
 def show_municipal_plans():
     """Display municipal plans with auto-sync"""
@@ -148,6 +231,16 @@ def show_municipal_plans():
             
             description = st.text_area("Description", placeholder="Brief description of the municipal plan")
             
+            # ========== NEW: FILE UPLOAD SECTION ==========
+            st.markdown("#### 📎 Attach Plan Document")
+            uploaded_file = st.file_uploader(
+                "Upload Plan Document", 
+                type=['pdf', 'docx', 'doc', 'xlsx', 'pptx'],
+                key="mun_upload",
+                help="Upload the official municipal plan document"
+            )
+            # ==============================================
+            
             submitted = st.form_submit_button("💾 Save Plan")
             
             if submitted and title:
@@ -161,7 +254,17 @@ def show_municipal_plans():
                     "description": description,
                     "level": "municipal"
                 }
-                auto_sync_add('municipal_plans', 'municipal_plans', new_plan)
+                
+                result = auto_sync_add('municipal_plans', 'municipal_plans', new_plan)
+                
+                # ========== NEW: Handle file upload ==========
+                if uploaded_file and result:
+                    file_info = upload_plan_file(result.get('id'), "municipal", uploaded_file)
+                    if file_info:
+                        result['attached_file'] = file_info
+                        auto_sync_update('municipal_plans', 'municipal_plans', result.get('id'), result)
+                # ============================================
+                
                 st.success(f"✅ Municipal plan for {municipality} saved and synced!")
                 st.rerun()
     
@@ -181,20 +284,46 @@ def show_municipal_plans():
             st.metric("Total Budget", f"₱{total_budget:,.2f}")
         
         # Display table
-        st.dataframe(df, use_container_width=True, hide_index=True)
+        display_df = df[['municipality', 'plan_type', 'title', 'year', 'status']].copy()
+        display_df['Has File'] = df['attached_file'].apply(lambda x: "📎 Yes" if x else "No") if 'attached_file' in df.columns else "No"
+        st.dataframe(display_df, use_container_width=True, hide_index=True)
         
-        # Delete functionality
+        # Detailed view with download links
         st.markdown("---")
-        st.markdown("### 🗑️ Delete Plan")
+        st.markdown("### 📄 Municipal Plan Documents")
+        
         for plan in st.session_state.municipal_plans:
-            with st.expander(f"Delete: {plan.get('title', 'Untitled')} - {plan.get('municipality', '')}"):
-                st.warning(f"⚠️ Confirm deletion of '{plan.get('title')}' for {plan.get('municipality')}?")
-                if st.button(f"Confirm Delete", key=f"del_mun_{plan.get('id')}"):
+            with st.expander(f"🏘️ {plan.get('title', 'Untitled')} - {plan.get('municipality', '')}"):
+                st.markdown(f"**Municipality:** {plan.get('municipality', 'N/A')}")
+                st.markdown(f"**Type:** {plan.get('plan_type', 'N/A')}")
+                st.markdown(f"**Year:** {plan.get('year', 'N/A')}")
+                st.markdown(f"**Status:** {plan.get('status', 'N/A')}")
+                st.markdown(f"**Budget:** ₱{plan.get('budget', 0):,.2f}")
+                st.markdown(f"**Description:** {plan.get('description', 'No description')}")
+                
+                # ========== NEW: Display attached file ==========
+                attached_file = plan.get('attached_file')
+                if attached_file and attached_file.get('file_path') and file_exists(attached_file.get('file_path')):
+                    file_path = attached_file['file_path']
+                    with open(file_path, "rb") as f:
+                        st.download_button(
+                            label=f"📎 Download {attached_file.get('filename', 'file')} ({attached_file.get('file_size', 'N/A')})",
+                            data=f,
+                            file_name=attached_file.get('filename', 'document'),
+                            key=f"download_mun_{plan.get('id')}"
+                        )
+                # ===============================================
+                
+                st.markdown("---")
+                if st.button(f"🗑️ Delete Plan", key=f"del_mun_{plan.get('id')}"):
+                    if plan.get('attached_file') and plan['attached_file'].get('file_path'):
+                        delete_file(plan['attached_file']['file_path'])
                     auto_sync_delete('municipal_plans', 'municipal_plans', plan.get('id'))
                     st.success("✅ Deleted and synced!")
                     st.rerun()
     else:
         st.info("📭 No municipal plans yet. Click 'Add New Municipal Plan' to get started.")
+
 
 def show_ppas():
     """Display Programs, Projects, Activities with auto-sync"""
@@ -222,6 +351,16 @@ def show_ppas():
             description = st.text_area("Description")
             remarks = st.text_area("Remarks / Challenges")
             
+            # ========== NEW: FILE UPLOAD SECTION ==========
+            st.markdown("#### 📎 Attach PPA Document")
+            uploaded_file = st.file_uploader(
+                "Upload PPA Document", 
+                type=['pdf', 'docx', 'doc', 'xlsx', 'pptx'],
+                key="ppa_upload",
+                help="Upload project proposal, contract, or implementation plan"
+            )
+            # ==============================================
+            
             submitted = st.form_submit_button("💾 Save PPA")
             
             if submitted and title:
@@ -237,7 +376,17 @@ def show_ppas():
                     "description": description,
                     "remarks": remarks
                 }
-                auto_sync_add('ppas', 'ppas', new_ppa)
+                
+                result = auto_sync_add('ppas', 'ppas', new_ppa)
+                
+                # ========== NEW: Handle file upload ==========
+                if uploaded_file and result:
+                    file_info = upload_plan_file(result.get('id'), "ppa", uploaded_file)
+                    if file_info:
+                        result['attached_file'] = file_info
+                        auto_sync_update('ppas', 'ppas', result.get('id'), result)
+                # ============================================
+                
                 st.success("✅ PPA saved and synced!")
                 st.rerun()
     
@@ -258,9 +407,27 @@ def show_ppas():
             total_budget = df['budget'].sum() if 'budget' in df.columns else 0
             st.metric("Total Budget", f"₱{total_budget:,.2f}")
         
-        st.dataframe(df, use_container_width=True, hide_index=True)
+        # Display with file indicator
+        display_df = df[['type', 'title', 'status', 'progress', 'responsible']].copy()
+        display_df['Has File'] = df['attached_file'].apply(lambda x: "📎 Yes" if x else "No") if 'attached_file' in df.columns else "No"
+        st.dataframe(display_df, use_container_width=True, hide_index=True)
+        
+        # Download links for PPAs
+        for ppa in st.session_state.ppas:
+            attached_file = ppa.get('attached_file')
+            if attached_file and attached_file.get('file_path') and file_exists(attached_file.get('file_path')):
+                with st.expander(f"📄 {ppa.get('title', 'Untitled')} - Attached Document"):
+                    file_path = attached_file['file_path']
+                    with open(file_path, "rb") as f:
+                        st.download_button(
+                            label=f"📎 Download {attached_file.get('filename', 'file')} ({attached_file.get('file_size', 'N/A')})",
+                            data=f,
+                            file_name=attached_file.get('filename', 'document'),
+                            key=f"download_ppa_{ppa.get('id')}"
+                        )
     else:
         st.info("📭 No PPAs yet. Click 'Add New PPA' to get started.")
+
 
 def show_indicators():
     """Display M&E Indicators with auto-sync"""
@@ -308,6 +475,7 @@ def show_indicators():
         st.dataframe(df, use_container_width=True, hide_index=True)
     else:
         st.info("📭 No indicators yet. Click 'Add New Indicator' to get started.")
+
 
 def show_implementation_tracker():
     """Display implementation tracking with auto-sync"""
@@ -369,8 +537,9 @@ def show_implementation_tracker():
     else:
         st.info("📭 No implementation records yet. Click 'Add Implementation Record' to get started.")
 
+
 def show_related_modules():
-    """Show related modules and connections - This is the feature you wanted to keep!"""
+    """Show related modules and connections"""
     
     st.markdown("### 🔗 Related Modules & Integration Points")
     st.caption("How Plan Management connects with other modules in INDC")

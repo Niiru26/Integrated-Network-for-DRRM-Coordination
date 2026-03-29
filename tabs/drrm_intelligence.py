@@ -1,831 +1,644 @@
-"""
-DRRM Intelligence Tab
-Complete working version with Hazard Documentation, Predictive Analytics,
-Event Database, Summary Dashboard, and Historical Context Guide
-"""
-
+# tabs/drrm_intelligence.py
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
 from datetime import datetime, date
-import hashlib
-from utils.database import add_event, load_events_from_supabase, save_events
+import os
+import json
+from utils.supabase_client import auto_sync_add, auto_sync_delete, auto_sync_update, is_connected, auto_sync_table
+from utils.local_storage import save_file, delete_file, get_file_info, get_file_size, file_exists, list_files
+import folium
+from streamlit_folium import folium_static
 
 def show():
-    """Display DRRM Intelligence tab"""
+    """Display DRRM Intelligence Tab with Hazard Events and Predictive Analytics"""
     
-    # Load data from Supabase into session state if needed
-    if 'disaster_events' not in st.session_state or st.session_state.disaster_events.empty:
-        st.session_state.disaster_events = load_events_from_supabase()
+    st.markdown("# 📊 DRRM INTELLIGENCE")
+    st.caption("Hazard events database, trend analysis, predictive forecasting, and typhoon tracking")
     
-    # Helper function for confidence calculation
-    def calculate_mp_confidence(affected_regions_str):
-        if not affected_regions_str:
-            return {'level': 'UNKNOWN', 'score': 0, 'reason': 'No region information', 'color': '#6c757d'}
-        
-        regions = [r.strip().upper() for r in affected_regions_str.split(',')]
-        has_car = any('CAR' in r for r in regions)
-        has_r1 = any('REGION I' in r or 'I' == r or '1' == r for r in regions)
-        has_r2 = any('REGION II' in r or 'II' == r or '2' == r for r in regions)
-        
-        if has_car and has_r1 and has_r2:
-            return {'level': 'VERY HIGH', 'score': 95, 'reason': 'CAR + Region I + Region II - surrounded MP', 'color': '#006400'}
-        elif has_car and (has_r1 or has_r2):
-            return {'level': 'HIGH', 'score': 85, 'reason': 'CAR + adjacent region - MP centrally located', 'color': '#008000'}
-        elif has_car:
-            return {'level': 'MEDIUM', 'score': 70, 'reason': 'CAR mentioned - MP is part of CAR', 'color': '#FFA500'}
-        elif has_r1 and has_r2:
-            return {'level': 'MEDIUM-LOW', 'score': 40, 'reason': 'Adjacent regions only - possible spillover', 'color': '#FFD700'}
-        else:
-            return {'level': 'LOW', 'score': 20, 'reason': 'No direct region mention', 'color': '#FF0000'}
+    # Initialize session state
+    if 'disaster_events' not in st.session_state:
+        st.session_state.disaster_events = pd.DataFrame()
     
-    st.header("📊 DRRM INTELLIGENCE")
+    if 'typhoon_tracks' not in st.session_state:
+        st.session_state.typhoon_tracks = []
     
-    # =========================================================================
-    # CREATE TABS FIRST - MUST BE DEFINED BEFORE USING
-    # =========================================================================
+    if 'hazard_photos' not in st.session_state:
+        st.session_state.hazard_photos = []
+    
+    # Create tabs
     tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
-        "📋 HAZARD DOCUMENTATION",
-        "🔮 PREDICTIVE ANALYTICS",
-        "🎯 PROJECTIVE ANALYTICS",
-        "📊 EVENT DATABASE",
-        "📈 SUMMARY DASHBOARD",
-        "📜 HISTORICAL CONTEXT GUIDE"
+        "📝 Event Entry",
+        "📊 Event Database",
+        "📈 Trend Analysis",
+        "🌀 Typhoon Tracking",
+        "📸 Hazard Photos",
+        "🔮 Predictive Analytics"
     ])
     
-    # =========================================================================
-    # TAB 1: HAZARD DOCUMENTATION
-    # =========================================================================
     with tab1:
-        st.markdown("### Hazard Documentation Form")
-        st.markdown("*For annual reporting and statistical analysis*")
-        
-        # UNDRR Reference
-        with st.expander("📖 Hazard Classification System (UNDRR, 2017)", expanded=False):
-            st.markdown("""
-            ### 📚 Hazard Classification System (UNDRR, 2017)
-            
-            | Category | Description | Examples |
-            |----------|-------------|----------|
-            | 🌡️ **Biological** | Organic origin, conveyed by biological vectors | Bacteria, viruses, parasites, venomous wildlife, poisonous plants |
-            | 🌱 **Environmental** | Created by environmental degradation or pollution | Soil degradation, deforestation, loss of biodiversity, salinization, sea-level rise |
-            | 🌋 **Geological/Geophysical** | Internal earth processes | Earthquakes, volcanic activity, mass movements (landslides, rockslides, debris flows) |
-            | 🌊 **Hydrometeorological** | Atmospheric, hydrological, oceanographic origin | Tropical cyclones (typhoons), floods, droughts, heatwaves, cold spells, storm surges |
-            | 🏭 **Technological** | Technological/industrial conditions, infrastructure failures | Industrial pollution, nuclear radiation, dam failures, transport accidents, fires, chemical spills |
-            
-            *Source: United Nations Office for Disaster Risk Reduction (UNDRR). 2017. The Sendai Framework Terminology on Disaster Risk Reduction. "Hazard". https://www.undrr.org/terminology/hazard.*
-            """)
-        
-        # Record type selection
+        show_event_entry()
+    
+    with tab2:
+        show_event_database()
+    
+    with tab3:
+        show_trend_analysis()
+    
+    with tab4:
+        show_typhoon_tracking()
+    
+    with tab5:
+        show_hazard_photos()
+    
+    with tab6:
+        show_predictive_analytics()
+
+
+def upload_event_file(event_id, file_type, uploaded_file, description=""):
+    """Upload a file for an event - stored locally"""
+    if not uploaded_file:
+        return None
+    
+    category = "drrm_intelligence"
+    subcategory = "event_files"
+    
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename = f"event_{event_id}_{file_type}_{timestamp}_{uploaded_file.name}"
+    
+    file_path = save_file(uploaded_file, category, subcategory, filename)
+    
+    return {
+        "file_path": file_path,
+        "filename": uploaded_file.name,
+        "file_size": get_file_size(file_path),
+        "file_type": file_type,
+        "description": description,
+        "uploaded_at": datetime.now().isoformat()
+    }
+
+
+def upload_typhoon_track(track_data, track_image=None):
+    """Upload typhoon track data and optional track map"""
+    category = "drrm_intelligence"
+    subcategory = "typhoon_tracks"
+    
+    track_id = int(datetime.now().timestamp() * 1000)
+    
+    # Save track data as JSON
+    track_filename = f"typhoon_track_{track_id}_{datetime.now().strftime('%Y%m%d')}.json"
+    track_path = save_file(None, category, subcategory, track_filename)
+    
+    with open(track_path, "w") as f:
+        json.dump(track_data, f)
+    
+    track_info = {
+        "id": track_id,
+        "track_file": track_path,
+        "track_data": track_data,
+        "created_at": datetime.now().isoformat()
+    }
+    
+    # Save track image if provided
+    if track_image:
+        image_filename = f"typhoon_track_map_{track_id}_{track_image.name}"
+        image_path = save_file(track_image, category, subcategory, image_filename)
+        track_info["map_image"] = image_path
+    
+    return track_info
+
+
+def show_event_entry():
+    """Form to add new disaster events with file attachments"""
+    
+    st.markdown("### Add New Hazard Event")
+    st.caption("Record typhoons, floods, landslides, and other disaster events")
+    
+    with st.form("add_event_form", clear_on_submit=False):
         col1, col2 = st.columns(2)
+        
         with col1:
-            record_period = st.radio(
-                "Select Record Type",
-                ["🏛️ HISTORICAL - Needs interpretation", "🏔️ PROVINCIAL - Direct Mountain Province data"],
-                horizontal=True,
-                key="record_period_radio"
-            )
+            event_type = st.selectbox("Event Type", [
+                "Typhoon", "Super Typhoon", "Tropical Storm", 
+                "Monsoon", "LPA", "ITCZ", "Shear Line",
+                "Flood", "Landslide", "Earthquake", "Drought", "Forest Fire"
+            ])
+            local_name = st.text_input("Local Name", placeholder="e.g., Typhoon Paeng (NALGAE)")
+            start_date = st.date_input("Start Date", date.today())
+            end_date = st.date_input("End Date", date.today())
         
         with col2:
-            hazard_category = st.selectbox(
-                "Hazard Category (UNDRR Classification)",
-                ["Hydrometeorological", "Geological/Geophysical", "Biological", "Environmental", "Technological"],
-                key="hazard_category_select"
-            )
+            municipality = st.selectbox("Municipality", [
+                "Barlig", "Bauko", "Besao", "Bontoc", "Natonin", 
+                "Paracelis", "Sabangan", "Sadanga", "Sagada", "Tadian", "Province-wide"
+            ])
+            fatalities = st.number_input("Fatalities", min_value=0, value=0)
+            injured = st.number_input("Injured", min_value=0, value=0)
+            missing = st.number_input("Missing", min_value=0, value=0)
         
-        st.markdown("---")
+        affected_families = st.number_input("Affected Families", min_value=0, value=0)
+        affected_persons = st.number_input("Affected Persons", min_value=0, value=0)
         
-        # Form key based on selections
-        form_key = f"hazard_form_{record_period[:5]}_{hazard_category[:5]}"
+        # Damage section
+        col1, col2 = st.columns(2)
+        with col1:
+            damaged_houses = st.number_input("Damaged Houses", min_value=0, value=0)
+            agricultural_damage = st.number_input("Agricultural Damage (₱)", min_value=0, value=0, step=10000)
+        with col2:
+            infrastructure_damage = st.number_input("Infrastructure Damage (₱)", min_value=0, value=0, step=10000)
+            total_damage = agricultural_damage + infrastructure_damage
+            st.metric("Total Damage Estimate", f"₱{total_damage:,.2f}")
         
-        with st.form(form_key):
-            st.markdown("#### 📍 Basic Information")
+        description = st.text_area("Description", placeholder="Detailed description of the event and its impacts")
+        response_actions = st.text_area("Response Actions Taken", placeholder="List response activities")
+        
+        # ========== FILE UPLOAD SECTION ==========
+        st.markdown("#### 📎 Attach Files")
+        st.caption("Upload typhoon tracks, hazard maps, photos, or other relevant documents")
+        
+        uploaded_file = st.file_uploader(
+            "Select file to attach", 
+            type=['jpg', 'jpeg', 'png', 'pdf', 'gif', 'mp4', 'csv', 'json'],
+            help="Upload typhoon track images, hazard maps, photos, or documents"
+        )
+        file_description = st.text_input("File Description", placeholder="e.g., Typhoon track map, Damage photo, Hazard assessment")
+        # ======================================
+        
+        submitted = st.form_submit_button("💾 Save Event", type="primary")
+        
+        if submitted:
+            if not local_name:
+                st.error("Please enter the event name")
+                return
             
-            col_a, col_b = st.columns(2)
-            with col_a:
-                local_name = st.text_input("Event Name", placeholder="e.g., Lawin, 1990 Luzon Earthquake", value="")
-                international_name = st.text_input("International Name (if applicable)", value="")
-                year = st.number_input("Year", min_value=1800, max_value=2100, value=datetime.now().year)
+            event = {
+                "id": int(datetime.now().timestamp() * 1000),
+                "event_type": event_type,
+                "local_name": local_name,
+                "start_date": start_date.isoformat(),
+                "end_date": end_date.isoformat(),
+                "municipality": municipality,
+                "fatalities": fatalities,
+                "injured": injured,
+                "missing": missing,
+                "affected_families": affected_families,
+                "affected_persons": affected_persons,
+                "damaged_houses": damaged_houses,
+                "agricultural_damage": agricultural_damage,
+                "infrastructure_damage": infrastructure_damage,
+                "total_damage": total_damage,
+                "description": description,
+                "response_actions": response_actions,
+                "created_at": datetime.now().isoformat()
+            }
             
-            with col_b:
-                # Hazard Type based on category
-                if hazard_category == "Hydrometeorological":
-                    hazard_type = st.selectbox("Hazard Type", [
-                        "Intertropical Convergence Zone (ITCZ)",
-                        "Low Pressure Area (LPA)",
-                        "Monsoon (Southwest/Northeast)",
-                        "Shear Line",
-                        "Thunderstorm",
-                        "Tropical Depression",
-                        "Tropical Storm",
-                        "Severe Tropical Storm",
-                        "Typhoon",
-                        "Super Typhoon",
-                        "Riverine/Fluvial Flood",
-                        "Flash Flood",
-                        "Drought",
-                        "Heatwave",
-                        "Forest Fire / Wildfire"
-                    ])
-                elif hazard_category == "Geological/Geophysical":
-                    hazard_type = st.selectbox("Hazard Type", [
-                        "Ground Shaking",
-                        "Ground Rupture",
-                        "Liquefaction",
-                        "Mass Wasting (Landslide)",
-                        "Mass Wasting (Rockfall)",
-                        "Mass Wasting (Debris Flow)",
-                        "Mass Wasting (Creep)",
-                        "Volcanic Eruption",
-                        "Volcanic Ashfall",
-                        "Earthquake"
-                    ])
-                elif hazard_category == "Biological":
-                    hazard_type = st.selectbox("Hazard Type", [
-                        "Disease Outbreak",
-                        "Vector-borne Disease",
-                        "Food-borne Illness",
-                        "Water-borne Disease",
-                        "Venomous Wildlife Incident",
-                        "Other Biological Hazard"
-                    ])
-                elif hazard_category == "Environmental":
-                    hazard_type = st.selectbox("Hazard Type", [
-                        "Soil Degradation",
-                        "Deforestation",
-                        "Loss of Biodiversity",
-                        "Salinization",
-                        "Sea-level Rise",
-                        "Other Environmental Hazard"
-                    ])
-                else:  # Technological
-                    hazard_type = st.selectbox("Hazard Type", [
-                        "Structural Fire",
-                        "Forest Fire / Wildfire",
-                        "Road Crash Incident",
-                        "Vehicular Crash Incident",
-                        "Industrial Accident",
-                        "Chemical Spill",
-                        "Dam Failure",
-                        "Transport Incident",
-                        "Other Technological Hazard"
-                    ])
-                
-                # Date range
-                min_date = date(1800, 1, 1)
-                max_date = date(2100, 12, 31)
-                
-                st.markdown("##### 📅 Event Period")
-                col_date1, col_date2 = st.columns(2)
-                with col_date1:
-                    start_date = st.date_input(
-                        "Start Date", 
-                        value=datetime.now().date(),
-                        min_value=min_date,
-                        max_value=max_date,
-                        help="When did the event begin? (1800-2100)"
-                    )
-                with col_date2:
-                    end_date = st.date_input(
-                        "End Date", 
-                        value=datetime.now().date(),
-                        min_value=min_date,
-                        max_value=max_date,
-                        help="When did the event end? (1800-2100)"
-                    )
+            # ========== Handle file upload ==========
+            if uploaded_file:
+                file_info = upload_event_file(event["id"], "attachment", uploaded_file, file_description)
+                if file_info:
+                    event["attached_files"] = [file_info]
+            # ======================================
             
-            # Duration
-            duration_days = (end_date - start_date).days
-            if duration_days >= 0:
-                st.caption(f"📅 Duration: {duration_days} day(s)")
+            # Add to DataFrame
+            if st.session_state.disaster_events.empty:
+                st.session_state.disaster_events = pd.DataFrame([event])
             else:
-                st.warning("End date should be after start date")
-            
-            # ===== INTENSITY SECTION =====
-            if "Hydrometeorological" in hazard_category:
-                st.markdown("#### 💥 Intensity Parameters")
-                col_i1, col_i2, col_i3 = st.columns(3)
-                with col_i1:
-                    max_wind = st.number_input("Max Wind Speed (km/h)", min_value=0, value=0)
-                    max_gust = st.number_input("Max Gust (km/h)", min_value=0, value=0)
-                with col_i2:
-                    tcws = st.slider("Max TCWS Signal", 0, 5, 0, help="Tropical Cyclone Warning Signal (1-5)")
-                    pressure = st.number_input("Min Pressure (hPa)", min_value=0, max_value=1100, value=0)
-                with col_i3:
-                    rainfall = st.number_input("Rainfall (mm)", min_value=0.0, value=0.0)
-            elif "Geological" in hazard_category:
-                st.markdown("#### 📊 Seismic/Geological Details")
-                col_s1, col_s2 = st.columns(2)
-                with col_s1:
-                    magnitude = st.number_input("Magnitude", min_value=0.0, max_value=10.0, value=0.0, step=0.1)
-                    depth = st.number_input("Depth (km)", min_value=0.0, value=0.0)
-                with col_s2:
-                    epicenter = st.text_input("Epicenter Location")
-                    intensity = st.text_input("Reported Intensity")
-            
-            # ===== HUMAN IMPACT =====
-            st.markdown("#### 💔 Human Impact")
-            col_h1, col_h2, col_h3 = st.columns(3)
-            with col_h1:
-                fatalities = st.number_input("Fatalities", min_value=0, value=0)
-                injured = st.number_input("Injured", min_value=0, value=0)
-            with col_h2:
-                missing = st.number_input("Missing", min_value=0, value=0)
-                displaced = st.number_input("Displaced Persons", min_value=0, value=0)
-            with col_h3:
-                evacuated = st.number_input("Evacuated", min_value=0, value=0)
-            
-            # ===== INFRASTRUCTURE DAMAGE =====
-            st.markdown("#### 🏠 Infrastructure Damage")
-            col_inf1, col_inf2 = st.columns(2)
-            with col_inf1:
-                houses_total = st.number_input("Totally Damaged Houses", min_value=0, value=0)
-                houses_partial = st.number_input("Partially Damaged Houses", min_value=0, value=0)
-            with col_inf2:
-                affected_barangays = st.number_input("Affected Barangays", min_value=0, value=0, help="Number of barangays affected")
-                roads_affected = st.text_area("Affected Roads", placeholder="List affected roads and sections...", height=60)
-            
-            # ===== ECONOMIC DAMAGE =====
-            st.markdown("#### 💰 Economic Damage")
-            col_e1, col_e2 = st.columns(2)
-            with col_e1:
-                damage_agri = st.number_input("Agriculture Damage (₱)", min_value=0.0, value=0.0, step=10000.0)
-            with col_e2:
-                damage_infra = st.number_input("Infrastructure Damage (₱)", min_value=0.0, value=0.0, step=10000.0)
-            total_damage = damage_agri + damage_infra
-            
-            # ===== SOURCE REFERENCE =====
-            st.markdown("#### 📚 Source Information")
-            source_reference = st.text_input(
-                "Source Reference",
-                placeholder="e.g., PAGASA Report, NDRRMC SitRep, Spanish Archives, MDRRMO Report",
-                help="Where did this information come from?"
-            )
-            
-            # ===== REMARKS =====
-            st.markdown("#### 📝 Remarks")
-            remarks = st.text_area("Additional Remarks", placeholder="Enter any additional information...", height=100, value="")
-            
-            # ===== AFFECTED AREAS =====
-            st.markdown("#### 🌍 Affected Areas")
-            col_a1, col_a2 = st.columns(2)
-            with col_a1:
-                region = st.selectbox("Region", ["CAR", "Region I", "Both", "Mountain Province Only", "Other"])
-                if region == "Other":
-                    other_region = st.text_input("Specify other region", value="")
-            with col_a2:
-                municipalities = st.text_input("Municipalities Affected", placeholder="e.g., Bontoc, Sagada, Bauko", value="")
-            
-            # ===== HISTORICAL CONFIDENCE =====
-            mentioned_regions = ""
-            if "HISTORICAL" in record_period:
-                st.markdown("#### 📊 Historical Record Confidence")
-                mentioned_regions = st.text_input("Regions Mentioned in Source", placeholder="e.g., CAR, Region I, Region II", value="")
-                if mentioned_regions:
-                    confidence_preview = calculate_mp_confidence(mentioned_regions)
-                    st.markdown(f"""
-                    <div style='background-color: {confidence_preview["color"]}; padding: 10px; border-radius: 5px;'>
-                        <strong style='color: white;'>Confidence: {confidence_preview["level"]}</strong><br>
-                        <span style='color: white;'>{confidence_preview["reason"]}</span>
-                    </div>
-                    """, unsafe_allow_html=True)
-            
-            # ===== AI PROCESSING (Optional) =====
-            with st.expander("🤖 AI Processing (Optional)", expanded=False):
-                ai_summary = st.text_area(
-                    "AI Summary",
-                    placeholder="AI-generated summary will appear here",
-                    height=100,
-                    value=""
-                )
-                ai_processed = st.checkbox("AI Processed", value=False)
-                ai_processing_notes = st.text_area(
-                    "AI Processing Notes",
-                    placeholder="Notes about AI processing...",
-                    height=80,
-                    value=""
+                st.session_state.disaster_events = pd.concat(
+                    [st.session_state.disaster_events, pd.DataFrame([event])],
+                    ignore_index=True
                 )
             
-            # ===== SUBMIT BUTTON =====
-            submitted = st.form_submit_button("➕ ADD TO DATABASE", width='stretch')
-            
-            if submitted and local_name:
-                if end_date < start_date:
-                    st.error("End date cannot be before start date. Please correct the dates.")
-                else:
-                    final_region = other_region if region == "Other" and 'other_region' in locals() else region
-                    
-                    if "HISTORICAL" in record_period:
-                        if mentioned_regions:
-                            confidence = calculate_mp_confidence(mentioned_regions)
-                        else:
-                            confidence = {'level': 'UNKNOWN', 'score': 0, 'reason': 'No region information', 'color': '#6c757d'}
-                    else:
-                        confidence = {'level': 'DIRECT DATA', 'score': 100, 'reason': 'Direct MP record', 'color': '#1E3A8A'}
-                    
-                    # Create unique ID
-                    unique_str = f"{local_name}_{year}_{start_date}_{end_date}_{datetime.now().timestamp()}"
-                    event_id = f"{'HIS' if 'HISTORICAL' in record_period else 'PRO'}{hashlib.md5(unique_str.encode()).hexdigest()[:8]}"
-                    
-                    # Map to database column names
-                    new_event = {
-                        'id': event_id,
-                        'local_name': local_name,
-                        'international_name': international_name,
-                        'year': year,
-                        'start_date': start_date.strftime('%Y-%m-%d'),
-                        'end_date': end_date.strftime('%Y-%m-%d'),
-                        'duration_days': duration_days,
-                        'hazard_category': hazard_category,
-                        'hazard_type_id': hazard_type,
-                        'tcws_signal': tcws if 'tcws' in locals() else 0,
-                        'affected_barangays_count': affected_barangays,
-                        'casualties_dead': fatalities,
-                        'casualties_injured': injured,
-                        'casualties_missing': missing,
-                        'displaced_persons': displaced if 'displaced' in locals() else 0,
-                        'evacuated': evacuated if 'evacuated' in locals() else 0,
-                        'houses_total': houses_total,
-                        'houses_partial': houses_partial,
-                        'damage_agriculture': damage_agri,
-                        'damage_infrastructure': damage_infra,
-                        'damage_total': total_damage,
-                        'region': final_region,
-                        'municipalities': municipalities,
-                        'source_reference': source_reference,
-                        'raw_remarks': remarks,
-                        'mentioned_regions': mentioned_regions,
-                        'mp_confidence_level': confidence['level'],
-                        'mp_confidence_score': confidence['score'],
-                        'record_type': "Historical" if "HISTORICAL" in record_period else "Provincial",
-                        'ai_summary': ai_summary if 'ai_summary' in locals() else '',
-                        'ai_processed': ai_processed if 'ai_processed' in locals() else False,
-                        'ai_processing_notes': ai_processing_notes if 'ai_processing_notes' in locals() else '',
-                        'created_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-                        'created_by': 'INDC_App'
-                    }
-                    
-                    # Check for duplicate
-                    existing_names = st.session_state.disaster_events['local_name'].tolist() if not st.session_state.disaster_events.empty else []
-                    if local_name in existing_names:
-                        st.warning(f"⚠️ Event '{local_name}' already exists. Use Edit function to modify it.")
-                    else:
-                        add_event(new_event)
-                        st.success(f"✅ Event '{local_name}' added successfully!")
-                        st.balloons()
-                        st.rerun()
+            st.success(f"✅ Event '{local_name}' recorded successfully!")
+            st.balloons()
+            st.rerun()
+
+
+def show_event_database():
+    """Display and manage events database with file attachments"""
     
-    # =========================================================================
-    # TAB 2: PREDICTIVE ANALYTICS
-    # =========================================================================
-    with tab2:
-        st.markdown("### 🔮 Predictive Analytics")
-        
-        if len(st.session_state.disaster_events) < 3:
-            st.info(f"Add at least 3 events to see predictions. Currently have {len(st.session_state.disaster_events)} events.")
-        else:
-            st.success(f"Ready with {len(st.session_state.disaster_events)} events")
-            
+    st.markdown("### Hazard Events Database")
+    st.caption("View, filter, and manage all recorded disaster events")
+    
+    df = st.session_state.disaster_events
+    
+    if df.empty:
+        st.info("No events recorded yet. Use the 'Event Entry' tab to add events.")
+        return
+    
+    # Filters
+    st.markdown("#### 🔍 Filter Events")
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        event_types = ["All"] + sorted(df['event_type'].unique().tolist())
+        filter_type = st.selectbox("Event Type", event_types)
+    with col2:
+        municipalities = ["All"] + sorted(df['municipality'].unique().tolist())
+        filter_mun = st.selectbox("Municipality", municipalities)
+    with col3:
+        years = ["All"] + sorted(pd.to_datetime(df['start_date']).dt.year.unique().tolist())
+        filter_year = st.selectbox("Year", years)
+    
+    # Apply filters
+    filtered_df = df.copy()
+    if filter_type != "All":
+        filtered_df = filtered_df[filtered_df['event_type'] == filter_type]
+    if filter_mun != "All":
+        filtered_df = filtered_df[filtered_df['municipality'] == filter_mun]
+    if filter_year != "All":
+        filtered_df = filtered_df[pd.to_datetime(filtered_df['start_date']).dt.year == filter_year]
+    
+    st.markdown(f"**Showing {len(filtered_df)} events**")
+    
+    # Summary cards
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        st.metric("Total Events", len(filtered_df))
+    with col2:
+        st.metric("Total Fatalities", int(filtered_df['fatalities'].sum()))
+    with col3:
+        st.metric("Total Affected", int(filtered_df['affected_families'].sum()))
+    with col4:
+        st.metric("Total Damage", f"₱{filtered_df['total_damage'].sum():,.0f}")
+    
+    # Display events
+    st.markdown("#### 📋 Event List")
+    
+    for idx, row in filtered_df.iterrows():
+        with st.expander(f"📅 {row['start_date'][:10]} - {row['local_name']} ({row['event_type']})"):
             col1, col2 = st.columns(2)
             with col1:
-                df = st.session_state.disaster_events
-                if 'fatalities' in df.columns:
-                    avg_fatalities = df['fatalities'].mean()
-                    risk_score = min(95, int(avg_fatalities * 2) + 30)
-                else:
-                    risk_score = 50
-                
-                st.markdown(f"""
-                <div style='text-align: center; padding: 20px;'>
-                    <div style='font-size: 3rem; font-weight: bold; color: #dc3545;'>{risk_score}%</div>
-                    <div style='background-color: #f0f0f0; height: 20px; border-radius: 10px; margin: 10px 0;'>
-                        <div style='width: {risk_score}%; background-color: #dc3545; height: 20px; border-radius: 10px;'></div>
-                    </div>
-                    <p>Projected Risk Level</p>
-                </div>
-                """, unsafe_allow_html=True)
-            
+                st.markdown(f"**Location:** {row['municipality']}")
+                st.markdown(f"**Dates:** {row['start_date'][:10]} to {row['end_date'][:10]}")
+                st.markdown(f"**Fatalities:** {row['fatalities']} | **Injured:** {row['injured']} | **Missing:** {row['missing']}")
             with col2:
-                if 'year' in df.columns:
-                    year_counts = df['year'].value_counts().sort_index().reset_index()
-                    year_counts.columns = ['Year', 'Count']
-                    fig = px.line(year_counts, x='Year', y='Count', markers=True, title="Event Frequency Trend")
-                    st.plotly_chart(fig, width='stretch')
+                st.markdown(f"**Affected:** {row['affected_families']} families, {row['affected_persons']} persons")
+                st.markdown(f"**Damaged Houses:** {row['damaged_houses']}")
+                st.markdown(f"**Total Damage:** ₱{row['total_damage']:,.2f}")
+            
+            st.markdown(f"**Description:** {row['description']}")
+            st.markdown(f"**Response:** {row['response_actions']}")
+            
+            # ========== Display attached files ==========
+            attached_files = row.get('attached_files', [])
+            if attached_files:
+                st.markdown("#### 📎 Attached Files")
+                for file in attached_files:
+                    file_path = file.get('file_path')
+                    if file_path and file_exists(file_path):
+                        with open(file_path, "rb") as f:
+                            col1, col2 = st.columns([3, 1])
+                            with col1:
+                                st.caption(f"📄 {file.get('description', file.get('filename'))} ({file.get('file_size', 'N/A')})")
+                            with col2:
+                                st.download_button(
+                                    label="Download",
+                                    data=f,
+                                    file_name=file.get('filename'),
+                                    key=f"download_{row['id']}_{file.get('filename')}"
+                                )
+            # ============================================
+            
+            # Delete button
+            if st.button(f"🗑️ Delete Event", key=f"del_{row['id']}"):
+                # Delete attached files
+                for file in row.get('attached_files', []):
+                    if file.get('file_path'):
+                        delete_file(file['file_path'])
+                st.session_state.disaster_events = st.session_state.disaster_events[
+                    st.session_state.disaster_events['id'] != row['id']
+                ]
+                st.success(f"Deleted: {row['local_name']}")
+                st.rerun()
+
+
+def show_trend_analysis():
+    """Display trend analysis charts"""
     
-    # =========================================================================
-    # TAB 3: PROJECTIVE ANALYTICS
-    # =========================================================================
-    with tab3:
-        st.markdown("### 🎯 Projective Analytics")
-        st.info("Scenario planning tools coming soon.")
-        
-        if len(st.session_state.disaster_events) >= 3:
-            df = st.session_state.disaster_events
-            if 'damage_total' in df.columns:
-                avg_damage = df['damage_total'].mean() / 1_000_000
-            else:
-                avg_damage = 0
-            
-            st.markdown(f"""
-            <div style='background-color: #f8f9fa; padding: 20px; border-radius: 10px;'>
-                <h4>Based on historical patterns:</h4>
-                <p>Average damage per event: <strong>₱{avg_damage:.2f}M</strong></p>
-                <p>Most frequent hazard: <strong>{df['hazard_type'].mode()[0] if 'hazard_type' in df.columns and not df['hazard_type'].mode().empty else 'N/A'}</strong></p>
-            </div>
-            """, unsafe_allow_html=True)
+    st.markdown("### Trend Analysis")
+    st.caption("Historical trends and patterns in disaster events")
     
-    # =========================================================================
-    # TAB 4: EVENT DATABASE (WITH EDIT/DELETE FUNCTIONALITY)
-    # =========================================================================
-    with tab4:
-        st.markdown("### 📊 Event Database")
-        st.markdown("*Click on any event to view, edit, or delete*")
-        
-        if st.session_state.disaster_events.empty:
-            st.info("No events in database. Use the Hazard Documentation tab to add events.")
-        else:
-            # Search and filters
-            col_s1, col_s2, col_s3 = st.columns(3)
-            with col_s1:
-                search = st.text_input("🔍 Search", placeholder="Search by name...")
-            with col_s2:
-                if 'year' in st.session_state.disaster_events.columns:
-                    years = sorted(st.session_state.disaster_events['year'].unique())
-                    year_filter = st.multiselect("Filter by Year", years)
-                else:
-                    year_filter = []
-            with col_s3:
-                if 'record_type' in st.session_state.disaster_events.columns:
-                    record_types = st.session_state.disaster_events['record_type'].unique().tolist()
-                    type_filter = st.multiselect("Filter by Record Type", record_types)
-                else:
-                    type_filter = []
-            
-            df = st.session_state.disaster_events.copy()
-            if search:
-                df = df[df['local_name'].str.contains(search, case=False, na=False)]
-            if year_filter:
-                df = df[df['year'].isin(year_filter)]
-            if type_filter:
-                df = df[df['record_type'].isin(type_filter)]
-            
-            st.markdown(f"**Showing {len(df)} of {len(st.session_state.disaster_events)} events**")
-            
-            # Export button
-            col_exp1, col_exp2 = st.columns(2)
-            with col_exp1:
-                if st.button("📥 Export to CSV", width='stretch'):
-                    csv = df.to_csv(index=False)
-                    st.download_button(
-                        "Download CSV", 
-                        csv, 
-                        f"disaster_events_{datetime.now().strftime('%Y%m%d')}.csv", 
-                        "text/csv"
-                    )
-            
-            st.markdown("---")
-            
-            # Display events with edit/delete functionality
-            for idx, event in df.iterrows():
-                display_name = event.get('local_name', 'Unknown')
-                if pd.isna(display_name) or display_name == '':
-                    display_name = 'Unnamed Event'
-                
-                record_type = event.get('record_type', 'Unknown')
-                header_color = '#8B4513' if record_type == 'Historical' else '#1E3A8A'
-                
-                # Check if in edit mode
-                if st.session_state.get(f'edit_mode_{idx}', False):
-                    with st.form(key=f"edit_form_{idx}"):
-                        st.markdown(f"### ✏️ Editing: {display_name}")
-                        
-                        col1, col2 = st.columns(2)
-                        with col1:
-                            new_local = st.text_input("Local Name", value=event.get('local_name', ''))
-                            new_year = st.number_input("Year", value=int(event.get('year', 2000)), min_value=1800, max_value=2100)
-                            new_fatalities = st.number_input("Fatalities", value=int(event.get('fatalities', 0)), min_value=0)
-                            new_injured = st.number_input("Injured", value=int(event.get('injured', 0)), min_value=0)
-                            new_missing = st.number_input("Missing", value=int(event.get('missing', 0)), min_value=0)
-                            new_houses_total = st.number_input("Totally Damaged Houses", value=int(event.get('houses_total', 0)), min_value=0)
-                            new_houses_partial = st.number_input("Partially Damaged Houses", value=int(event.get('houses_partial', 0)), min_value=0)
-                        with col2:
-                            new_international = st.text_input("International Name", value=event.get('international_name', ''))
-                            new_hazard_type = st.text_input("Hazard Type", value=event.get('hazard_type', ''))
-                            new_region = st.text_input("Region", value=event.get('region', ''))
-                            new_municipalities = st.text_input("Municipalities", value=event.get('municipalities', ''))
-                            new_damage_agri = st.number_input("Agriculture Damage", value=float(event.get('damage_agriculture', 0)), step=10000.0)
-                            new_damage_infra = st.number_input("Infrastructure Damage", value=float(event.get('damage_infrastructure', 0)), step=10000.0)
-                            new_remarks = st.text_area("Remarks", value=event.get('remarks', ''), height=80)
-                        
-                        # Date fields
-                        st.markdown("#### 📅 Event Period")
-                        col_date1, col_date2 = st.columns(2)
-                        with col_date1:
-                            new_start_date = st.date_input(
-                                "Start Date", 
-                                value=datetime.strptime(event.get('start_date', datetime.now().strftime('%Y-%m-%d')), '%Y-%m-%d').date()
-                            )
-                        with col_date2:
-                            new_end_date = st.date_input(
-                                "End Date", 
-                                value=datetime.strptime(event.get('end_date', datetime.now().strftime('%Y-%m-%d')), '%Y-%m-%d').date()
-                            )
-                        
-                        col1, col2 = st.columns(2)
-                        with col1:
-                            if st.form_submit_button("💾 Save Changes", width='stretch'):
-                                new_duration = (new_end_date - new_start_date).days
-                                
-                                # Update the event
-                                event_data = event.to_dict()
-                                event_data['local_name'] = new_local
-                                event_data['year'] = new_year
-                                event_data['fatalities'] = new_fatalities
-                                event_data['injured'] = new_injured
-                                event_data['missing'] = new_missing
-                                event_data['houses_total'] = new_houses_total
-                                event_data['houses_partial'] = new_houses_partial
-                                event_data['international_name'] = new_international
-                                event_data['hazard_type'] = new_hazard_type
-                                event_data['region'] = new_region
-                                event_data['municipalities'] = new_municipalities
-                                event_data['damage_agriculture'] = new_damage_agri
-                                event_data['damage_infrastructure'] = new_damage_infra
-                                event_data['damage_total'] = new_damage_agri + new_damage_infra
-                                event_data['remarks'] = new_remarks
-                                event_data['start_date'] = new_start_date.strftime('%Y-%m-%d')
-                                event_data['end_date'] = new_end_date.strftime('%Y-%m-%d')
-                                event_data['duration_days'] = new_duration
-                                event_data['date_updated'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-                                
-                                from utils.database import save_events
-                                st.session_state.disaster_events.loc[idx] = event_data
-                                save_events(st.session_state.disaster_events)
-                                
-                                st.session_state[f'edit_mode_{idx}'] = False
-                                st.success("✅ Event updated successfully!")
-                                st.rerun()
-                        with col2:
-                            if st.form_submit_button("❌ Cancel", width='stretch'):
-                                st.session_state[f'edit_mode_{idx}'] = False
-                                st.rerun()
-                    st.markdown("---")
-                    continue
-                
-                # Normal display mode with expander
-                with st.expander(f"**{display_name}** ({event.get('year', '')}) - {event.get('hazard_type', 'Unknown')}"):
-                    # Record type badge
-                    st.markdown(f"""
-                    <div style='background-color:{header_color}; padding:5px 10px; border-radius:5px; margin-bottom:10px; display: flex; justify-content: space-between;'>
-                        <span style='color:white;'>{record_type.upper()} RECORD</span>
-                        <span style='color:white;'>ID: {event.get('event_id', 'N/A')}</span>
-                    </div>
-                    """, unsafe_allow_html=True)
-                    
-                    # Event period
-                    start = event.get('start_date', 'Unknown')
-                    end = event.get('end_date', 'Unknown')
-                    duration = event.get('duration_days', '')
-                    st.markdown(f"**📅 Period:** {start} to {end} ({duration} day(s))")
-                    
-                    col1, col2, col3 = st.columns(3)
-                    with col1:
-                        st.markdown("**📊 Human Impact**")
-                        st.markdown(f"Fatalities: {event.get('fatalities', 0):,}")
-                        st.markdown(f"Injured: {event.get('injured', 0):,}")
-                        st.markdown(f"Missing: {event.get('missing', 0):,}")
-                        if event.get('tcws', 0) > 0:
-                            st.markdown(f"TCWS Signal: #{event.get('tcws', 0)}")
-                    with col2:
-                        st.markdown("**🏠 Housing Damage**")
-                        st.markdown(f"Totally Damaged: {event.get('houses_total', 0):,}")
-                        st.markdown(f"Partially Damaged: {event.get('houses_partial', 0):,}")
-                        st.markdown(f"Affected Barangays: {event.get('affected_barangays', 0)}")
-                    with col3:
-                        st.markdown("**💰 Economic Damage**")
-                        total = event.get('damage_total', 0) / 1_000_000
-                        st.markdown(f"Total: ₱{total:.2f}M")
-                        if event.get('damage_agriculture', 0) > 0:
-                            st.markdown(f"Agriculture: ₱{event.get('damage_agriculture', 0)/1e6:.2f}M")
-                        if event.get('damage_infrastructure', 0) > 0:
-                            st.markdown(f"Infrastructure: ₱{event.get('damage_infrastructure', 0)/1e6:.2f}M")
-                    
-                    st.markdown(f"**📍 Region:** {event.get('region', 'Unknown')}")
-                    if event.get('municipalities'):
-                        st.markdown(f"**📍 Municipalities:** {event.get('municipalities')}")
-                    
-                    if event.get('source_reference'):
-                        st.markdown(f"**📚 Source:** {event.get('source_reference')}")
-                    
-                    if event.get('remarks'):
-                        preview = event.get('remarks')[:150] + '...' if len(event.get('remarks', '')) > 150 else event.get('remarks')
-                        st.markdown(f"**📝 Remarks:** {preview}")
-                    
-                    # Edit and Delete buttons
-                    col_btn1, col_btn2 = st.columns(2)
-                    with col_btn1:
-                        if st.button(f"✏️ Edit", key=f"edit_{idx}", width='stretch'):
-                            st.session_state[f'edit_mode_{idx}'] = True
-                            st.rerun()
-                    with col_btn2:
-                        if st.button(f"🗑️ Delete", key=f"del_{idx}", width='stretch'):
-                            st.session_state[f'delete_confirm_{idx}'] = True
-                    
-                    # Delete confirmation
-                    if st.session_state.get(f'delete_confirm_{idx}', False):
-                        st.warning(f"⚠️ Delete '{display_name}'? This action cannot be undone.")
-                        col_yes, col_no = st.columns(2)
-                        with col_yes:
-                            if st.button(f"✅ Yes, Delete", key=f"confirm_del_{idx}", width='stretch'):
-                                from utils.database import save_events
-                                st.session_state.disaster_events = st.session_state.disaster_events.drop(idx).reset_index(drop=True)
-                                save_events(st.session_state.disaster_events)
-                                st.session_state[f'delete_confirm_{idx}'] = False
-                                st.success("✅ Event deleted successfully!")
-                                st.rerun()
-                        with col_no:
-                            if st.button(f"❌ No, Cancel", key=f"cancel_del_{idx}", width='stretch'):
-                                st.session_state[f'delete_confirm_{idx}'] = False
-                                st.rerun()
+    df = st.session_state.disaster_events
     
-    # =========================================================================
-    # TAB 5: SUMMARY DASHBOARD
-    # =========================================================================
-    with tab5:
-        st.markdown("### 📈 Summary Dashboard")
-        
-        if st.session_state.disaster_events.empty:
-            st.info("Add events to see summary statistics.")
-        else:
-            df = st.session_state.disaster_events.copy()
-            
-            # Check if we have the required columns
-            has_fatalities = 'fatalities' in df.columns
-            has_houses_total = 'houses_total' in df.columns
-            has_damage_total = 'damage_total' in df.columns
-            has_year = 'year' in df.columns
-            has_hazard_type = 'hazard_type' in df.columns
-            has_record_type = 'record_type' in df.columns
-            has_hazard_category = 'hazard_category' in df.columns
-            
-            # Filters
-            st.markdown("#### 🔍 Filters")
-            col_f1, col_f2, col_f3 = st.columns(3)
-            
-            with col_f1:
-                if has_record_type:
-                    record_filter = st.radio(
-                        "Record Type",
-                        ["Both", "Provincial Only", "Historical Only"],
-                        horizontal=True,
-                        index=0
-                    )
-                else:
-                    record_filter = "Both"
-            
-            with col_f2:
-                if has_year:
-                    all_years = sorted(df['year'].unique())
-                    year_filter = st.multiselect(
-                        "Year(s)",
-                        options=all_years,
-                        default=all_years,
-                        help="Select one or more years to filter"
-                    )
-                else:
-                    year_filter = []
-            
-            with col_f3:
-                if has_hazard_category:
-                    categories = df['hazard_category'].unique().tolist()
-                    if categories:
-                        category_filter = st.multiselect(
-                            "Hazard Category",
-                            options=categories,
-                            default=categories,
-                            help="Filter by hazard category"
-                        )
-                    else:
-                        category_filter = []
-                else:
-                    category_filter = []
-            
-            # Apply filters
-            if has_record_type and record_filter == "Provincial Only":
-                df = df[df['record_type'] == 'Provincial']
-            elif has_record_type and record_filter == "Historical Only":
-                df = df[df['record_type'] == 'Historical']
-            
-            if year_filter and has_year:
-                df = df[df['year'].isin(year_filter)]
-            
-            if category_filter and has_hazard_category:
-                df = df[df['hazard_category'].isin(category_filter)]
-            
-            st.caption(f"Showing {len(df)} events | Record Type: {record_filter} | Years: {', '.join(map(str, year_filter)) if year_filter else 'All'}")
-            st.markdown("---")
-            
-            # Summary metrics - safe access
-            col1, col2, col3, col4 = st.columns(4)
+    if df.empty:
+        st.info("Not enough data for trend analysis. Add more events.")
+        return
+    
+    df['year'] = pd.to_datetime(df['start_date']).dt.year
+    df['month'] = pd.to_datetime(df['start_date']).dt.month
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        # Events by year
+        yearly = df.groupby('year').size().reset_index(name='count')
+        fig = px.bar(yearly, x='year', y='count', title='Events by Year')
+        st.plotly_chart(fig, use_container_width=True)
+    
+    with col2:
+        # Events by month
+        monthly = df.groupby('month').size().reset_index(name='count')
+        month_names = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+        monthly['month_name'] = monthly['month'].apply(lambda x: month_names[x-1])
+        fig = px.bar(monthly, x='month_name', y='count', title='Events by Month')
+        st.plotly_chart(fig, use_container_width=True)
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        # Fatalities by year
+        yearly_fatalities = df.groupby('year')['fatalities'].sum().reset_index()
+        fig = px.line(yearly_fatalities, x='year', y='fatalities', title='Fatalities Trend')
+        st.plotly_chart(fig, use_container_width=True)
+    
+    with col2:
+        # Damage by year
+        yearly_damage = df.groupby('year')['total_damage'].sum().reset_index()
+        fig = px.line(yearly_damage, x='year', y='total_damage', title='Damage Cost Trend (₱)')
+        st.plotly_chart(fig, use_container_width=True)
+    
+    # Event type distribution
+    st.markdown("#### Event Type Distribution")
+    event_type_counts = df['event_type'].value_counts().reset_index()
+    event_type_counts.columns = ['Event Type', 'Count']
+    fig = px.pie(event_type_counts, values='Count', names='Event Type', title='Events by Type')
+    st.plotly_chart(fig, use_container_width=True)
+
+
+def show_typhoon_tracking():
+    """Display typhoon tracking and historical tracks"""
+    
+    st.markdown("### Typhoon Tracking")
+    st.caption("Historical typhoon tracks and real-time monitoring")
+    
+    # Map display
+    st.markdown("#### 🗺️ Typhoon Track Map")
+    
+    # Create a folium map
+    m = folium.Map(location=[17.0, 121.0], zoom_start=8)
+    
+    # Add markers for municipalities
+    municipalities = {
+        "Barlig": [17.0833, 121.0833],
+        "Bauko": [16.9871, 120.8695],
+        "Besao": [17.0953, 120.8561],
+        "Bontoc": [17.0904, 120.9772],
+        "Natonin": [17.1091, 121.2798],
+        "Paracelis": [17.1812, 121.4036],
+        "Sabangan": [17.0045, 120.9232],
+        "Sadanga": [17.1687, 121.0289],
+        "Sagada": [17.0846, 120.9016],
+        "Tadian": [16.9958, 120.8218]
+    }
+    
+    for name, coords in municipalities.items():
+        folium.Marker(
+            coords,
+            popup=name,
+            icon=folium.Icon(color='blue', icon='info-sign')
+        ).add_to(m)
+    
+    folium_static(m)
+    
+    # Typhoon track upload - FIXED: Now properly inside a form
+    st.markdown("#### 📤 Upload Typhoon Track")
+    st.caption("Upload historical typhoon track data and track maps")
+    
+    with st.expander("Upload Typhoon Track", expanded=False):
+        # ========== FIX: Added st.form() wrapper ==========
+        with st.form("typhoon_track_form"):
+            col1, col2 = st.columns(2)
             with col1:
-                st.metric("Total Events", len(df))
+                typhoon_name = st.text_input("Typhoon Name", placeholder="e.g., Typhoon Paeng (NALGAE)", key="typhoon_name")
+                typhoon_year = st.number_input("Year", min_value=2000, max_value=2030, value=2024, key="typhoon_year")
+                typhoon_category = st.selectbox("Category", ["Tropical Depression", "Tropical Storm", "Typhoon", "Super Typhoon"], key="typhoon_category")
             with col2:
-                if has_fatalities:
-                    st.metric("Total Fatalities", int(df['fatalities'].sum()))
-                else:
-                    st.metric("Total Fatalities", 0)
-            with col3:
-                if has_houses_total:
-                    st.metric("Totally Damaged Houses", int(df['houses_total'].sum()))
-                else:
-                    st.metric("Totally Damaged Houses", 0)
-            with col4:
-                if has_damage_total:
-                    st.metric("Total Damage", f"₱{df['damage_total'].sum()/1e6:.1f}M")
-                else:
-                    st.metric("Total Damage", "₱0M")
+                landfall_date = st.date_input("Landfall Date", date.today(), key="typhoon_landfall")
+                affected_areas = st.text_area("Affected Areas", placeholder="List municipalities affected", key="typhoon_affected")
             
-            # Charts - only if we have data
-            if not df.empty:
-                col_c1, col_c2 = st.columns(2)
-                with col_c1:
-                    if has_hazard_type:
-                        type_counts = df['hazard_type'].value_counts().reset_index()
-                        type_counts.columns = ['Hazard Type', 'Count']
-                        fig = px.pie(type_counts, values='Count', names='Hazard Type', title="Events by Hazard Type")
-                        st.plotly_chart(fig, width='stretch')
+            track_description = st.text_area("Track Description", placeholder="Description of typhoon path and impacts", key="typhoon_description")
+            
+            # Track data upload
+            track_image = st.file_uploader("Upload Track Map Image", type=['jpg', 'jpeg', 'png'], key="typhoon_track_image")
+            
+            # ========== FIX: Now this button is inside the form ==========
+            submitted = st.form_submit_button("💾 Save Typhoon Track")
+            
+            if submitted and typhoon_name:
+                track_data = {
+                    "name": typhoon_name,
+                    "year": typhoon_year,
+                    "category": typhoon_category,
+                    "landfall_date": landfall_date.isoformat(),
+                    "affected_areas": affected_areas,
+                    "description": track_description,
+                    "uploaded_at": datetime.now().isoformat()
+                }
                 
-                with col_c2:
-                    if has_year:
-                        year_counts = df['year'].value_counts().sort_index().reset_index()
-                        year_counts.columns = ['Year', 'Count']
-                        fig = px.bar(year_counts, x='Year', y='Count', title="Events by Year")
-                        st.plotly_chart(fig, width='stretch')
+                track_info = upload_typhoon_track(track_data, track_image)
+                st.session_state.typhoon_tracks.append(track_info)
+                st.success(f"✅ Typhoon track for {typhoon_name} saved!")
+                st.rerun()
+        # ===================================================
     
-    # =========================================================================
-    # TAB 6: HISTORICAL CONTEXT GUIDE
-    # =========================================================================
-    with tab6:
-        st.markdown("### 📜 Understanding Historical Records")
+    # Display saved typhoon tracks
+    if st.session_state.typhoon_tracks:
+        st.markdown("#### 📜 Historical Typhoon Tracks")
         
-        st.markdown("""
-        <div style='background: linear-gradient(135deg, #8B4513, #A0522D); padding: 20px; border-radius: 10px; color: white; margin-bottom: 20px;'>
-            <h3 style='color: #FFD700;'>How We Interpret Historical Records</h3>
-            <p>This guide explains how we determine whether historical records likely affected Mountain Province.</p>
-        </div>
-        """, unsafe_allow_html=True)
+        for track in reversed(st.session_state.typhoon_tracks):
+            track_data = track.get('track_data', {})
+            with st.expander(f"🌀 {track_data.get('name', 'Unknown')} ({track_data.get('year', 'N/A')})"):
+                col1, col2 = st.columns(2)
+                with col1:
+                    st.markdown(f"**Category:** {track_data.get('category', 'N/A')}")
+                    st.markdown(f"**Landfall:** {track_data.get('landfall_date', 'N/A')}")
+                with col2:
+                    st.markdown(f"**Affected:** {track_data.get('affected_areas', 'N/A')}")
+                
+                st.markdown(f"**Description:** {track_data.get('description', 'No description')}")
+                
+                # Display track image if available
+                if track.get('map_image') and file_exists(track['map_image']):
+                    with open(track['map_image'], "rb") as f:
+                        st.image(f, use_container_width=True, caption=f"Track Map - {track_data.get('name')}")
+                
+                if st.button(f"🗑️ Delete Track", key=f"del_track_{track.get('id')}"):
+                    if track.get('track_file'):
+                        delete_file(track['track_file'])
+                    if track.get('map_image'):
+                        delete_file(track['map_image'])
+                    st.session_state.typhoon_tracks = [t for t in st.session_state.typhoon_tracks if t.get('id') != track.get('id')]
+                    st.rerun()
+
+
+def show_hazard_photos():
+    """Display and manage hazard photos"""
+    
+    st.markdown("### Hazard Photo Gallery")
+    st.caption("Visual documentation of hazard events, impacts, and response")
+    
+    # Upload photo
+    with st.expander("📸 Upload Photo", expanded=False):
+        with st.form("upload_hazard_photo"):
+            col1, col2 = st.columns(2)
+            with col1:
+                photo_title = st.text_input("Photo Title")
+                photo_event = st.text_input("Related Event", placeholder="e.g., Typhoon Paeng 2024")
+                photo_location = st.text_input("Location")
+                photo_date = st.date_input("Date Taken", date.today())
+            with col2:
+                photo_category = st.selectbox("Category", ["Damage", "Response", "Recovery", "Preparedness", "Training"])
+                photographer = st.text_input("Photographer")
+                photo_tags = st.text_input("Tags", placeholder="comma separated")
+            
+            photo_description = st.text_area("Description")
+            photo_file = st.file_uploader("Select Photo", type=['jpg', 'jpeg', 'png', 'gif'])
+            
+            submitted = st.form_submit_button("📸 Upload Photo")
+            
+            if submitted and photo_title and photo_file:
+                category = "drrm_intelligence"
+                subcategory = "hazard_photos"
+                
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                filename = f"hazard_photo_{timestamp}_{photo_file.name}"
+                file_path = save_file(photo_file, category, subcategory, filename)
+                
+                new_photo = {
+                    "id": int(datetime.now().timestamp() * 1000),
+                    "title": photo_title,
+                    "event": photo_event,
+                    "location": photo_location,
+                    "date": photo_date.isoformat(),
+                    "category": photo_category,
+                    "photographer": photographer,
+                    "tags": photo_tags,
+                    "description": photo_description,
+                    "file_path": file_path,
+                    "filename": photo_file.name,
+                    "file_size": get_file_size(file_path),
+                    "uploaded_at": datetime.now().isoformat()
+                }
+                st.session_state.hazard_photos.append(new_photo)
+                st.success(f"✅ Photo '{photo_title}' uploaded!")
+                st.rerun()
+    
+    # Display gallery
+    if st.session_state.hazard_photos:
+        st.markdown("#### 📷 Photo Gallery")
         
-        col1, col2 = st.columns(2)
+        # Filter options
+        categories = ["All"] + list(set(p.get('category') for p in st.session_state.hazard_photos))
+        filter_category = st.selectbox("Filter by Category", categories, key="photo_filter")
         
-        with col1:
-            st.markdown("""
-            #### 🌏 Geographic Reality
-            
-            **Mountain Province is centrally located in the Cordillera Administrative Region (CAR)**,
-            bordered by:
-            - **Region I (Ilocos)** to the west
-            - **Region II (Cagayan Valley)** to the east
-            
-            Typhoons that affect CAR and its adjacent regions almost certainly impacted Mountain Province.
-            """)
-            
-            st.markdown("""
-            #### 📊 Confidence Scoring System
-            
-            | Regions Mentioned | Confidence | Weight |
-            |------------------|------------|--------|
-            | CAR + I + II | VERY HIGH | 95% |
-            | CAR + I or CAR + II | HIGH | 85% |
-            | CAR only | MEDIUM | 70% |
-            | I + II only | MEDIUM-LOW | 40% |
-            | Single region | LOW | 20% |
-            | Provincial data | DIRECT | 100% |
-            """)
+        filtered_photos = st.session_state.hazard_photos
+        if filter_category != "All":
+            filtered_photos = [p for p in filtered_photos if p.get('category') == filter_category]
         
-        with col2:
-            st.markdown("""
-            #### 📝 Best Practices
-            
-            **When entering historical records:**
-            
-            1. **Record the exact regions mentioned** in the source document
-            2. **Document your reasoning** in the Remarks field
-            3. **Note any uncertainties** about the original data
-            4. **Include source information** (archives, references, etc.)
-            
-            #### 💡 Example
-            
-            **Source:** Spanish Colonial Archive, 1894
-            **Regions Mentioned:** "Cagayan, Ilocos, Montañosa"
-            **Inference:** "Montañosa refers to the mountainous interior, including present-day Mountain Province."
-            **Confidence:** HIGH
-            """)
-            
-            if not st.session_state.disaster_events.empty:
-                st.markdown("#### 📊 Your Current Data")
-                df = st.session_state.disaster_events
-                historical_count = len(df[df['record_type'] == 'Historical']) if 'record_type' in df.columns else 0
-                provincial_count = len(df[df['record_type'] == 'Provincial']) if 'record_type' in df.columns else 0
-                st.markdown(f"- **Historical records:** {historical_count}")
-                st.markdown(f"- **Provincial records:** {provincial_count}")
-                st.markdown(f"- **Total records:** {len(df)}")
+        cols = st.columns(3)
+        for i, photo in enumerate(reversed(filtered_photos)):
+            with cols[i % 3]:
+                with st.container():
+                    if photo.get('file_path') and file_exists(photo['file_path']):
+                        try:
+                            from PIL import Image
+                            image = Image.open(photo['file_path'])
+                            st.image(image, use_container_width=True, caption=photo.get('title'))
+                        except:
+                            st.caption(f"📷 {photo.get('title')}")
+                    else:
+                        st.caption(f"📷 {photo.get('title')}")
+                    
+                    st.caption(f"📍 {photo.get('location', 'Unknown')}")
+                    st.caption(f"📅 {photo.get('date', 'N/A')}")
+                    st.caption(f"🏷️ {photo.get('category', 'N/A')}")
+                    
+                    if st.button(f"🗑️ Delete", key=f"del_photo_{photo.get('id')}"):
+                        if photo.get('file_path'):
+                            delete_file(photo['file_path'])
+                        st.session_state.hazard_photos = [p for p in st.session_state.hazard_photos if p.get('id') != photo.get('id')]
+                        st.rerun()
+                    st.markdown("---")
+    else:
+        st.info("No photos uploaded yet. Click 'Upload Photo' to get started.")
+
+
+def show_predictive_analytics():
+    """Display predictive analytics and forecasting"""
+    
+    st.markdown("### Predictive Analytics")
+    st.caption("Machine learning-based forecasts and risk projections")
+    
+    df = st.session_state.disaster_events
+    
+    if df.empty or len(df) < 5:
+        st.info("Need at least 5 events for meaningful predictive analysis. Continue collecting data.")
+        return
+    
+    # Risk scoring
+    st.markdown("#### 🎯 Municipal Risk Score")
+    
+    risk_data = []
+    municipalities = df['municipality'].unique()
+    
+    for mun in municipalities:
+        mun_data = df[df['municipality'] == mun]
+        event_count = len(mun_data)
+        total_fatalities = mun_data['fatalities'].sum()
+        total_damage = mun_data['total_damage'].sum()
+        
+        risk_score = (event_count * 0.4) + (total_fatalities * 0.3) + (total_damage / 1000000 * 0.3)
+        risk_score = min(risk_score, 100)
+        
+        risk_data.append({
+            "Municipality": mun,
+            "Event Count": event_count,
+            "Fatalities": int(total_fatalities),
+            "Damage (₱M)": total_damage / 1000000,
+            "Risk Score": round(risk_score, 1),
+            "Risk Level": "High" if risk_score > 60 else "Medium" if risk_score > 30 else "Low"
+        })
+    
+    risk_df = pd.DataFrame(risk_data).sort_values('Risk Score', ascending=False)
+    st.dataframe(risk_df, use_container_width=True, hide_index=True)
+    
+    # High risk areas
+    high_risk = risk_df[risk_df['Risk Level'] == 'High']
+    if not high_risk.empty:
+        st.markdown("#### ⚠️ High Risk Municipalities")
+        for _, row in high_risk.iterrows():
+            st.warning(f"**{row['Municipality']}** - Risk Score: {row['Risk Score']} | Priority for intervention")
+    
+    # Forecast
+    st.markdown("#### 🔮 5-Year Forecast (2026-2030)")
+    
+    years = [2026, 2027, 2028, 2029, 2030]
+    avg_events_per_year = len(df) / (pd.to_datetime(df['start_date']).dt.year.max() - pd.to_datetime(df['start_date']).dt.year.min() + 1)
+    trend_factor = 1.05  # 5% annual increase assumption
+    
+    forecast_events = []
+    forecast_damage = []
+    cumulative = avg_events_per_year
+    
+    for year in years:
+        cumulative = cumulative * trend_factor
+        forecast_events.append(round(cumulative))
+        forecast_damage.append(round(cumulative * (df['total_damage'].mean() / avg_events_per_year) / 1000000, 1))
+    
+    forecast_df = pd.DataFrame({
+        "Year": years,
+        "Predicted Events": forecast_events,
+        "Predicted Damage (₱M)": forecast_damage
+    })
+    st.dataframe(forecast_df, use_container_width=True, hide_index=True)
+    
+    # Recommendations
+    st.markdown("#### 💡 Recommendations")
+    st.markdown("""
+    Based on historical data analysis:
+    1. **Focus on high-risk municipalities** - Prioritize interventions in areas with highest risk scores
+    2. **Prepare for peak season** - October-November shows highest event frequency
+    3. **Strengthen early warning** - Improve lead time for typhoons and floods
+    4. **Invest in resilience** - Allocate resources for infrastructure hardening
+    5. **Build community capacity** - Conduct regular drills and trainings
+    """)
