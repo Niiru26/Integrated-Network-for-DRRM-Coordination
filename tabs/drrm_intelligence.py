@@ -173,295 +173,155 @@ def save_to_local_storage():
 
 
 def show_data_entry():
-    """Data Entry with Three-Era Classification"""
+    """Smart Data Entry Form with Era-based date validation"""
     
     st.markdown("### 📝 Hazard Event Data Entry")
-    st.markdown("*Record disaster events by era with appropriate classification*")
+    st.caption("Record disaster events with comprehensive details")
     
-    # Era Selection
+    # Era Selection with date ranges
     st.markdown("#### 🕰️ Select Era")
-    col_era1, col_era2, col_era3 = st.columns(3)
+    era_options = {
+        "🏛️ Historical (1800-1976)": (1800, 1976, "Historical"),
+        "🛰️ Satellite Era (1977-1999)": (1977, 1999, "Satellite Era"),
+        "🌍 21st Century (2000-2099)": (2000, 2099, "21st Century")
+    }
     
-    with col_era1:
-        era = st.radio(
-            "Era",
-            ["🏛️ Historical (1800-1976)", "🛰️ Satellite Era (1977-1999)", "🌍 21st Century (2000-2099)"],
-            key="era_select",
-            horizontal=True
-        )
+    selected_era = st.radio(
+        "Select Era",
+        list(era_options.keys()),
+        horizontal=True,
+        key="era_selector"
+    )
     
-    # Determine era-specific settings
-    if "Historical" in era:
-        min_year, max_year, record_type = 1800, 1976, "Historical"
-        st.info("📜 **Historical Era (1800-1976)** - Based on archival records, newspapers, and historical accounts")
-    elif "Satellite" in era:
-        min_year, max_year, record_type = 1977, 1999, "Satellite Era"
-        st.info("🛰️ **Satellite Era (1977-1999)** - Based on archival records, newspapers, and historical accounts")
-    else:
-        min_year, max_year, record_type = 2000, 2099, "21st Century"
-        st.success("🌍 **21st Century (2000-2099)** - Modern era with data from reports")
+    min_year, max_year, record_type = era_options[selected_era]
     
-    # UNDRR Reference Panel
-    with st.expander("📖 UNDRR Hazard Classification Reference", expanded=False):
-        st.markdown("""
-        ### 📚 Hazard Classification System (UNDRR)
-        
-        | Category | Description | Examples |
-        |----------|-------------|----------|
-        | 🌊 **Hydrometeorological** | Atmospheric, hydrological, oceanographic origin | Typhoons, floods, droughts, thunderstorms, ITCZ, shear line |
-        | 🌋 **Geological/Geophysical** | Internal earth processes | Earthquakes, landslides, volcanic activity |
-        | 🌡️ **Biological** | Organic origin, conveyed by biological vectors | Disease outbreaks, epidemics |
-        | 🌱 **Environmental** | Environmental degradation or pollution | Deforestation, soil degradation |
-        | 🏭 **Technological** | Technological/industrial conditions | Industrial accidents, infrastructure failures |
-        """)
+    # Show era info
+    st.info(f"📅 Selected Era: {selected_era} (Year range: {min_year} - {max_year})")
     
-    with st.form("event_entry_form", clear_on_submit=False):
-        st.markdown("#### 📍 Basic Information")
+    # Use a form with a unique key to reset after submission
+    with st.form("event_entry_form", clear_on_submit=True):
         col1, col2 = st.columns(2)
         
         with col1:
-            local_name = st.text_input("Event Name", placeholder="e.g., Typhoon Egay, 1990 Earthquake")
-            international_name = st.text_input("International Name (if applicable)")
+            event_type = st.selectbox("Event Type", [
+                "Typhoon", "Super Typhoon", "Tropical Storm", 
+                "Monsoon", "LPA", "ITCZ", "Shear Line",
+                "Flood", "Landslide", "Earthquake", "Drought", "Forest Fire"
+            ])
+            local_name = st.text_input("Event Name (in ALL CAPS)", placeholder="e.g., TYPHOON PAENG (NALGAE)")
+            
+            # Year input with era validation
             year = st.number_input("Year", min_value=min_year, max_value=max_year, value=min_year, step=1)
+            
+            # Show warning if year is outside era range
+            if year < min_year or year > max_year:
+                st.warning(f"⚠️ Year {year} is outside the selected era range ({min_year}-{max_year}). Please adjust.")
+            
+            start_date = st.date_input("Start Date", date.today())
+            end_date = st.date_input("End Date", date.today())
         
         with col2:
-            # Hazard Category (UNDRR)
-            hazard_category = st.selectbox(
-                "Hazard Category (UNDRR)",
-                ["🌊 Hydrometeorological", "🌋 Geological/Geophysical", "🌡️ Biological", "🌱 Environmental", "🏭 Technological"]
-            )
-            
-            # Hazard Type based on category
-            if "Hydrometeorological" in hazard_category:
-                hazard_type = st.selectbox("Hazard Type", [
-                    "Intertropical Convergence Zone (ITCZ)", "Low Pressure Area (LPA)",
-                    "Monsoon", "Shear Line", "Thunderstorm", "Tropical Depression",
-                    "Tropical Storm", "Severe Tropical Storm", "Typhoon", "Super Typhoon",
-                    "Flood", "Flash Flood", "Drought", "Heatwave"
-                ])
-            elif "Geological" in hazard_category:
-                hazard_type = st.selectbox("Hazard Type", [
-                    "Earthquake", "Landslide", "Rockfall", "Debris Flow", "Ground Shaking", "Liquefaction"
-                ])
-            else:
-                hazard_type = st.selectbox("Hazard Type", ["Other", "Not Specified"])
-        
-        # Date range
-        col_date1, col_date2 = st.columns(2)
-        with col_date1:
-            start_date = st.date_input("Start Date", value=datetime.now().date())
-        with col_date2:
-            end_date = st.date_input("End Date", value=datetime.now().date())
-        
-        month = start_date.month
-        
-        # ===== INTENSITY SECTION (for Hydrometeorological) =====
-        if "Hydrometeorological" in hazard_category:
-            st.markdown("#### 💥 Intensity Parameters")
-            col_i1, col_i2, col_i3 = st.columns(3)
-            with col_i1:
-                max_wind = st.number_input("Max Wind Speed (km/h)", min_value=0, value=0)
-                max_gust = st.number_input("Max Gust (km/h)", min_value=0, value=0)
-            with col_i2:
-                tcws = st.slider("Max TCWS Signal", 0, 5, 0)
-                pressure = st.number_input("Min Pressure (hPa)", min_value=0, max_value=1100, value=0)
-            with col_i3:
-                rainfall = st.number_input("Rainfall (mm)", min_value=0.0, value=0.0)
-        else:
-            max_wind = max_gust = tcws = pressure = rainfall = 0
-        
-        # ===== IMPACT SECTIONS =====
-        st.markdown("#### 💔 Human Impact")
-        col_h1, col_h2, col_h3 = st.columns(3)
-        with col_h1:
+            municipality = st.selectbox("Municipality", [
+                "Barlig", "Bauko", "Besao", "Bontoc", "Natonin", 
+                "Paracelis", "Sabangan", "Sadanga", "Sagada", "Tadian", "Province-wide"
+            ])
             fatalities = st.number_input("Fatalities", min_value=0, value=0)
             injured = st.number_input("Injured", min_value=0, value=0)
-        with col_h2:
             missing = st.number_input("Missing", min_value=0, value=0)
-            displaced_families = st.number_input("Displaced Families", min_value=0, value=0)
-        with col_h3:
-            displaced_persons = st.number_input("Displaced Persons", min_value=0, value=0)
-            evacuated = st.number_input("Evacuated", min_value=0, value=0)
         
-        st.markdown("#### 🏠 Infrastructure Damage")
-        col_inf1, col_inf2 = st.columns(2)
-        with col_inf1:
-            houses_total = st.number_input("Totally Damaged Houses", min_value=0, value=0)
-            houses_partial = st.number_input("Partially Damaged Houses", min_value=0, value=0)
-        with col_inf2:
-            affected_barangays = st.number_input("Affected Barangays", min_value=0, value=0)
-            roads_affected = st.text_area("Affected Roads", placeholder="List affected roads and sections...", height=60)
+        affected_families = st.number_input("Affected Families", min_value=0, value=0)
+        affected_persons = st.number_input("Affected Persons", min_value=0, value=0)
         
-        st.markdown("#### 💰 Economic Damage (₱)")
-        col_e1, col_e2, col_e3 = st.columns(3)
-        with col_e1:
-            damage_agriculture = st.number_input("Agriculture Damage", min_value=0.0, value=0.0, step=10000.0)
-        with col_e2:
-            damage_infrastructure = st.number_input("Infrastructure Damage", min_value=0.0, value=0.0, step=10000.0)
-        with col_e3:
-            damage_private = st.number_input("Private Property Damage", min_value=0.0, value=0.0, step=10000.0)
+        col1, col2 = st.columns(2)
+        with col1:
+            damaged_houses = st.number_input("Damaged Houses", min_value=0, value=0)
+            agricultural_damage = st.number_input("Agricultural Damage (₱)", min_value=0, value=0, step=10000)
+        with col2:
+            infrastructure_damage = st.number_input("Infrastructure Damage (₱)", min_value=0, value=0, step=10000)
+            evacuated = st.number_input("Evacuated Persons", min_value=0, value=0)
         
-        total_damage = damage_agriculture + damage_infrastructure + damage_private
-        st.metric("💰 Total Damage Estimate", f"₱{total_damage:,.2f}")
+        total_damage = agricultural_damage + infrastructure_damage
+        st.metric("💰 Total Estimated Damage", f"₱{total_damage:,.2f}")
         
-        # ===== NARRATIVE SECTION =====
-        st.markdown("#### 📝 Narrative / Remarks")
+        description = st.text_area("Event Description", placeholder="Detailed description of the event", height=100)
+        response_actions = st.text_area("Response Actions Taken", placeholder="List response activities", height=80)
         
-        if "Historical" in era or "Satellite" in era:
-            col_n1, col_n2 = st.columns(2)
-            with col_n1:
-                historical_source = st.text_input("Source of Record", placeholder="e.g., Spanish Archives, PAGASA Records")
-                historical_context = st.text_area("Historical Context", placeholder="Describe the historical context...", height=80)
-            with col_n2:
-                mentioned_regions = st.text_input(
-                    "Regions Mentioned in Source",
-                    placeholder="e.g., CAR, Region I, Region II",
-                    help="Enter all regions mentioned in the source (comma-separated)"
-                )
-                
-                if mentioned_regions:
-                    confidence = calculate_mp_confidence(mentioned_regions)
-                    st.markdown(f"""
-                    <div style='background-color: {confidence['color']}; padding: 10px; border-radius: 5px; margin-top: 10px;'>
-                        <strong style='color: white;'>Confidence: {confidence['level']}</strong><br>
-                        <span style='color: white;'>{confidence['reason']}</span>
-                    </div>
-                    """, unsafe_allow_html=True)
-                
-                inference_notes = st.text_area(
-                    "Inference Notes for Mountain Province",
-                    placeholder="Explain how this historical event likely affected Mountain Province...",
-                    height=80
-                )
-            
-            narrative = f"""
-            **Source:** {historical_source}
-            **Historical Context:** {historical_context}
-            **Regions Mentioned:** {mentioned_regions}
-            **Inference for Mountain Province:** {inference_notes}
-            """
-        else:
-            # Modern era - direct reporting
-            col_n1, col_n2 = st.columns(2)
-            with col_n1:
-                event_name_narrative = st.text_input("EVENT NAME", placeholder="e.g., Typhoon Egay")
-                damages_list = st.text_area("DAMAGES", placeholder="• 20 houses totally damaged\n• 35 houses partially damaged", height=80)
-                response_taken = st.text_area("RESPONSE ACTIONS", placeholder="• 300 families evacuated\n• Food packs distributed", height=80)
-            with col_n2:
-                problems_encountered = st.text_area("PROBLEMS ENCOUNTERED", placeholder="• Roads impassable\n• No communication", height=80)
-                lessons_learned = st.text_area("LESSONS LEARNED", placeholder="• Early evacuation worked\n• Need backup comms", height=80)
-            
-            narrative = f"""
-            **EVENT:** {event_name_narrative}
-            **DAMAGES:** {damages_list}
-            **RESPONSE ACTIONS:** {response_taken}
-            **PROBLEMS ENCOUNTERED:** {problems_encountered}
-            **LESSONS LEARNED:** {lessons_learned}
-            """
+        # Quick Guide for Significant Events
+        with st.expander("📋 Quick Guide: What to Report for Significant Events"):
+            st.markdown("""
+            - ✅ PDRA conduct dates
+            - ✅ TCWS hoisting dates and levels
+            - ✅ Alert level changes
+            - ✅ Road closures (specific locations)
+            - ✅ Power interruptions
+            - ✅ Communication issues
+            - ✅ Evacuation numbers
+            - ✅ Landslide counts
+            - ✅ Class suspensions
+            - ✅ State of calamity declarations
+            """)
         
-        # ===== AFFECTED AREAS =====
-        st.markdown("#### 🌍 Affected Areas")
-        col_a1, col_a2 = st.columns(2)
-        with col_a1:
-            if "Historical" in era or "Satellite" in era:
-                region = st.text_input("Regions Affected", placeholder="e.g., CAR, Region I, Cagayan Valley")
-            else:
-                region = st.selectbox("Region", ["CAR", "Region I", "Both", "Mountain Province Only", "Other"])
-                if region == "Other":
-                    other_region = st.text_input("Specify other region")
-        with col_a2:
-            municipalities = st.text_input("Municipalities Affected", placeholder="e.g., Bontoc, Sagada, Bauko (comma-separated)")
-        
-        # Build affected regions string for confidence
-        if "Historical" in era or "Satellite" in era:
-            affected_regions_str = region if 'region' in locals() else ''
-        else:
-            affected_regions_str = region if region == "Both" else (other_region if region == "Other" else region)
-        
-        # File attachment
-        st.markdown("#### 📎 Attachment")
-        uploaded_file = st.file_uploader("Upload document or photo", type=['jpg', 'png', 'pdf', 'docx'])
+        uploaded_file = st.file_uploader("Attach Document/Photo", type=['jpg', 'png', 'pdf', 'xlsx'])
         
         submitted = st.form_submit_button("💾 Save Event", type="primary")
         
-        if submitted and local_name:
-            # Calculate confidence for historical records
-            if "Historical" in era or "Satellite" in era:
-                if affected_regions_str:
-                    confidence = calculate_mp_confidence(affected_regions_str)
+        if submitted:
+            if not local_name:
+                st.error("Please enter the event name")
+            elif year < min_year or year > max_year:
+                st.error(f"Year {year} is outside the selected era range ({min_year}-{max_year}). Please select the correct era.")
+            else:
+                # Create event dictionary
+                event = {
+                    "id": int(datetime.now().timestamp() * 1000),
+                    "event_type": event_type,
+                    "local_name": local_name.upper(),
+                    "year": year,
+                    "start_date": start_date.isoformat(),
+                    "end_date": end_date.isoformat(),
+                    "municipality": municipality,
+                    "fatalities": fatalities,
+                    "injured": injured,
+                    "missing": missing,
+                    "affected_families": affected_families,
+                    "affected_persons": affected_persons,
+                    "evacuated": evacuated,
+                    "damaged_houses": damaged_houses,
+                    "agricultural_damage": agricultural_damage,
+                    "infrastructure_damage": infrastructure_damage,
+                    "total_damage": total_damage,
+                    "description": description,
+                    "response_actions": response_actions,
+                    "record_type": record_type,
+                    "era": selected_era,
+                    "created_at": datetime.now().isoformat()
+                }
+                
+                # Handle file upload
+                if uploaded_file:
+                    folder = f"local_storage/drrm_intelligence/events/{event['id']}"
+                    os.makedirs(folder, exist_ok=True)
+                    file_path = os.path.join(folder, uploaded_file.name)
+                    with open(file_path, "wb") as f:
+                        f.write(uploaded_file.getbuffer())
+                    event["attachment"] = file_path
+                    event["attachment_name"] = uploaded_file.name
+                
+                # Add to session state
+                if st.session_state.disaster_events.empty:
+                    st.session_state.disaster_events = pd.DataFrame([event])
                 else:
-                    confidence = {'level': 'UNKNOWN', 'score': 0, 'reason': 'No region information', 'color': '#6c757d'}
-            else:
-                confidence = {'level': 'DIRECT DATA', 'score': 100, 'reason': 'Direct Mountain Province record', 'color': '#1E3A8A'}
-            
-            event = {
-                "id": int(datetime.now().timestamp() * 1000),
-                "era": record_type,
-                "local_name": local_name.upper(),
-                "international_name": international_name,
-                "year": year,
-                "month": month,
-                "start_date": start_date.isoformat(),
-                "end_date": end_date.isoformat(),
-                "hazard_category": hazard_category,
-                "hazard_type": hazard_type,
-                "max_wind": max_wind,
-                "max_gust": max_gust,
-                "tcws": tcws,
-                "pressure": pressure,
-                "rainfall": rainfall,
-                "fatalities": fatalities,
-                "injured": injured,
-                "missing": missing,
-                "displaced_families": displaced_families,
-                "displaced_persons": displaced_persons,
-                "evacuated": evacuated,
-                "houses_total": houses_total,
-                "houses_partial": houses_partial,
-                "affected_barangays": affected_barangays,
-                "roads_affected": roads_affected,
-                "damage_agriculture": damage_agriculture,
-                "damage_infrastructure": damage_infrastructure,
-                "damage_private": damage_private,
-                "damage_total": total_damage,
-                "region": region if 'region' in locals() else '',
-                "municipalities": municipalities,
-                "affected_regions_mentioned": affected_regions_str,
-                "mp_confidence_level": confidence['level'],
-                "mp_confidence_score": confidence['score'],
-                "mp_confidence_reason": confidence['reason'],
-                "narrative": narrative,
-                "record_type": record_type,
-                "created_at": datetime.now().isoformat()
-            }
-            
-            # Handle file attachment
-            if uploaded_file:
-                folder = f"local_storage/drrm_intelligence/events/{event['id']}"
-                os.makedirs(folder, exist_ok=True)
-                file_path = os.path.join(folder, uploaded_file.name)
-                with open(file_path, "wb") as f:
-                    f.write(uploaded_file.getbuffer())
-                event["attachment"] = file_path
-                event["attachment_name"] = uploaded_file.name
-            
-            # Add to session state
-            if st.session_state.disaster_events.empty:
-                st.session_state.disaster_events = pd.DataFrame([event])
-            else:
-                st.session_state.disaster_events = pd.concat(
-                    [st.session_state.disaster_events, pd.DataFrame([event])],
-                    ignore_index=True
-                )
-            
-            # Save to local storage
-            save_to_local_storage()
-            
-            st.success(f"✅ Event '{local_name}' recorded successfully!")
-            st.balloons()
-            st.rerun()
-        elif submitted and not local_name:
-            st.error("Please enter the event name")
+                    st.session_state.disaster_events = pd.concat(
+                        [st.session_state.disaster_events, pd.DataFrame([event])],
+                        ignore_index=True
+                    )
+                
+                # Save to local storage
+                save_to_local_storage()
+                
+                st.success(f"✅ Event '{local_name}' recorded successfully!")
+                st.balloons()
+                st.rerun()
 
 
 def show_event_database():

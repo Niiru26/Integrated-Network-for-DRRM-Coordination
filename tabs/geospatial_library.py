@@ -395,21 +395,101 @@ def show_related_modules():
 
 def open_map_file(file_path):
     """Open a map file with the default system application"""
+    import platform
+    import subprocess
+    import os
+    
     try:
         if platform.system() == "Windows":
             os.startfile(file_path)
         elif platform.system() == "Darwin":  # macOS
             subprocess.run(["open", file_path])
-        else:  # Linux
-            subprocess.run(["xdg-open", file_path])
+        else:  # Linux (including Streamlit Cloud)
+            # On Streamlit Cloud, we can't open files locally
+            # Instead, provide download option
+            st.warning("File cannot be opened in cloud environment. Please download to view.")
     except Exception as e:
-        st.error(f"Could not open file: {e}")
+        st.warning(f"Cannot open file directly. Please download to view: {e}")
 
 
-def format_file_size(size_bytes):
-    """Format file size in human-readable format"""
-    for unit in ['B', 'KB', 'MB', 'GB']:
-        if size_bytes < 1024:
-            return f"{size_bytes:.1f} {unit}"
-        size_bytes /= 1024
-    return f"{size_bytes:.1f} TB"
+def show_upload_map(categories):
+    """Upload new GIS maps with clear form after submission"""
+    
+    st.markdown("### 📤 Upload GIS Map")
+    st.caption("Add new maps to the library (JPEG, PNG, PDF formats)")
+    
+    municipalities = ["Province-wide", "Barlig", "Bauko", "Besao", "Bontoc", "Natonin", "Paracelis", "Sabangan", "Sadanga", "Sagada", "Tadian"]
+    
+    # Use clear_on_submit=True to reset form after submission
+    with st.form("upload_map_form", clear_on_submit=True):
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            title = st.text_input("Map Title *", placeholder="e.g., Provincial Landslide Hazard Map")
+            category = st.selectbox("Category *", list(categories.keys()))
+            year = st.number_input("Year *", min_value=2000, max_value=2030, value=datetime.now().year)
+            municipality = st.selectbox("Municipality/Area", municipalities)
+        
+        with col2:
+            scale = st.text_input("Map Scale", placeholder="e.g., 1:50,000")
+            projection = st.text_input("Projection", placeholder="e.g., UTM Zone 51N")
+            source = st.text_input("Data Source", placeholder="e.g., MGB, PAGASA, LGU")
+            tags = st.text_input("Tags", placeholder="comma separated: landslide, hazard, barlig")
+        
+        description = st.text_area("Description", placeholder="Brief description of the map and its purpose", height=100)
+        
+        uploaded_file = st.file_uploader("Select map file", type=['jpg', 'jpeg', 'png', 'pdf'])
+        
+        submitted = st.form_submit_button("📤 Upload Map", type="primary")
+        
+        if submitted and title and uploaded_file:
+            # Create folder structure
+            category_folder = category.replace(" ", "_")
+            folder = f"local_storage/geospatial_library/{category_folder}"
+            os.makedirs(folder, exist_ok=True)
+            
+            # Save file
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            safe_title = "".join(c for c in title if c.isalnum() or c in (' ', '-', '_')).replace(' ', '_')
+            extension = uploaded_file.name.split('.')[-1].lower()
+            filename = f"{timestamp}_{safe_title}.{extension}"
+            file_path = os.path.join(folder, filename)
+            
+            with open(file_path, "wb") as f:
+                f.write(uploaded_file.getbuffer())
+            
+            # Get file info
+            file_size_bytes = os.path.getsize(file_path)
+            file_size = format_file_size(file_size_bytes)
+            
+            # Create metadata record
+            new_map = {
+                "id": int(datetime.now().timestamp() * 1000),
+                "title": title,
+                "category": category,
+                "year": year,
+                "municipality": municipality,
+                "scale": scale,
+                "projection": projection,
+                "source": source,
+                "tags": tags,
+                "description": description,
+                "file_path": file_path,
+                "filename": filename,
+                "file_extension": extension.upper(),
+                "file_size": file_size,
+                "file_size_bytes": file_size_bytes,
+                "upload_date": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                "created_at": datetime.now().isoformat()
+            }
+            
+            st.session_state.gis_maps.append(new_map)
+            st.success(f"✅ Map '{title}' uploaded successfully!")
+            st.balloons()
+            st.rerun()
+        
+        elif submitted and not title:
+            st.error("Please enter a map title")
+        
+        elif submitted and not uploaded_file:
+            st.error("Please select a file to upload")
