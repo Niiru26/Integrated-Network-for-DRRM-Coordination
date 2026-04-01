@@ -19,6 +19,19 @@ warnings.filterwarnings('ignore')
 # HELPER FUNCTIONS
 # =============================================================================
 
+def format_number(value, decimals=2):
+    """Format number with thousand separators and specified decimals"""
+    if value is None or pd.isna(value):
+        return "0" + (".00" if decimals > 0 else "")
+    try:
+        if decimals == 0:
+            return f"{int(float(value)):,}"
+        else:
+            return f"{float(value):,.{decimals}f}"
+    except:
+        return str(value)
+
+
 def format_file_size(size_bytes):
     """Format file size in human-readable format"""
     if size_bytes == 0:
@@ -121,13 +134,13 @@ def display_annual_report(report):
     
     col1, col2, col3, col4 = st.columns(4)
     with col1:
-        st.metric("Total Events", report['total_events'])
+        st.metric("Total Events", format_number(report['total_events'], 0))
     with col2:
-        st.metric("Fatalities", report['total_fatalities'])
+        st.metric("Fatalities", format_number(report['total_fatalities'], 0))
     with col3:
-        st.metric("Injured", report['total_injured'])
+        st.metric("Injured", format_number(report['total_injured'], 0))
     with col4:
-        st.metric("Missing", report['total_missing'])
+        st.metric("Missing", format_number(report['total_missing'], 0))
     
     st.markdown("---")
     
@@ -150,9 +163,9 @@ def display_annual_report(report):
             st.info("No data")
     
     st.markdown("#### 🏠 Housing Damage")
-    st.markdown(f"- **Totally Damaged:** {report['total_houses_damaged']['total']:,} houses")
-    st.markdown(f"- **Partially Damaged:** {report['total_houses_damaged']['partial']:,} houses")
-    st.markdown(f"- **Total Damage Cost:** ₱{report['total_damage_cost']/1e6:.2f} Million")
+    st.markdown(f"- **Totally Damaged:** {format_number(report['total_houses_damaged']['total'], 0)} houses")
+    st.markdown(f"- **Partially Damaged:** {format_number(report['total_houses_damaged']['partial'], 0)} houses")
+    st.markdown(f"- **Total Damage Cost:** ₱{format_number(report['total_damage_cost']/1e6, 2)} Million")
     
     st.markdown("#### 🏘️ Most Affected Areas")
     st.markdown(f"- **Most Affected Municipality:** {report['most_affected_municipality']}")
@@ -481,7 +494,7 @@ def show_hazard_documentation():
             damage_private = st.number_input("Private Property Damage (₱)", min_value=0.0, value=0.0, step=1000.0,
                                             help="Damage to private properties and businesses")
             total_damage = damage_agriculture + damage_infrastructure + damage_private
-            st.metric("Total Damage (₱)", f"₱{total_damage:,.2f}")
+            st.metric("Total Damage (₱)", f"₱{format_number(total_damage, 2)}")
         
         # ===== NARRATIVE SECTION =====
         st.markdown("#### 📝 Narrative / Remarks")
@@ -886,17 +899,17 @@ def show_event_database():
             col1, col2, col3 = st.columns(3)
             with col1:
                 st.markdown("**📊 Impact**")
-                st.markdown(f"Fatalities: {event.get('fatalities', 0):,}")
-                st.markdown(f"Injured: {event.get('injured', 0):,}")
-                st.markdown(f"Missing: {event.get('missing', 0):,}")
+                st.markdown(f"Fatalities: {format_number(event.get('fatalities', 0), 0)}")
+                st.markdown(f"Injured: {format_number(event.get('injured', 0), 0)}")
+                st.markdown(f"Missing: {format_number(event.get('missing', 0), 0)}")
             with col2:
                 st.markdown("**🏠 Housing**")
-                st.markdown(f"Totally Damaged: {event.get('houses_total', 0):,}")
-                st.markdown(f"Partially Damaged: {event.get('houses_partial', 0):,}")
+                st.markdown(f"Totally Damaged: {format_number(event.get('houses_total', 0), 0)}")
+                st.markdown(f"Partially Damaged: {format_number(event.get('houses_partial', 0), 0)}")
             with col3:
                 st.markdown("**💰 Damage (₱M)**")
                 total = event.get('damage_total', 0) / 1_000_000
-                st.markdown(f"Total: ₱{total:.2f}M")
+                st.markdown(f"Total: ₱{format_number(total, 2)}M")
             
             if event.get('narrative') and not pd.isna(event.get('narrative')):
                 preview = event.get('narrative')[:150] + '...' if len(event.get('narrative', '')) > 150 else event.get('narrative')
@@ -935,16 +948,16 @@ def show_summary_dashboard():
         )
         df = df[df['record_type'].isin(selected_types)]
     
-    # Summary metrics
+    # Summary metrics with formatted numbers
     col1, col2, col3, col4 = st.columns(4)
     with col1:
-        st.metric("Total Events", len(df))
+        st.metric("Total Events", format_number(len(df), 0))
     with col2:
-        st.metric("Total Fatalities", int(df['fatalities'].sum()))
+        st.metric("Total Fatalities", format_number(int(df['fatalities'].sum()), 0))
     with col3:
-        st.metric("Totally Damaged", int(df['houses_total'].sum()))
+        st.metric("Totally Damaged", format_number(int(df['houses_total'].sum()), 0))
     with col4:
-        st.metric("Total Damage (₱M)", f"{df['damage_total'].sum()/1e6:.1f}M")
+        st.metric("Total Damage (₱M)", f"₱{format_number(df['damage_total'].sum()/1e6, 2)}M")
     
     # Annual Report Generator
     st.markdown("---")
