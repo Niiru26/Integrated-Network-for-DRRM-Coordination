@@ -217,8 +217,14 @@ def show_data_entry():
             if year < min_year or year > max_year:
                 st.warning(f"⚠️ Year {year} is outside the selected era range ({min_year}-{max_year}). Please adjust.")
             
-            start_date = st.date_input("Start Date", date.today())
-            end_date = st.date_input("End Date", date.today())
+            # ========== FIX: Date pickers with year limits ==========
+            # Create min and max date based on era
+            min_date = date(min_year, 1, 1)
+            max_date = date(max_year, 12, 31)
+            
+            start_date = st.date_input("Start Date", value=date(min_year, 1, 1), min_value=min_date, max_value=max_date)
+            end_date = st.date_input("End Date", value=date(min_year, 1, 1), min_value=min_date, max_value=max_date)
+            # ======================================================
         
         with col2:
             municipality = st.selectbox("Municipality", [
