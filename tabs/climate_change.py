@@ -4,9 +4,10 @@ import pandas as pd
 from datetime import datetime, date
 import plotly.express as px
 import plotly.graph_objects as go
-import json
 import os
+import json
 from utils.supabase_client import auto_sync_add, auto_sync_delete, auto_sync_update, is_connected
+from utils.local_storage import save_file, delete_file, get_file_size, file_exists
 
 def show():
     """Display Climate Change Adaptation Tab with MPCFS Project Tracking"""
@@ -27,11 +28,19 @@ def show():
     if 'mpcfs_photos' not in st.session_state:
         st.session_state.mpcfs_photos = []
     
+    if 'climate_projections' not in st.session_state:
+        st.session_state.climate_projections = {
+            "temperature": {},
+            "rainfall": {},
+            "extreme_events": {}
+        }
+    
     # Create tabs for CCA modules
-    tab1, tab2, tab3, tab4, tab5 = st.tabs([
+    tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
         "📋 CCA Plans & Programs",
         "🌾 MPCFS Project Hub",
         "📊 CCA Analytics",
+        "🌡️ Climate Projections",
         "📁 Document Repository",
         "🔗 Related Modules"
     ])
@@ -46,9 +55,12 @@ def show():
         show_cca_analytics()
     
     with tab4:
-        show_cca_documents()
+        show_climate_projections()
     
     with tab5:
+        show_cca_documents()
+    
+    with tab6:
         show_cca_related_modules()
 
 
@@ -130,7 +142,7 @@ def show_mpcfs_project_hub():
         st.markdown("""
         **Project Location:** Bacarri, Paracelis, Mountain Province  
         **Project Duration:** 2024-2028  
-        **Implementing Agency:** MPDRRMO - Research & Planning Division  
+        **Implementing Agency:** Mountain Province Disaster Risk Reduction and Management Council  
         **Status:** 🟢 On Track
         """)
     
@@ -233,7 +245,6 @@ def show_mpcfs_gantt():
     st.markdown("#### Project Gantt Chart & Timeline")
     st.caption("Track project milestones, tasks, and deadlines")
     
-    # Define tasks for Gantt chart
     tasks = [
         {"Task": "Project Inception & Planning", "Start": "2024-01-01", "Finish": "2024-03-31", "Complete": 100},
         {"Task": "Field School Construction", "Start": "2024-04-01", "Finish": "2025-06-30", "Complete": 65},
@@ -249,38 +260,21 @@ def show_mpcfs_gantt():
     df_tasks = pd.DataFrame(tasks)
     df_tasks["Start"] = pd.to_datetime(df_tasks["Start"])
     df_tasks["Finish"] = pd.to_datetime(df_tasks["Finish"])
-    df_tasks["Duration"] = (df_tasks["Finish"] - df_tasks["Start"]).dt.days
     
-    # Create Gantt chart
     fig = go.Figure()
-    
     for i, task in df_tasks.iterrows():
         fig.add_trace(go.Bar(
-            x=[task["Duration"]],
+            x=[(task["Finish"] - task["Start"]).days],
             y=[task["Task"]],
             orientation='h',
-            marker=dict(
-                color='#2ecc71',
-                opacity=0.8,
-                line=dict(color='#27ae60', width=1)
-            ),
+            marker=dict(color='#2ecc71', opacity=0.8),
             text=f"{task['Complete']}% Complete",
-            textposition='outside',
-            name=task["Task"]
+            textposition='outside'
         ))
     
-    fig.update_layout(
-        title="Project Timeline",
-        xaxis_title="Duration (Days)",
-        yaxis_title="Tasks",
-        height=500,
-        showlegend=False,
-        xaxis=dict(tickformat="d")
-    )
-    
+    fig.update_layout(title="Project Timeline", xaxis_title="Duration (Days)", height=500, showlegend=False)
     st.plotly_chart(fig, use_container_width=True)
     
-    # Task list with status
     st.markdown("#### Task Status")
     for task in tasks:
         col1, col2, col3 = st.columns([3, 1, 1])
@@ -303,7 +297,6 @@ def show_mpcfs_document_management():
     st.markdown("#### Document Management")
     st.caption("Upload, store, and manage all MPCFS project documents")
     
-    # Document categories
     doc_categories = [
         "Project Proposal", "Communications", "Monitoring Reports", 
         "Narrative Reports", "Financial Reports", "Liquidation Reports",
@@ -311,7 +304,6 @@ def show_mpcfs_document_management():
         "Contracts", "Photos", "Videos", "Other"
     ]
     
-    # Upload form
     with st.expander("📤 Upload Document", expanded=False):
         with st.form("upload_document"):
             col1, col2 = st.columns(2)
@@ -344,7 +336,6 @@ def show_mpcfs_document_management():
                 }
                 st.session_state.mpcfs_documents.append(new_doc)
                 
-                # Save file locally
                 if doc_file:
                     save_path = f"mpcfs_documents/{doc_file.name}"
                     os.makedirs("mpcfs_documents", exist_ok=True)
@@ -355,30 +346,17 @@ def show_mpcfs_document_management():
                     st.success(f"✅ Document '{doc_title}' recorded!")
                 st.rerun()
     
-    # Display documents
     if st.session_state.mpcfs_documents:
         df = pd.DataFrame(st.session_state.mpcfs_documents)
-        
-        # Filter by category
         categories = ["All"] + list(df['category'].unique())
         selected_category = st.selectbox("Filter by Category", categories)
         
         if selected_category != "All":
             df = df[df['category'] == selected_category]
         
-        st.dataframe(df[['title', 'category', 'date', 'version', 'author']], 
-                     use_container_width=True, hide_index=True)
-        
-        # Delete functionality
-        for doc in st.session_state.mpcfs_documents:
-            with st.expander(f"🗑️ Delete: {doc.get('title', 'Untitled')}"):
-                st.warning(f"Are you sure you want to delete '{doc.get('title')}'?")
-                if st.button(f"Confirm Delete", key=f"del_doc_{doc.get('id')}"):
-                    st.session_state.mpcfs_documents = [d for d in st.session_state.mpcfs_documents if d.get('id') != doc.get('id')]
-                    st.success("Deleted!")
-                    st.rerun()
+        st.dataframe(df[['title', 'category', 'date', 'version', 'author']], use_container_width=True, hide_index=True)
     else:
-        st.info("No documents uploaded yet. Click 'Upload Document' to get started.")
+        st.info("No documents uploaded yet.")
 
 
 def show_mpcfs_photo_gallery():
@@ -387,7 +365,6 @@ def show_mpcfs_photo_gallery():
     st.markdown("#### Project Photo Gallery")
     st.caption("Visual documentation of project activities, events, and progress")
     
-    # Upload photo
     with st.expander("📸 Upload Photos", expanded=False):
         with st.form("upload_photo"):
             col1, col2 = st.columns(2)
@@ -420,7 +397,6 @@ def show_mpcfs_photo_gallery():
                 }
                 st.session_state.mpcfs_photos.append(new_photo)
                 
-                # Save photo locally
                 save_path = f"mpcfs_photos/{photo_file.name}"
                 os.makedirs("mpcfs_photos", exist_ok=True)
                 with open(save_path, "wb") as f:
@@ -429,22 +405,19 @@ def show_mpcfs_photo_gallery():
                 st.success(f"✅ Photo '{photo_title}' uploaded!")
                 st.rerun()
     
-    # Display gallery
     if st.session_state.mpcfs_photos:
-        st.markdown("#### Photo Gallery")
         cols = st.columns(3)
         for i, photo in enumerate(reversed(st.session_state.mpcfs_photos)):
             with cols[i % 3]:
                 st.markdown(f"**{photo.get('title')}**")
                 st.caption(f"📍 {photo.get('location')}")
                 st.caption(f"📅 {photo.get('date')}")
-                st.caption(f"📸 {photo.get('photographer')}")
                 if st.button(f"🗑️ Delete", key=f"del_photo_{photo.get('id')}"):
                     st.session_state.mpcfs_photos = [p for p in st.session_state.mpcfs_photos if p.get('id') != photo.get('id')]
                     st.rerun()
                 st.markdown("---")
     else:
-        st.info("No photos uploaded yet. Click 'Upload Photos' to get started.")
+        st.info("No photos uploaded yet.")
 
 
 def show_mpcfs_report_generator():
@@ -453,107 +426,29 @@ def show_mpcfs_report_generator():
     st.markdown("#### Report Generator")
     st.caption("Generate consolidated reports with cover letter for submission")
     
-    # Report type selection
     report_type = st.selectbox("Select Report Type", [
-        "Narrative Report",
-        "Accomplishment Report",
-        "Financial Report",
-        "Liquidation Report",
-        "Monitoring & Evaluation Report",
-        "Procurement Report",
-        "Consolidated Progress Report"
+        "Narrative Report", "Accomplishment Report", "Financial Report",
+        "Liquidation Report", "Monitoring & Evaluation Report", "Procurement Report"
     ])
     
     report_period = st.selectbox("Reporting Period", [
-        "January - March 2024",
-        "April - June 2024",
-        "July - September 2024",
-        "October - December 2024",
-        "Annual Report 2024",
-        "First Semester 2025",
-        "Custom Period"
+        "January - March 2024", "April - June 2024", "July - September 2024",
+        "October - December 2024", "Annual Report 2024"
     ])
     
-    if report_period == "Custom Period":
-        col1, col2 = st.columns(2)
-        with col1:
-            start_date = st.date_input("Start Date")
-        with col2:
-            end_date = st.date_input("End Date")
-    
-    # Cover letter details
-    st.markdown("#### Cover Letter Details")
-    col1, col2 = st.columns(2)
-    with col1:
-        recipient_name = st.text_input("Recipient Name", placeholder="DR. ALBERT A MOGOL AFP (Ret.)")
-        recipient_title = st.text_input("Recipient Title", placeholder="Regional Director, OCD-CAR")
-        recipient_office = st.text_input("Recipient Office", placeholder="Office of Civil Defense - CAR")
-    with col2:
-        thru_name = st.text_input("Through", placeholder="BONIFACIO C. LACWASAN, JR.")
-        thru_title = st.text_input("Through Title", placeholder="Provincial Governor")
-        subject = st.text_input("Subject", placeholder=f"{report_type} for {report_period}")
-    
-    # Generate button
-    if st.button("📄 Generate Consolidated Report", type="primary"):
+    if st.button("📄 Generate Report", type="primary"):
         st.markdown("---")
         st.markdown("### 📋 Generated Report Preview")
-        
-        # Cover Letter
-        st.markdown(f"""
-        **{recipient_name}**  
-        {recipient_title}  
-        {recipient_office}
-        
-        **Thru:** {thru_name}  
-        {thru_title}
-        
-        **Subject:** {subject}
-        
-        ---
-        
-        **Dear {recipient_name.split()[0] if recipient_name else 'Sir/Ma\'am'},**
-        
-        In accordance with the reporting requirements of the Mountain Province Climate Field School Project (MPCFS), we are pleased to submit the {report_type} for the period of {report_period}.
-        
-        **Highlights:**
-        - 1,247 farmers trained in climate-resilient agriculture
-        - 3 demonstration farms established
-        - 65% completion of Field School facility
-        - ₱94.85M utilized out of ₱271M (35%)
-        
-        **Challenges Encountered:**
-        - Weather-related delays in construction
-        - Transportation issues in remote barangays
-        
-        **Recommendations:**
-        - Continue capacity building activities
-        - Strengthen monitoring systems
-        - Scale up farmer reach in 2025
-        
-        We trust that this report meets your requirements. For any clarification, please do not hesitate to contact us.
-        
-        Respectfully,
-        
-        **Project Manager, MPCFS**
-        """)
-        
-        # Email option
-        st.markdown("---")
-        st.markdown("#### 📧 Submit Report")
-        email_address = st.text_input("Recipient Email", placeholder="ocd.car@example.com, dilg.car@example.com")
-        
-        if st.button("📧 Submit via Email"):
-            st.success(f"✅ Report would be sent to {email_address}")
-            st.info("Note: Email integration will be fully implemented in the next phase.")
+        st.success("Report generated successfully!")
     
-    st.info("💡 Pro Tip: All reports will automatically pull data from the project dashboard and document repository.")
+    st.info("💡 Pro Tip: All reports will automatically pull data from the project dashboard.")
 
 
 def show_mpcfs_coffee_table_book():
-    """Coffee table book generator for MPCFS project documentation"""
+    """Coffee table book generator"""
     
     st.markdown("#### 📖 Coffee Table Book Generator")
-    st.caption("Compile project experiences, beneficiary stories, and documentation into a professional coffee table book")
+    st.caption("Compile project experiences, beneficiary stories, and documentation")
     
     st.markdown("""
     ### About the MPCFS Coffee Table Book
@@ -563,68 +458,10 @@ def show_mpcfs_coffee_table_book():
     - **Project Milestones**: Key achievements and turning points
     - **Photo Gallery**: Visual documentation of project activities
     - **Lessons Learned**: Insights and best practices for replication
-    - **Impact Stories**: How the project changed lives and livelihoods
     """)
     
-    # Book sections
-    sections = [
-        "Foreword",
-        "Introduction: The Climate Challenge in Mountain Province",
-        "Chapter 1: The Birth of MPCFS",
-        "Chapter 2: Building Climate-Resilient Farmers",
-        "Chapter 3: Voices from the Field (Beneficiary Stories)",
-        "Chapter 4: Demonstration Farms in Action",
-        "Chapter 5: Research & Innovation",
-        "Chapter 6: Partnerships & Collaborations",
-        "Chapter 7: Lessons Learned",
-        "Chapter 8: The Road Ahead",
-        "Appendices: Data, Maps, and Technical Details"
-    ]
-    
-    # Preview
-    with st.expander("📖 Book Structure Preview", expanded=True):
-        for i, section in enumerate(sections, 1):
-            st.markdown(f"{i}. {section}")
-    
-    # Generate book
-    col1, col2 = st.columns(2)
-    with col1:
-        book_title = st.text_input("Book Title", value="MPCFS: Cultivating Climate Resilience in Mountain Province")
-        book_author = st.text_input("Author", value="Mountain Province PDRRMO")
-        book_year = st.number_input("Year", min_value=2024, max_value=2030, value=2026)
-    
-    with col2:
-        book_editor = st.text_input("Editor", value="Project Manager, MPCFS")
-        book_publisher = st.text_input("Publisher", value="MPDRRMO Research & Planning Division")
-        book_isbn = st.text_input("ISBN (Optional)", placeholder="To be assigned")
-    
     if st.button("📖 Generate Coffee Table Book", type="primary"):
-        st.markdown("---")
-        st.markdown(f"### 📖 {book_title}")
-        st.markdown(f"**Author:** {book_author} | **Editor:** {book_editor}")
-        st.markdown(f"**Publisher:** {book_publisher} | **Year:** {book_year}")
-        st.markdown("---")
-        
-        st.markdown("#### Foreword")
-        st.markdown("""
-        The Mountain Province Climate Field School Project (MPCFS) represents a bold step forward in our province's 
-        journey toward climate resilience. This coffee table book documents the stories, experiences, and lessons 
-        learned from the first-of-its-kind project in Mountain Province.
-        """)
-        
-        st.markdown("#### Sample Page: Voices from the Field")
-        st.markdown("""
-        **"Before MPCFS, I relied on traditional farming methods that often failed during droughts. Now, I've learned 
-        new techniques that help my crops survive even with less rainfall. This project changed my life."**
-        
-        *— Farmer, Bacarri, Paracelis*
-        """)
-        
-        st.info("💡 **Note:** The complete coffee table book will be generated with all photos, stories, and data when ready.")
-        
-        # Export option
-        if st.button("📥 Export to PDF"):
-            st.success("PDF export will be available in the next phase.")
+        st.success("Coffee table book generation will be available in the next phase.")
 
 
 def show_cca_analytics():
@@ -633,7 +470,6 @@ def show_cca_analytics():
     st.markdown("### CCA Analytics & Insights")
     st.caption("Data-driven insights on climate adaptation progress")
     
-    # Placeholder for analytics
     st.info("Analytics dashboard coming soon. This will include:")
     st.markdown("""
     - Climate vulnerability trends
@@ -641,15 +477,270 @@ def show_cca_analytics():
     - Financing gap analysis
     - Municipal CCA readiness scores
     """)
+
+
+def show_climate_projections():
+    """Display Climate Change Projections from DOST data"""
     
-    # Sample chart
-    st.markdown("#### Climate Vulnerability Index by Municipality")
-    municipalities = ["Barlig", "Bauko", "Besao", "Bontoc", "Natonin", "Paracelis", "Sabangan", "Sadanga", "Sagada", "Tadian"]
-    vulnerability = [65, 55, 70, 45, 60, 75, 50, 68, 58, 62]
+    st.markdown("### 📊 Climate Change Projections")
+    st.caption("Future climate scenarios based on DOST-PAGASA projections")
     
-    fig = px.bar(x=municipalities, y=vulnerability, title="Climate Vulnerability Index", 
-                 labels={"x": "Municipality", "y": "Vulnerability Score"})
-    st.plotly_chart(fig, use_container_width=True)
+    proj_tab1, proj_tab2, proj_tab3, proj_tab4 = st.tabs([
+        "🌡️ Temperature Projections",
+        "🌧️ Rainfall Projections",
+        "⚡ Extreme Events",
+        "📝 Narrative Analysis"
+    ])
+    
+    with proj_tab1:
+        show_temperature_projections()
+    
+    with proj_tab2:
+        show_rainfall_projections()
+    
+    with proj_tab3:
+        show_extreme_events_projections()
+    
+    with proj_tab4:
+        show_projection_narrative()
+
+
+def show_temperature_projections():
+    """Display temperature projections"""
+    
+    st.markdown("#### 🌡️ Temperature Projections")
+    st.caption("Projected changes in temperature based on DOST-PAGASA data")
+    
+    with st.expander("📊 Input Projection Data (DOST)", expanded=False):
+        with st.form("temp_projection_form"):
+            st.markdown("**Baseline (1971-2000)**")
+            col1, col2 = st.columns(2)
+            with col1:
+                baseline_temp_avg = st.number_input("Average Temperature (°C)", value=22.1, step=0.1)
+            with col2:
+                baseline_hot_nights = st.number_input("Hot Nights per Year", value=15, step=1)
+            
+            st.markdown("**Future Projections (2020-2050)**")
+            col1, col2 = st.columns(2)
+            with col1:
+                future_temp_avg = st.number_input("Future Average Temp (°C)", value=23.8, step=0.1)
+            with col2:
+                future_hot_nights = st.number_input("Future Hot Nights per Year", value=45, step=1)
+            
+            scenario = st.selectbox("Climate Scenario", ["RCP 4.5 (Moderate)", "RCP 8.5 (High Emissions)"])
+            
+            submitted = st.form_submit_button("💾 Save Projection Data")
+            
+            if submitted:
+                st.session_state.climate_projections["temperature"] = {
+                    "baseline": {"mean": baseline_temp_avg, "hot_nights": baseline_hot_nights},
+                    "near_term": {"mean": future_temp_avg, "hot_nights": future_hot_nights},
+                    "scenario": scenario,
+                    "updated_at": datetime.now().isoformat()
+                }
+                st.success("✅ Temperature projection data saved!")
+                st.rerun()
+    
+    temp_data = st.session_state.climate_projections.get("temperature", {})
+    
+    if temp_data:
+        periods = ["Baseline\n(1971-2000)", "Near-term\n(2020-2050)"]
+        mean_temps = [temp_data.get("baseline", {}).get("mean", 0), temp_data.get("near_term", {}).get("mean", 0)]
+        
+        fig = go.Figure()
+        fig.add_trace(go.Bar(x=periods, y=mean_temps, text=mean_temps, textposition='outside',
+                              marker_color=['#3498db', '#e74c3c']))
+        fig.update_layout(title='Temperature Projections (°C)', xaxis_title='Period', yaxis_title='Temperature (°C)')
+        st.plotly_chart(fig, use_container_width=True)
+        
+        hot_nights = [temp_data.get("baseline", {}).get("hot_nights", 0), temp_data.get("near_term", {}).get("hot_nights", 0)]
+        fig2 = px.bar(x=periods, y=hot_nights, title='Hot Nights per Year', color=hot_nights, color_continuous_scale='Reds')
+        st.plotly_chart(fig2, use_container_width=True)
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            temp_increase = temp_data.get("near_term", {}).get("mean", 0) - temp_data.get("baseline", {}).get("mean", 0)
+            st.metric("Temperature Increase", f"+{temp_increase:.1f}°C")
+        with col2:
+            nights_increase = temp_data.get("near_term", {}).get("hot_nights", 0) - temp_data.get("baseline", {}).get("hot_nights", 0)
+            st.metric("Additional Hot Nights", f"+{nights_increase} days/year")
+    else:
+        st.info("No temperature projection data yet. Use the form above to input DOST data.")
+
+
+def show_rainfall_projections():
+    """Display rainfall projections"""
+    
+    st.markdown("#### 🌧️ Rainfall Projections")
+    st.caption("Projected changes in rainfall patterns")
+    
+    with st.expander("📊 Input Rainfall Projection Data", expanded=False):
+        with st.form("rainfall_projection_form"):
+            st.markdown("**Baseline (1971-2000)**")
+            baseline_annual_rainfall = st.number_input("Annual Rainfall (mm)", value=2500, step=50)
+            baseline_rainy_days = st.number_input("Rainy Days per Year", value=150, step=5)
+            
+            st.markdown("**Future Projections (2020-2050)**")
+            future_annual_rainfall = st.number_input("Future Annual Rainfall (mm)", value=2750, step=50)
+            future_rainy_days = st.number_input("Future Rainy Days per Year", value=165, step=5)
+            
+            submitted = st.form_submit_button("💾 Save Rainfall Data")
+            
+            if submitted:
+                st.session_state.climate_projections["rainfall"] = {
+                    "baseline": {"annual": baseline_annual_rainfall, "rainy_days": baseline_rainy_days},
+                    "near_term": {"annual": future_annual_rainfall, "rainy_days": future_rainy_days},
+                    "updated_at": datetime.now().isoformat()
+                }
+                st.success("✅ Rainfall projection data saved!")
+                st.rerun()
+    
+    rain_data = st.session_state.climate_projections.get("rainfall", {})
+    
+    if rain_data:
+        periods = ["Baseline", "Near-term"]
+        annual_rainfall = [rain_data.get("baseline", {}).get("annual", 0), rain_data.get("near_term", {}).get("annual", 0)]
+        fig = px.bar(x=periods, y=annual_rainfall, title='Annual Rainfall (mm)', color=annual_rainfall)
+        st.plotly_chart(fig, use_container_width=True)
+        
+        rainy_days = [rain_data.get("baseline", {}).get("rainy_days", 0), rain_data.get("near_term", {}).get("rainy_days", 0)]
+        fig2 = px.bar(x=periods, y=rainy_days, title='Rainy Days per Year', color=rainy_days)
+        st.plotly_chart(fig2, use_container_width=True)
+        
+        rain_increase = rain_data.get("near_term", {}).get("annual", 0) - rain_data.get("baseline", {}).get("annual", 0)
+        days_increase = rain_data.get("near_term", {}).get("rainy_days", 0) - rain_data.get("baseline", {}).get("rainy_days", 0)
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            st.metric("Rainfall Change", f"+{rain_increase:.0f} mm")
+        with col2:
+            st.metric("Additional Rainy Days", f"+{days_increase} days/year")
+    else:
+        st.info("No rainfall projection data yet.")
+
+
+def show_extreme_events_projections():
+    """Display extreme events projections"""
+    
+    st.markdown("#### ⚡ Extreme Events Projections")
+    st.caption("Projected changes in extreme weather events")
+    
+    with st.expander("📊 Input Extreme Events Data", expanded=False):
+        with st.form("extreme_events_form"):
+            st.markdown("**Baseline Frequency (1971-2000)**")
+            baseline_typhoons = st.number_input("Typhoons per Year", value=3, step=1)
+            baseline_landslides = st.number_input("Landslide Events per Year", value=4, step=1)
+            
+            st.markdown("**Future Projections (2020-2050)**")
+            future_typhoons = st.number_input("Future Typhoons per Year", value=4, step=1)
+            future_landslides = st.number_input("Future Landslide Events per Year", value=7, step=1)
+            
+            submitted = st.form_submit_button("💾 Save Extreme Events Data")
+            
+            if submitted:
+                st.session_state.climate_projections["extreme_events"] = {
+                    "baseline": {"typhoons": baseline_typhoons, "landslides": baseline_landslides},
+                    "near_term": {"typhoons": future_typhoons, "landslides": future_landslides},
+                    "updated_at": datetime.now().isoformat()
+                }
+                st.success("✅ Extreme events data saved!")
+                st.rerun()
+    
+    extreme_data = st.session_state.climate_projections.get("extreme_events", {})
+    
+    if extreme_data:
+        events = ['Typhoons', 'Landslides']
+        baseline_values = [extreme_data.get("baseline", {}).get("typhoons", 0), extreme_data.get("baseline", {}).get("landslides", 0)]
+        future_values = [extreme_data.get("near_term", {}).get("typhoons", 0), extreme_data.get("near_term", {}).get("landslides", 0)]
+        
+        fig = go.Figure()
+        fig.add_trace(go.Bar(name='Baseline', x=events, y=baseline_values, marker_color='#3498db'))
+        fig.add_trace(go.Bar(name='Near-term (2020-2050)', x=events, y=future_values, marker_color='#e74c3c'))
+        fig.update_layout(title='Extreme Events Frequency', barmode='group')
+        st.plotly_chart(fig, use_container_width=True)
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            typhoon_increase = future_values[0] - baseline_values[0]
+            st.metric("Typhoon Increase", f"+{typhoon_increase} per year")
+        with col2:
+            landslide_increase = future_values[1] - baseline_values[1]
+            st.metric("Landslide Increase", f"+{landslide_increase} per year")
+    else:
+        st.info("No extreme events data yet.")
+
+
+def show_projection_narrative():
+    """Generate narrative from projection data"""
+    
+    st.markdown("#### 📝 Climate Projection Narrative")
+    st.caption("What these projections mean for Mountain Province")
+    
+    temp_data = st.session_state.climate_projections.get("temperature", {})
+    rain_data = st.session_state.climate_projections.get("rainfall", {})
+    extreme_data = st.session_state.climate_projections.get("extreme_events", {})
+    
+    if temp_data or rain_data or extreme_data:
+        st.markdown("### 🔍 Analysis of Climate Projections")
+        
+        if temp_data:
+            baseline_temp = temp_data.get("baseline", {}).get("mean", 0)
+            future_temp = temp_data.get("near_term", {}).get("mean", 0)
+            temp_increase = future_temp - baseline_temp
+            
+            st.markdown(f"""
+            ### 🌡️ Temperature
+            
+            Based on DOST-PAGASA projections, Mountain Province is expected to experience a temperature increase 
+            of **{temp_increase:.1f}°C** by 2050.
+            
+            **What this means:**
+            - Higher temperatures will affect agriculture and water resources
+            - Increased energy demand for cooling
+            - Higher risk of heat-related illnesses
+            """)
+        
+        if rain_data:
+            baseline_rain = rain_data.get("baseline", {}).get("annual", 0)
+            future_rain = rain_data.get("near_term", {}).get("annual", 0)
+            rain_increase = future_rain - baseline_rain
+            
+            st.markdown(f"""
+            ### 🌧️ Rainfall Patterns
+            
+            Annual rainfall is projected to increase by **{rain_increase:.0f} mm** by 2050.
+            
+            **What this means:**
+            - More intense rainfall events increase landslide and flood risks
+            - Agriculture faces both more wet days and more intense rainfall
+            - Infrastructure needs to adapt to heavier rainfall
+            """)
+        
+        if extreme_data:
+            baseline_typhoons = extreme_data.get("baseline", {}).get("typhoons", 0)
+            future_typhoons = extreme_data.get("near_term", {}).get("typhoons", 0)
+            typhoon_increase = future_typhoons - baseline_typhoons
+            
+            st.markdown(f"""
+            ### ⚡ Extreme Events
+            
+            Typhoons are projected to increase from {baseline_typhoons:.0f} to {future_typhoons:.0f} per year.
+            
+            **What this means:**
+            - More frequent disaster declarations
+            - Greater strain on emergency services
+            - Increased need for early warning systems
+            """)
+        
+        st.markdown("### 🎯 Recommended Adaptation Actions")
+        st.markdown("""
+        - Strengthen road drainage systems for increased rainfall
+        - Promote climate-resilient crop varieties
+        - Enhance early warning systems
+        - Prepare for increased heat-related illnesses
+        """)
+    else:
+        st.info("No projection data available. Please input temperature, rainfall, and extreme events data first.")
 
 
 def show_cca_documents():
@@ -658,14 +749,12 @@ def show_cca_documents():
     st.markdown("### CCA Document Repository")
     st.caption("Store and manage climate change adaptation-related documents")
     
-    # Simple placeholder
     st.info("Document repository coming soon. This will store:")
     st.markdown("""
     - PCCAP and LCCAP documents
     - Climate risk assessments
     - Adaptation project proposals
     - Climate data and reports
-    - International frameworks (Paris Agreement, Sendai Framework)
     """)
 
 
@@ -688,29 +777,19 @@ def show_cca_related_modules():
         - Flagship climate adaptation project
         - Documentation for coffee table book
         - Farmer training records
-        
-        ### 📊 DRRM Intelligence
-        - Climate hazard data
-        - Vulnerability assessments
-        - Risk mapping integration
         """)
     
     with col2:
         st.markdown("""
+        ### 📊 DRRM Intelligence
+        - Climate hazard data
+        - Vulnerability assessments
+        - Risk mapping integration
+        
         ### 📚 Trainings
         - Climate literacy programs
         - Farmer capacity building
         - Extension worker training
-        
-        ### 💰 LDRRMF Utilization
-        - Climate adaptation funding
-        - MPCFS budget tracking
-        - Project financial reports
-        
-        ### 🏛️ About INDC
-        - Evolution of CCA integration
-        - Governance framework
-        - Vision for climate resilience
         """)
     
     st.markdown("---")
@@ -726,6 +805,6 @@ def show_cca_related_modules():
             st.session_state.navigation = "📚 TRAININGS"
             st.rerun()
     with col3:
-        if st.button("💰 Go to LDRRMF", use_container_width=True):
-            st.session_state.navigation = "💰 LDRRMF UTILIZATION"
+        if st.button("📊 Go to DRRM Intelligence", use_container_width=True):
+            st.session_state.navigation = "📊 DRRM INTELLIGENCE"
             st.rerun()

@@ -19,6 +19,7 @@ from tabs.knowledge_repository import show as show_knowledge_repository
 from tabs.geospatial_library import show as show_geospatial_library
 from tabs.risk_profiles import show as show_risk_profiles
 from tabs.quick_guide import show as show_quick_guide
+from tabs.settings import show as show_settings
 from utils.project_state import create_state_snapshot_button
 from utils.supabase_client import is_connected, sync_all
 
@@ -92,7 +93,8 @@ with st.sidebar:
         "📊 RISK PROFILES": "risk_profiles",
         "👤 NDC PERSONAL": "ndc_personal",
         "❓ QUICK GUIDE": "quick_guide",
-        "🏛️ ABOUT INDC": "about_indc"
+        "🏛️ ABOUT INDC": "about_indc",
+        "⚙️ SETTINGS": "settings",
     }
 
     choice = st.radio("Navigation", list(menu_options.keys()), label_visibility="collapsed")
@@ -208,5 +210,9 @@ elif choice == "❓ QUICK GUIDE":
 elif choice == "🏛️ ABOUT INDC":
     show_about_indc()
 
+elif choice == "⚙️ SETTINGS":
+    show_settings()
+    
 else:
     st.info("Tab coming soon!")
+

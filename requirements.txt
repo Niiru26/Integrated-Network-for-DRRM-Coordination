@@ -1,14 +1,12 @@
+cat > requirements.txt << 'EOF'
 streamlit
 pandas
 numpy
 plotly
 folium
 streamlit-folium
-openpyxl
-PyPDF2
-python-docx
+Pillow
+requests
 supabase
 python-dateutil
-Pillow
-scikit-learn
-requests
+EOF
