@@ -218,12 +218,13 @@ def show_system_status():
     
     with col2:
         st.markdown("#### 🗄️ Local Storage")
-        total_size = get_storage_usage()
-        st.metric("Total Storage Used", total_size)
-        
-        # Storage breakdown
+        # Safely check local storage
         storage_path = "local_storage"
         if os.path.exists(storage_path):
+            total_size = get_folder_size(storage_path)
+            st.metric("Total Storage Used", format_file_size(total_size))
+            
+            # Storage breakdown
             breakdown = []
             for item in os.listdir(storage_path):
                 item_path = os.path.join(storage_path, item)
@@ -234,6 +235,8 @@ def show_system_status():
             if breakdown:
                 df = pd.DataFrame(breakdown)
                 st.dataframe(df, use_container_width=True, hide_index=True)
+        else:
+            st.info("No local storage folder found")
     
     st.markdown("---")
     
@@ -242,21 +245,26 @@ def show_system_status():
     with col1:
         st.markdown("#### 📱 Application Info")
         st.markdown(f"- **Version:** 2.0.0")
-        st.markdown(f"- **Last Updated:** March 2026")
+        st.markdown(f"- **Last Updated:** April 2026")
         st.markdown(f"- **Python Version:** {__import__('sys').version.split()[0]}")
         st.markdown(f"- **Streamlit Version:** {__import__('streamlit').__version__}")
     
     with col2:
         st.markdown("#### 🔧 System Checks")
         
-        # Check disk space
-        import shutil
-        total, used, free = shutil.disk_usage("E:/")
-        st.metric("Free Disk Space", format_file_size(free))
-        
-        if free < 5 * 1024 * 1024 * 1024:  # Less than 5GB
-            st.warning("⚠️ Low disk space! Consider cleaning up old files.")
-
+        # Safe disk space check (skip on cloud)
+        try:
+            import shutil
+            # Try to get disk space from current directory
+            current_path = os.getcwd()
+            total, used, free = shutil.disk_usage(current_path)
+            st.metric("Free Disk Space", format_file_size(free))
+            
+            if free < 5 * 1024 * 1024 * 1024:  # Less than 5GB
+                st.warning("⚠️ Low disk space! Consider cleaning up old files.")
+        except Exception as e:
+            # On cloud environment, disk_usage might not work as expected
+            st.info("ℹ️ Disk space monitoring is available in local installation only")
 
 def show_storage_management():
     """Manage local storage and clean up files"""
