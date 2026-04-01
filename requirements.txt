@@ -1,12 +1,1 @@
-cat > requirements.txt << 'EOF'
 streamlit
-pandas
-numpy
-plotly
-folium
-streamlit-folium
-Pillow
-requests
-supabase
-python-dateutil
-EOF

@@ -38,4 +38,7 @@ desktop.ini
 # Backup files (not needed in repo)
 *_backup_*.py
 *.bak
-*.tmp
+*.tmplocal_storage/
+mpcfs_documents/
+mpcfs_photos/
+app_backup.py
