@@ -9,7 +9,17 @@ import os
 import json
 import base64
 from utils.supabase_client import auto_sync_add, auto_sync_delete, auto_sync_update, is_connected, auto_sync_table
-from utils.local_storage import save_file, delete_file, get_file_size, file_exists
+# Replace the file upload section
+from utils.local_storage import save_file_to_cloud, delete_file_from_cloud, get_file_url
+
+# Inside the form, after the file upload:
+if uploaded_file:
+    file_info = save_file_to_cloud(uploaded_file, f"drrm_intelligence/events/{event_id}")
+    if file_info:
+        new_event["attachment_path"] = file_info["path"]
+        new_event["attachment_url"] = file_info["url"]
+        new_event["attachment_name"] = uploaded_file.name
+        new_event["attachment_size"] = format_file_size(file_info["size"])
 import folium
 from streamlit_folium import folium_static
 import warnings
@@ -482,7 +492,7 @@ def show_hazard_documentation():
             roads_affected = st.text_area("Affected Roads", placeholder="List affected roads and sections...",
                                          height=60, help="List roads damaged or blocked")
         
-        st.markdown("#### 💰 Economic Damage (in Philippine Pesos)")
+        st.markdown("#### 💰 Economic Damage")
         col_e1, col_e2, col_e3 = st.columns(3)
         with col_e1:
             damage_agriculture = st.number_input("Agriculture Damage (₱)", min_value=0.0, value=0.0, step=1000.0,
@@ -819,10 +829,10 @@ def show_projective_analytics():
 
 
 def show_event_database():
-    """Event database with search and filters"""
+    """Event database with search, filters, edit, delete, and print"""
     
     st.markdown("### 📊 Event Database")
-    st.markdown("*Queryable database for report generation*")
+    st.markdown("*Queryable database with edit, delete, and print capabilities*")
     
     df = st.session_state.disaster_events
     
@@ -864,17 +874,22 @@ def show_event_database():
     
     st.markdown(f"**Showing {len(filtered_df)} of {len(df)} events**")
     
-    # Export button
-    if st.button("📥 Export to CSV", use_container_width=True):
-        csv = filtered_df.to_csv(index=False)
-        st.download_button(
-            label="Download CSV",
-            data=csv,
-            file_name=f"disaster_events_export_{datetime.now().strftime('%Y%m%d')}.csv",
-            mime="text/csv"
-        )
+    # Export and Print buttons
+    col_btn1, col_btn2, col_btn3 = st.columns(3)
+    with col_btn1:
+        if st.button("📥 Export to CSV", use_container_width=True):
+            csv = filtered_df.to_csv(index=False)
+            st.download_button(
+                label="Download CSV",
+                data=csv,
+                file_name=f"disaster_events_export_{datetime.now().strftime('%Y%m%d')}.csv",
+                mime="text/csv"
+            )
+    with col_btn2:
+        if st.button("🖨️ Print View", use_container_width=True):
+            st.info("Click Ctrl+P (Cmd+P on Mac) to print this page")
     
-    # Display events
+    # Display events with Edit and Delete
     for idx, event in filtered_df.iterrows():
         display_name = event.get('local_name', 'Unknown')
         if pd.isna(display_name) or display_name == '':
@@ -883,12 +898,11 @@ def show_event_database():
         record_type = event.get('record_type', 'Unknown')
         if record_type == 'Historical':
             header_color = '#8B4513'
-            confidence = event.get('mp_confidence_level', 'UNKNOWN')
         else:
             header_color = '#1E3A8A'
-            confidence = 'DIRECT DATA'
         
         with st.expander(f"**{display_name}** ({event.get('year', '')}) - {event.get('hazard_type', 'Unknown')}"):
+            # Header
             st.markdown(f"""
             <div style='background-color: {header_color}; padding: 5px 10px; border-radius: 5px; margin-bottom: 10px;'>
                 <span style='color: white; font-weight: bold;'>{record_type.upper()} RECORD</span>
@@ -896,26 +910,40 @@ def show_event_database():
             </div>
             """, unsafe_allow_html=True)
             
+            # Event details
             col1, col2, col3 = st.columns(3)
             with col1:
                 st.markdown("**📊 Impact**")
                 st.markdown(f"Fatalities: {format_number(event.get('fatalities', 0), 0)}")
                 st.markdown(f"Injured: {format_number(event.get('injured', 0), 0)}")
                 st.markdown(f"Missing: {format_number(event.get('missing', 0), 0)}")
+                st.markdown(f"Displaced Families: {format_number(event.get('displaced_families', 0), 0)}")
             with col2:
                 st.markdown("**🏠 Housing**")
                 st.markdown(f"Totally Damaged: {format_number(event.get('houses_total', 0), 0)}")
                 st.markdown(f"Partially Damaged: {format_number(event.get('houses_partial', 0), 0)}")
+                st.markdown(f"Affected Barangays: {format_number(event.get('affected_barangays', 0), 0)}")
             with col3:
-                st.markdown("**💰 Damage (₱M)**")
-                total = event.get('damage_total', 0) / 1_000_000
-                st.markdown(f"Total: ₱{format_number(total, 2)}M")
+                st.markdown("**💰 Damage (₱)**")
+                total = event.get('damage_total', 0)
+                st.markdown(f"Agriculture: ₱{format_number(event.get('damage_agriculture', 0), 2)}")
+                st.markdown(f"Infrastructure: ₱{format_number(event.get('damage_infrastructure', 0), 2)}")
+                st.markdown(f"Private: ₱{format_number(event.get('damage_private', 0), 2)}")
+                st.markdown(f"**Total: ₱{format_number(total, 2)}**")
+            
+            # Additional info
+            st.markdown(f"**📍 Location:** {event.get('municipalities', event.get('region', 'Unknown'))}")
+            st.markdown(f"**📅 Dates:** {event.get('start_date', 'N/A')} to {event.get('end_date', 'N/A')}")
             
             if event.get('narrative') and not pd.isna(event.get('narrative')):
-                preview = event.get('narrative')[:150] + '...' if len(event.get('narrative', '')) > 150 else event.get('narrative')
-                st.markdown(f"**📝 Narrative:** {preview}")
+                st.markdown(f"**📝 Narrative:** {event.get('narrative')}")
             
-            # Show attachment if exists
+            # Confidence info for historical records
+            if event.get('mp_confidence_level') and event.get('mp_confidence_level') != 'DIRECT DATA':
+                st.markdown(f"**🔍 Confidence:** {event.get('mp_confidence_level')} ({event.get('mp_confidence_score')}%)")
+                st.caption(f"*{event.get('mp_confidence_reason', '')}*")
+            
+            # Attachment
             if event.get('attachment') and os.path.exists(event.get('attachment')):
                 with open(event.get('attachment'), "rb") as f:
                     st.download_button(
@@ -924,6 +952,111 @@ def show_event_database():
                         file_name=event.get('attachment_name', 'attachment'),
                         key=f"download_{event.get('event_id')}"
                     )
+            
+            # Action buttons
+            st.markdown("---")
+            col_btn1, col_btn2, col_btn3 = st.columns(3)
+            with col_btn1:
+                if st.button(f"✏️ Edit", key=f"edit_{event.get('event_id')}"):
+                    st.session_state.edit_event = event
+                    st.info("Edit feature will open a form to modify this event")
+            with col_btn2:
+                if st.button(f"🖨️ Print", key=f"print_{event.get('event_id')}"):
+                    # Create printable version
+                    print_content = generate_print_content(event)
+                    st.download_button(
+                        label="Download as HTML",
+                        data=print_content,
+                        file_name=f"event_{event.get('event_id')}.html",
+                        mime="text/html",
+                        key=f"print_download_{event.get('event_id')}"
+                    )
+            with col_btn3:
+                if st.button(f"🗑️ Delete", key=f"delete_{event.get('event_id')}"):
+                    # Delete attachment if exists
+                    if event.get('attachment') and os.path.exists(event.get('attachment')):
+                        os.remove(event.get('attachment'))
+                    # Remove from session state
+                    st.session_state.disaster_events = st.session_state.disaster_events[
+                        st.session_state.disaster_events['event_id'] != event.get('event_id')
+                    ]
+                    save_to_local_storage()
+                    st.success(f"✅ Deleted: {display_name}")
+                    st.rerun()
+
+
+def generate_print_content(event):
+    """Generate HTML content for printing"""
+    html = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>DRRM Event: {event.get('local_name', 'Unknown')}</title>
+        <style>
+            body {{ font-family: Arial, sans-serif; margin: 40px; }}
+            h1 {{ color: #1E3A8A; }}
+            .header {{ background-color: #f0f0f0; padding: 20px; border-radius: 10px; margin-bottom: 20px; }}
+            .section {{ margin-bottom: 20px; padding: 15px; border: 1px solid #ddd; border-radius: 8px; }}
+            .section h3 {{ margin-top: 0; color: #1E3A8A; }}
+            table {{ width: 100%; border-collapse: collapse; }}
+            td {{ padding: 8px; border-bottom: 1px solid #ddd; }}
+            .footer {{ margin-top: 40px; text-align: center; font-size: 12px; color: #666; }}
+        </style>
+    </head>
+    <body>
+        <div class="header">
+            <h1>📊 DRRM Event Report</h1>
+            <p><strong>Event Name:</strong> {event.get('local_name', 'Unknown')}</p>
+            <p><strong>Year:</strong> {event.get('year', 'N/A')}</p>
+            <p><strong>Record Type:</strong> {event.get('record_type', 'Unknown')}</p>
+            <p><strong>Generated:</strong> {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</p>
+        </div>
+        
+        <div class="section">
+            <h3>📊 Impact Statistics</h3>
+            <table>
+                 <tr><td><strong>Fatalities:</strong></td><td>{format_number(event.get('fatalities', 0), 0)}</td></tr>
+                 <tr><td><strong>Injured:</strong></td><td>{format_number(event.get('injured', 0), 0)}</td></tr>
+                 <tr><td><strong>Missing:</strong></td><td>{format_number(event.get('missing', 0), 0)}</td></tr>
+                 <tr><td><strong>Displaced Families:</strong></td><td>{format_number(event.get('displaced_families', 0), 0)}</td></tr>
+                 <tr><td><strong>Displaced Persons:</strong></td><td>{format_number(event.get('displaced_persons', 0), 0)}</td></tr>
+                 <tr><td><strong>Evacuated:</strong></td><td>{format_number(event.get('evacuated', 0), 0)}</td></tr>
+            </table>
+        </div>
+        
+        <div class="section">
+            <h3>🏠 Infrastructure Damage</h3>
+            <table>
+                 <tr><td><strong>Totally Damaged Houses:</strong></td><td>{format_number(event.get('houses_total', 0), 0)}</td></tr>
+                 <tr><td><strong>Partially Damaged Houses:</strong></td><td>{format_number(event.get('houses_partial', 0), 0)}</td></tr>
+                 <tr><td><strong>Affected Barangays:</strong></td><td>{format_number(event.get('affected_barangays', 0), 0)}</td></tr>
+                 <tr><td><strong>Affected Roads:</strong></td><td>{event.get('roads_affected', 'None reported')}</td></tr>
+            </table>
+        </div>
+        
+        <div class="section">
+            <h3>💰 Economic Damage</h3>
+            <table>
+                 <tr><td><strong>Agriculture Damage:</strong></td><td>₱{format_number(event.get('damage_agriculture', 0), 2)}</td></tr>
+                 <tr><td><strong>Infrastructure Damage:</strong></td><td>₱{format_number(event.get('damage_infrastructure', 0), 2)}</td></tr>
+                 <tr><td><strong>Private Property Damage:</strong></td><td>₱{format_number(event.get('damage_private', 0), 2)}</td></tr>
+                 <tr style="background-color: #f0f0f0;"><td><strong>TOTAL DAMAGE:</strong></td><td><strong>₱{format_number(event.get('damage_total', 0), 2)}</strong></td></tr>
+            </table>
+        </div>
+        
+        <div class="section">
+            <h3>📝 Narrative</h3>
+            <p>{event.get('narrative', 'No narrative provided')}</p>
+        </div>
+        
+        <div class="footer">
+            <p>Generated by INDC - Integrated Network for DRRM Coordination</p>
+            <p>Mountain Province PDRRMO</p>
+        </div>
+    </body>
+    </html>
+    """
+    return html
 
 
 def show_summary_dashboard():
