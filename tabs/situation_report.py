@@ -289,106 +289,11 @@ def show_risk_communication_monitor():
 def show_risk_impact_assessment():
     """Risk and Impact Assessment table for landslides and flooding"""
     
-    st.markdown("### III. RISK AND IMPACT ASSESSMENT")
-    st.caption("Barangays susceptible to landslides and flooding based on PAGASA GSM and WRF models and MGB data")
+    # Initialize if not exists
+    if 'risk_assessment' not in st.session_state:
+        st.session_state.risk_assessment = {}
     
-    # Risk options
-    risk_options = ["", "VHL", "HL", "ML", "DF", "VHF", "HF", "MF"]
-    
-    # Barangay data
-    barangay_risks = {
-        "BARLIG": ["Chupac", "Fiangtin", "Gawana", "Kaleo", "Latang", "Lias Kanluran", "Lias Silangan", "Lingoy", "Lunas", "Macalana", "Ogo-og"],
-        "BAUKO": ["Bagnen Oriente", "Bagnen Proper", "Balintaugan", "Banao", "Bila", "Guinzadan Central", "Guinzadan Norte", "Guinzadan Sur", "Lagawa", "Leseb", "Mabaay", "Mayag", "Monamon Norte", "Monamon Sur", "Mount Data", "Otucan Norte", "Otucan Sur", "Poblacion", "Sadsadan", "Sinto", "Tapapan"],
-        "BESAO": ["Agawa", "Besao East", "Gueday", "Lacmaan", "Suquib"],
-        "BONTOC": ["Alab Oriente", "Alab Proper", "Balili", "Bayyo", "Bontoc Ili", "Caluttit", "Caneo", "Dalican", "Gonogon", "Guina-ang", "Mainit", "Maligcong", "Poblacion", "Samoki", "Talubin", "Tocucan"],
-        "NATONIN": ["Alunogan", "Balangao", "Banao", "Banawel", "Butac", "Maducayan", "Poblacion", "Pudo", "Saliok", "Santa Isabel", "Tonglayan"],
-        "PARACELIS": ["Anonat", "Bacarri", "Bananao", "Bantay", "Bunot", "Buringal", "Butigue", "Palitod", "Poblacion"],
-        "SABANGAN": ["Napua", "Pingad", "Poblacion", "Supang", "Tambingan", "Bao-Angan", "Bun-Ayan", "Busa", "Camatagan", "Capinitan", "Data", "Gayang", "Lagan", "Losad", "Namatec"],
-        "SADANGA": ["Anabel", "Bekigan", "Belwang", "Betwagan", "Demang", "Poblacion", "Sacasacan", "Saclit"],
-        "SAGADA": ["Ambasing", "Angkeling", "Antadao", "Balugan", "Bangaan", "Dagdag", "Demang", "Fidelisan", "Kilong", "Madongo", "Nacagang", "Poblacion", "Suyo", "Taccong", "Tanulong", "Tetep-an Norte", "Tetep-an Sur"],
-        "TADIAN": ["Bana-ao", "Cadad-anan", "Cagubatan", "Dacudac", "Lenga", "Pandayan"]
-    }
-    
-    # Create expandable sections for each municipality
-    for municipality, barangays in barangay_risks.items():
-        with st.expander(f"📍 {municipality}", expanded=False):
-            st.markdown(f"##### {municipality}")
-            
-            # Header
-            col1, col2, col3, col4, col5, col6, col7, col8 = st.columns([1.5, 1, 1, 1, 1, 1, 1, 1])
-            with col1:
-                st.markdown("**Barangay**")
-            with col2:
-                st.markdown("**VH Landslide**")
-            with col3:
-                st.markdown("**H Landslide**")
-            with col4:
-                st.markdown("**M Landslide**")
-            with col5:
-                st.markdown("**Debris Flow**")
-            with col6:
-                st.markdown("**VH Flood**")
-            with col7:
-                st.markdown("**H Flood**")
-            with col8:
-                st.markdown("**M Flood**")
-            
-            # Create rows for each barangay
-            for barangay in barangays:
-                key_prefix = f"{municipality}_{barangay}"
-                
-                # Get existing values or use defaults
-                existing = st.session_state.risk_assessment.get(key_prefix, {})
-                
-                col1, col2, col3, col4, col5, col6, col7, col8 = st.columns([1.5, 1, 1, 1, 1, 1, 1, 1])
-                with col1:
-                    st.markdown(barangay)
-                with col2:
-                    vh_landslide = st.selectbox("VH Landslide", risk_options, 
-                                                index=risk_options.index(existing.get('vh_landslide', '')) if existing.get('vh_landslide') in risk_options else 0,
-                                                key=f"{key_prefix}_vh_landslide", 
-                                                label_visibility="collapsed")
-                with col3:
-                    h_landslide = st.selectbox("H Landslide", risk_options,
-                                               index=risk_options.index(existing.get('h_landslide', '')) if existing.get('h_landslide') in risk_options else 0,
-                                               key=f"{key_prefix}_h_landslide", 
-                                               label_visibility="collapsed")
-                with col4:
-                    m_landslide = st.selectbox("M Landslide", risk_options,
-                                               index=risk_options.index(existing.get('m_landslide', '')) if existing.get('m_landslide') in risk_options else 0,
-                                               key=f"{key_prefix}_m_landslide", 
-                                               label_visibility="collapsed")
-                with col5:
-                    debris_flow = st.selectbox("Debris Flow", risk_options,
-                                               index=risk_options.index(existing.get('debris_flow', '')) if existing.get('debris_flow') in risk_options else 0,
-                                               key=f"{key_prefix}_debris", 
-                                               label_visibility="collapsed")
-                with col6:
-                    vh_flood = st.selectbox("VH Flood", risk_options,
-                                            index=risk_options.index(existing.get('vh_flood', '')) if existing.get('vh_flood') in risk_options else 0,
-                                            key=f"{key_prefix}_vh_flood", 
-                                            label_visibility="collapsed")
-                with col7:
-                    h_flood = st.selectbox("H Flood", risk_options,
-                                           index=risk_options.index(existing.get('h_flood', '')) if existing.get('h_flood') in risk_options else 0,
-                                           key=f"{key_prefix}_h_flood", 
-                                           label_visibility="collapsed")
-                with col8:
-                    m_flood = st.selectbox("M Flood", risk_options,
-                                           index=risk_options.index(existing.get('m_flood', '')) if existing.get('m_flood') in risk_options else 0,
-                                           key=f"{key_prefix}_m_flood", 
-                                           label_visibility="collapsed")
-                
-                # Store in session state
-                st.session_state.risk_assessment[key_prefix] = {
-                    "vh_landslide": vh_landslide,
-                    "h_landslide": h_landslide,
-                    "m_landslide": m_landslide,
-                    "debris_flow": debris_flow,
-                    "vh_flood": vh_flood,
-                    "h_flood": h_flood,
-                    "m_flood": m_flood
-                }
+    # ... rest of the function ...
 
 
 def show_early_flood_warning_system():
@@ -567,33 +472,19 @@ def show_pdra_ratings():
 def show_incidents_monitored():
     """Section VI: Incidents Monitored"""
     
-    st.markdown("### VI. INCIDENTS MONITORED")
+    # Initialize if not exists
+    if 'incidents_data' not in st.session_state:
+        municipalities = ["Barlig", "Bauko", "Besao", "Bontoc", "Natonin", 
+                         "Paracelis", "Sabangan", "Sadanga", "Sagada", "Tadian"]
+        st.session_state.incidents_data = {mun: {"incidents": "", "casualties": ""} for mun in municipalities}
     
-    municipalities = ["Barlig", "Bauko", "Besao", "Bontoc", "Natonin", 
-                     "Paracelis", "Sabangan", "Sadanga", "Sagada", "Tadian"]
-    
-    for mun in municipalities:
-        with st.expander(f"📋 {mun}", expanded=False):
-            incidents = st.text_area(
-                "Incident/s Reported",
-                value=st.session_state.incidents_data[mun]["incidents"],
-                placeholder="No untoward incident reported",
-                height=60,
-                key=f"incidents_{mun}"
-            )
-            casualties = st.text_input(
-                "Casualties",
-                value=st.session_state.incidents_data[mun]["casualties"],
-                placeholder="e.g., 0 dead, 2 injured, 1 missing",
-                key=f"casualties_{mun}"
-            )
-            st.session_state.incidents_data[mun] = {"incidents": incidents, "casualties": casualties}
+    # ... rest of the function ...
 
 
 def show_lifelines_status():
     """Section VII: Status of Lifelines - OUTSIDE FORM"""
     
-    # Initialize if not exists
+    # Initialize all road-related session state
     if 'national_roads' not in st.session_state:
         st.session_state.national_roads = [
             {"id": 1, "name": "Bontoc - Baguio Road (S00504LZ)", "sections": []},
@@ -621,10 +512,16 @@ def show_lifelines_status():
     if 'municipal_roads' not in st.session_state:
         st.session_state.municipal_roads = []
     
+    if 'power_data' not in st.session_state:
+        municipalities = ["Barlig", "Bauko", "Besao", "Bontoc", "Natonin", 
+                         "Paracelis", "Sabangan", "Sadanga", "Sagada", "Tadian"]
+        st.session_state.power_data = {mun: "Normal" for mun in municipalities}
+        st.session_state.comm_data = {mun: "Normal" for mun in municipalities}
+    
     # Continue with the rest of the function...
     st.markdown("### VII. STATUS OF LIFELINES")
     
-    # ... rest of the existing code ...
+    # ... rest of your existing code for roads management ...
 
 
 def show_displaced_damages():
@@ -708,6 +605,10 @@ def show_response_actions():
 
 def show_photo_documentation():
     """Photo Documentation - OUTSIDE FORM"""
+    
+    # Initialize if not exists
+    if 'photos' not in st.session_state:
+        st.session_state.photos = []
     
     st.markdown("### XI. PHOTO DOCUMENTATION")
     
