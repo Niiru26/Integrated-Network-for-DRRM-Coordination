@@ -63,6 +63,8 @@ def show():
     with tab6:
         show_cca_related_modules()
 
+    with tab7:
+        show_mpcfs_scurve_tracker()
 
 def show_cca_plans():
     """Display CCA Plans and Programs"""
@@ -161,14 +163,15 @@ def show_mpcfs_project_hub():
     
     st.markdown("---")
     
-    # MPCFS Sub-tabs
-    mpcfstab1, mpcfstab2, mpcfstab3, mpcfstab4, mpcfstab5, mpcfstab6 = st.tabs([
+    # MPCFS Sub-tabs - UPDATED with 7th tab for S-Curve Tracker
+    mpcfstab1, mpcfstab2, mpcfstab3, mpcfstab4, mpcfstab5, mpcfstab6, mpcfstab7 = st.tabs([
         "📊 Project Dashboard",
         "📋 Gantt Chart & Timeline",
         "📁 Document Management",
         "📸 Photo Gallery",
         "📄 Report Generator",
-        "📖 Coffee Table Book"
+        "📖 Coffee Table Book",
+        "📈 S-Curve Tracker"  # NEW TAB
     ])
     
     with mpcfstab1:
@@ -188,6 +191,9 @@ def show_mpcfs_project_hub():
     
     with mpcfstab6:
         show_mpcfs_coffee_table_book()
+    
+    with mpcfstab7:
+        show_mpcfs_scurve_tracker()  # NEW FUNCTION CALL
 
 
 def show_mpcfs_dashboard():
