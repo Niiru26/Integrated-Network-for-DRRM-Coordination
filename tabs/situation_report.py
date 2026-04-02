@@ -13,8 +13,129 @@ def show():
     st.markdown("# 📡 SITUATION REPORT")
     st.caption("Official MPDRRMC Situation Report Form with Complete Sections")
     
-    # ===== INITIALIZE ALL SESSION STATE VARIABLES =====
-    # [Keep all initialization code here - unchanged]
+    # ===== INITIALIZE ALL SESSION STATE VARIABLES FIRST =====
+    # Basic info
+    if 'sitrep_number' not in st.session_state:
+        st.session_state.sitrep_number = 1
+    if 'incident_name' not in st.session_state:
+        st.session_state.incident_name = ""
+    if 'report_date' not in st.session_state:
+        st.session_state.report_date = date.today()
+    if 'report_time' not in st.session_state:
+        st.session_state.report_time = datetime.now().time()
+    if 'overall_alert' not in st.session_state:
+        st.session_state.overall_alert = "White"
+    if 'pagasa_bulletin' not in st.session_state:
+        st.session_state.pagasa_bulletin = ""
+    
+    # Risk communication monitor
+    if 'risk_communications' not in st.session_state:
+        st.session_state.risk_communications = []
+    
+    # Flood warning system
+    if 'flood_warning_systems' not in st.session_state:
+        st.session_state.flood_warning_systems = [
+            {"river_basin": "Chico River", "drainage_area": 82574, "head_water": "Eastern slopes of Mount Data", 
+             "watershed_area": 93984.71, "monitoring_station": "Chico Karayan Bridge", 
+             "yellow_line": "Alert/Ready", "orange_line": "Pre-emptive evacuation", "red_line": "Evacuation"},
+            {"river_basin": "Mallig River", "drainage_area": 26026, "head_water": "Eastern slope of mountain ranges dividing Paracelis & Natonin", 
+             "watershed_area": 11461.55, "monitoring_station": "", "yellow_line": "", "orange_line": "", "red_line": ""},
+            {"river_basin": "Siffu River", "drainage_area": 56304, "head_water": "Northeastern slopes of mountain ridges dividing Barlig & Banaue, Ifugao", 
+             "watershed_area": 61892.37, "monitoring_station": "", "yellow_line": "", "orange_line": "", "red_line": ""},
+            {"river_basin": "Tanudan River", "drainage_area": 25370, "head_water": "Provincial boundary near Mount Polis", 
+             "watershed_area": 0, "monitoring_station": "", "yellow_line": "", "orange_line": "", "red_line": ""},
+            {"river_basin": "Abit River", "drainage_area": 0, "head_water": "Northern slope of Mount Data, Bauko", 
+             "watershed_area": 38969.27, "monitoring_station": "", "yellow_line": "", "orange_line": "", "red_line": ""},
+            {"river_basin": "Layaen River", "drainage_area": 0, "head_water": "Besao", 
+             "watershed_area": 10607, "monitoring_station": "", "yellow_line": "", "orange_line": "", "red_line": ""}
+        ]
+    
+    # PDRA ratings
+    if 'pdra_probability' not in st.session_state:
+        st.session_state.pdra_probability = None
+    if 'pdra_impact' not in st.session_state:
+        st.session_state.pdra_impact = None
+    
+    # Weather data for 10 municipalities
+    if 'weather_data' not in st.session_state:
+        municipalities = ["Barlig", "Bauko", "Besao", "Bontoc", "Natonin", 
+                         "Paracelis", "Sabangan", "Sadanga", "Sagada", "Tadian"]
+        st.session_state.weather_data = {mun: {"cloud": "Clear", "wind": "Calm", "precip": "None", "alert": "White"} for mun in municipalities}
+    
+    # Incidents data
+    if 'incidents_data' not in st.session_state:
+        municipalities = ["Barlig", "Bauko", "Besao", "Bontoc", "Natonin", 
+                         "Paracelis", "Sabangan", "Sadanga", "Sagada", "Tadian"]
+        st.session_state.incidents_data = {mun: {"incidents": "", "casualties": ""} for mun in municipalities}
+    
+    # Risk assessment
+    if 'risk_assessment' not in st.session_state:
+        st.session_state.risk_assessment = {}
+    
+    # National Roads
+    if 'national_roads' not in st.session_state:
+        st.session_state.national_roads = [
+            {"id": 1, "name": "Bontoc - Baguio Road (S00504LZ)", "sections": []},
+            {"id": 2, "name": "Bontoc - Cadre Road (S03996LZ)", "sections": []},
+            {"id": 3, "name": "Dantay - Sagada Road (S00509LZ)", "sections": []},
+            {"id": 4, "name": "Junction Talubin - Barlig - Natonin - Paracelis - Calaccad Road (S00534LZ)", "sections": []},
+            {"id": 5, "name": "Mt. Province - Cagayan via Tabuk - Enrile Road (S00514LZ)", "sections": []},
+            {"id": 6, "name": "Mt. Province - Ilocos Sur Road via Kayan (S00531LZ)", "sections": []},
+            {"id": 7, "name": "Mt. Province - Ilocos Sur Road via Tue (S00530LZ)", "sections": []},
+            {"id": 8, "name": "Mt. Province - Nueva Vizcaya Road (S00512LZ)", "sections": []}
+        ]
+    
+    # Provincial Roads
+    if 'provincial_roads' not in st.session_state:
+        st.session_state.provincial_roads = [
+            {"id": 1, "name": "Abatan - Bagnen Road", "status": "Passable", "remarks": ""},
+            {"id": 2, "name": "Abatan - Maba-ay Road", "status": "Passable", "remarks": ""},
+            {"id": 3, "name": "Balicanao - Am-am Road", "status": "Passable", "remarks": ""},
+            {"id": 4, "name": "Bontoc - Mainit Road", "status": "Passable", "remarks": ""},
+            {"id": 5, "name": "Bontoc - Maligcong Road", "status": "Passable", "remarks": ""},
+            {"id": 6, "name": "Sagada - Payeo Road", "status": "Passable", "remarks": ""},
+            {"id": 7, "name": "Tadian - Nacawang Road", "status": "Passable", "remarks": ""},
+            {"id": 8, "name": "Natonin - Toboy - Aguinaldo Road", "status": "Passable", "remarks": ""}
+        ]
+    
+    # Municipal and Barangay Roads
+    if 'municipal_roads' not in st.session_state:
+        st.session_state.municipal_roads = []
+    if 'barangay_roads' not in st.session_state:
+        st.session_state.barangay_roads = []
+    
+    # Power and Communication
+    if 'power_data' not in st.session_state:
+        municipalities = ["Barlig", "Bauko", "Besao", "Bontoc", "Natonin", 
+                         "Paracelis", "Sabangan", "Sadanga", "Sagada", "Tadian"]
+        st.session_state.power_data = {mun: "Normal" for mun in municipalities}
+        st.session_state.comm_data = {mun: "Normal" for mun in municipalities}
+    
+    # Displaced and damages
+    if 'displaced' not in st.session_state:
+        st.session_state.displaced = {"families_ec": 0, "persons_ec": 0, "families_out": 0, "persons_out": 0}
+    if 'damages' not in st.session_state:
+        st.session_state.damages = {"totally_damaged": 0, "partially_damaged": 0, "affected_families": 0, "affected_persons": 0}
+    
+    # Resources
+    if 'resources' not in st.session_state:
+        st.session_state.resources = {"food_packs": 0, "hygiene_kits": 0, "family_kits": 0}
+    
+    # Response
+    if 'response_actions' not in st.session_state:
+        st.session_state.response_actions = ""
+    
+    # Photos
+    if 'photos' not in st.session_state:
+        st.session_state.photos = []
+    
+    # Needs
+    if 'needs' not in st.session_state:
+        st.session_state.needs = {"priority1": "", "priority2": "", "priority3": ""}
+    
+    # Saved sitreps
+    if 'saved_sitreps' not in st.session_state:
+        st.session_state.saved_sitreps = []
     
     # ===== LOAD EXISTING DATA FROM CLOUD =====
     load_sitreps_from_cloud()
@@ -22,13 +143,16 @@ def show():
     # ===== SECTIONS WITH BUTTONS (OUTSIDE FORM) =====
     show_risk_communication_monitor()
     show_early_flood_warning_system()
-    show_lifelines_status()  # Moved OUTSIDE the form
+    show_lifelines_status()
     show_photo_documentation()
+    
+    # ===== HEADER SECTION (INSIDE FORM) =====
+    # Note: The form starts after these sections
     
     # ===== MAIN FORM STARTS HERE =====
     with st.form("situation_report_form", clear_on_submit=False):
         
-        # ===== HEADER SECTION =====
+        # Header section is now called INSIDE the form
         show_header_section()
         
         # ===== SECTION I: SITUATION OVERVIEW =====
