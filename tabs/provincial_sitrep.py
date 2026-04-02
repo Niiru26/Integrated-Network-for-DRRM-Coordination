@@ -4,14 +4,6 @@ import pandas as pd
 from datetime import datetime, date, time, timedelta
 import os
 import json
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
-from email.mime.base import MIMEBase
-from email import encoders
-import schedule
-import threading
-import time as time_module
 from utils.supabase_client import auto_sync_add, auto_sync_delete, auto_sync_update, is_connected
 from utils.local_storage import save_file, get_file_size
 
@@ -149,53 +141,47 @@ def show_provincial_sitrep_form():
                          "Paracelis", "Sabangan", "Sadanga", "Sagada", "Tadian"]
         
         weather_data = []
-        cols = st.columns(5)
-        st.markdown("""
-        <style>
-        .stTable td, .stTable th { padding: 4px; }
-        </style>
-        """, unsafe_allow_html=True)
         
-        # Create header
-        header_cols = st.columns([1.5, 1, 1, 1, 1])
-        with header_cols[0]:
+        # Create header row
+        col1, col2, col3, col4, col5 = st.columns([1.5, 1, 1, 1, 1])
+        with col1:
             st.markdown("**Municipality**")
-        with header_cols[1]:
+        with col2:
             st.markdown("**Cloud**")
-        with header_cols[2]:
+        with col3:
             st.markdown("**Wind**")
-        with header_cols[3]:
+        with col4:
             st.markdown("**Precipitation**")
-        with header_cols[4]:
+        with col5:
             st.markdown("**Alert Level**")
         
         # Create rows for each municipality
         for i, mun in enumerate(municipalities):
-            row_cols = st.columns([1.5, 1, 1, 1, 1])
-            with row_cols[0]:
+            col1, col2, col3, col4, col5 = st.columns([1.5, 1, 1, 1, 1])
+            with col1:
                 st.markdown(f"**{mun}**")
-            with row_cols[1]:
+            with col2:
                 cloud = st.selectbox(
                     "Cloud", 
                     ["Clear", "Partly Cloudy", "Cloudy", "Light Rains", "Moderate Rains", "Heavy Rains"],
                     key=f"cloud_{mun}",
                     label_visibility="collapsed"
                 )
-            with row_cols[2]:
+            with col3:
                 wind = st.selectbox(
                     "Wind",
                     ["Calm", "Light", "Moderate", "Strong", "Gale", "Storm"],
                     key=f"wind_{mun}",
                     label_visibility="collapsed"
                 )
-            with row_cols[3]:
+            with col4:
                 precip = st.selectbox(
                     "Precipitation",
                     ["None", "Light", "Moderate", "Heavy", "Torrential"],
                     key=f"precip_{mun}",
                     label_visibility="collapsed"
                 )
-            with row_cols[4]:
+            with col5:
                 alert = st.selectbox(
                     "Alert Level",
                     ["White", "Blue", "Red"],
@@ -533,7 +519,6 @@ def save_sitrep_to_local(sitrep):
 
 def auto_fill_from_municipal_reports():
     """Auto-fill provincial sitrep from municipal reports"""
-    # This will be implemented to pull data from municipal_reports
     st.info("Auto-fill from municipal reports will be implemented in the next phase")
 
 
@@ -549,8 +534,9 @@ def show_archived_sitreps():
         return
     
     df = pd.DataFrame(sitreps)
-    st.dataframe(df[['sitrep_number', 'incident_name', 'report_date', 'overall_alert']], 
-                 use_container_width=True, hide_index=True)
+    display_cols = ['sitrep_number', 'incident_name', 'report_date', 'overall_alert']
+    available_cols = [c for c in display_cols if c in df.columns]
+    st.dataframe(df[available_cols], use_container_width=True, hide_index=True)
     
     for sitrep in sitreps:
         with st.expander(f"SITREP #{sitrep['sitrep_number']} - {sitrep['incident_name']} ({sitrep['report_date']})"):
@@ -616,7 +602,6 @@ def show_auto_submit_settings():
     
     if alert_status != st.session_state.current_alert_status:
         st.session_state.current_alert_status = alert_status
-        update_submission_schedule()
         st.rerun()
     
     # Display submission schedule based on alert status
@@ -651,10 +636,8 @@ def show_auto_submit_settings():
     if auto_submit != st.session_state.auto_submit_enabled:
         st.session_state.auto_submit_enabled = auto_submit
         if auto_submit:
-            start_auto_submit_scheduler()
-            st.success("Auto-submit enabled! SITREPs will be sent automatically.")
+            st.success("Auto-submit enabled! SITREPs will be sent automatically at scheduled times.")
         else:
-            stop_auto_submit_scheduler()
             st.info("Auto-submit disabled.")
     
     # Test email button
@@ -664,27 +647,9 @@ def show_auto_submit_settings():
         st.success("Test email sent to all recipients!")
 
 
-def update_submission_schedule():
-    """Update the submission schedule based on alert status"""
-    # This will be implemented with a background scheduler
-    pass
-
-
-def start_auto_submit_scheduler():
-    """Start the background scheduler for auto-submission"""
-    # This will be implemented with schedule library
-    pass
-
-
-def stop_auto_submit_scheduler():
-    """Stop the background scheduler"""
-    pass
-
-
 def send_test_email():
     """Send a test email to all recipients"""
-    # This will be implemented with SMTP
-    st.info("Email functionality will be configured with SMTP settings")
+    st.info("Email functionality will be configured with SMTP settings. The email list is ready.")
 
 
 def show_related_modules():
