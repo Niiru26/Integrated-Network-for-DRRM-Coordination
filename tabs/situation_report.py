@@ -573,31 +573,31 @@ def show_mdrrmo_data_entry():
     
     municipalities = ["Barlig", "Bauko", "Besao", "Bontoc", "Natonin", "Paracelis", "Sabangan", "Sadanga", "Sagada", "Tadian"]
     
-    # National Roads list
+    # National Roads list with unique IDs
     national_roads = [
-        "Bontoc - Baguio Road",
-        "Bontoc - Cadre Road",
-        "Dantay - Sagada Road",
-        "Junction Talubin - Barlig - Natonin - Paracelis - Calaccad Road",
-        "Mt. Province - Cagayan via Tabuk - Enrile Road",
-        "Mt. Province - Ilocos Sur Road via Kayan",
-        "Mt. Province - Ilocos Sur Road via Tue",
-        "Mt. Province - Nueva Vizcaya Road"
+        {"id": 1, "name": "Bontoc - Baguio Road"},
+        {"id": 2, "name": "Bontoc - Cadre Road"},
+        {"id": 3, "name": "Dantay - Sagada Road"},
+        {"id": 4, "name": "Junction Talubin - Barlig - Natonin - Paracelis - Calaccad Road"},
+        {"id": 5, "name": "Mt. Province - Cagayan via Tabuk - Enrile Road"},
+        {"id": 6, "name": "Mt. Province - Ilocos Sur Road via Kayan"},
+        {"id": 7, "name": "Mt. Province - Ilocos Sur Road via Tue"},
+        {"id": 8, "name": "Mt. Province - Nueva Vizcaya Road"}
     ]
     
     with st.form("municipal_report_form", clear_on_submit=True):
         col1, col2 = st.columns(2)
         with col1:
-            municipality = st.selectbox("Municipality *", municipalities)
-            report_date = st.date_input("Report Date *", date.today())
-            report_time = st.time_input("Report Time *", datetime.now().time())
-            sitrep_number = st.number_input("SITREP Number *", min_value=1, value=1, step=1)
-            incident_name = st.text_input("Incident Name *", placeholder="e.g., TS PAENG")
+            municipality = st.selectbox("Municipality *", municipalities, key="mun_select")
+            report_date = st.date_input("Report Date *", date.today(), key="report_date")
+            report_time = st.time_input("Report Time *", datetime.now().time(), key="report_time")
+            sitrep_number = st.number_input("SITREP Number *", min_value=1, value=1, step=1, key="sitrep_num")
+            incident_name = st.text_input("Incident Name *", placeholder="e.g., TS PAENG", key="incident_name")
         
         with col2:
-            alert_level = st.selectbox("Alert Level *", ["Alpha", "Blue", "Red", "White"])
-            submitted_by = st.text_input("Reported By *", placeholder="Name and Position")
-            contact_number = st.text_input("Contact Number")
+            alert_level = st.selectbox("Alert Level *", ["Alpha", "Blue", "Red", "White"], key="alert_level")
+            submitted_by = st.text_input("Reported By *", placeholder="Name and Position", key="submitted_by")
+            contact_number = st.text_input("Contact Number", key="contact_num")
         
         st.markdown("---")
         
@@ -605,102 +605,106 @@ def show_mdrrmo_data_entry():
         st.markdown("#### 🌦️ Weather Conditions")
         col1, col2, col3 = st.columns(3)
         with col1:
-            cloud = st.selectbox("Cloud Condition", ["Clear", "Partly Cloudy", "Cloudy", "Light Rains", "Moderate Rains", "Heavy Rains"])
+            cloud = st.selectbox("Cloud Condition", ["Clear", "Partly Cloudy", "Cloudy", "Light Rains", "Moderate Rains", "Heavy Rains"], key="cloud")
         with col2:
-            wind = st.selectbox("Wind Condition", ["Calm", "Light", "Moderate", "Strong", "Gale", "Storm"])
+            wind = st.selectbox("Wind Condition", ["Calm", "Light", "Moderate", "Strong", "Gale", "Storm"], key="wind")
         with col3:
-            precipitation = st.selectbox("Precipitation", ["None", "Light", "Moderate", "Heavy", "Torrential"])
+            precipitation = st.selectbox("Precipitation", ["None", "Light", "Moderate", "Heavy", "Torrential"], key="precip")
         
         # Incidents
         st.markdown("#### 📋 Incidents Reported")
-        incidents = st.text_area("Incident/s Reported", placeholder="List all incidents per barangay", height=100)
-        casualties = st.text_input("Casualties", placeholder="e.g., 0 dead, 2 injured, 1 missing")
+        incidents = st.text_area("Incident/s Reported", placeholder="List all incidents per barangay", height=100, key="incidents")
+        casualties = st.text_input("Casualties", placeholder="e.g., 0 dead, 2 injured, 1 missing", key="casualties")
         
-        # Roads Management
+        # Roads Management - FIXED with unique keys
         st.markdown("#### 🛣️ National Roads Status")
         st.caption("Select roads in your municipality and their status")
         
         roads_status = []
         for road in national_roads:
-            with st.container():
-                col1, col2, col3 = st.columns([3, 2, 2])
+            road_id = road["id"]
+            road_name = road["name"]
+            # Create a unique key for each checkbox using road_id
+            include = st.checkbox(road_name, key=f"road_include_{road_id}")
+            
+            if include:
+                col1, col2 = st.columns(2)
                 with col1:
-                    include = st.checkbox(road, key=f"road_{road[:20]}")
+                    traffic = st.selectbox(
+                        "Traffic", 
+                        ["Passable", "One Lane Passable", "Not Passable"], 
+                        key=f"road_traffic_{road_id}"
+                    )
                 with col2:
-                    if include:
-                        traffic = st.selectbox("Traffic", ["Passable", "One Lane Passable", "Not Passable"], key=f"traffic_{road[:20]}")
-                    else:
-                        traffic = None
-                with col3:
-                    if include:
-                        remarks = st.text_input("Remarks", placeholder="Road section details", key=f"remarks_{road[:20]}")
-                    else:
-                        remarks = None
-                if include:
-                    roads_status.append({
-                        "road": road,
-                        "traffic": traffic,
-                        "remarks": remarks
-                    })
+                    remarks = st.text_input(
+                        "Remarks", 
+                        placeholder="Road section details", 
+                        key=f"road_remarks_{road_id}"
+                    )
+                roads_status.append({
+                    "road": road_name,
+                    "traffic": traffic,
+                    "remarks": remarks
+                })
         
         # Utilities
         st.markdown("#### 🔌 Utilities")
         col1, col2 = st.columns(2)
         with col1:
-            power = st.selectbox("Power Status", ["Normal", "Intermittent", "No Power"])
-            power_remarks = st.text_input("Power Remarks")
+            power = st.selectbox("Power Status", ["Normal", "Intermittent", "No Power"], key="power")
+            power_remarks = st.text_input("Power Remarks", key="power_remarks")
         with col2:
-            comm = st.selectbox("Communication Status", ["Normal", "Intermittent", "No Signal"])
-            comm_remarks = st.text_input("Communication Remarks")
+            comm = st.selectbox("Communication Status", ["Normal", "Intermittent", "No Signal"], key="comm")
+            comm_remarks = st.text_input("Communication Remarks", key="comm_remarks")
         
         # Displaced Population
         st.markdown("#### 🏠 Displaced Population")
         col1, col2 = st.columns(2)
         with col1:
-            families_ec = st.number_input("Families in ECs", min_value=0, value=0)
-            persons_ec = st.number_input("Persons in ECs", min_value=0, value=0)
+            families_ec = st.number_input("Families in ECs", min_value=0, value=0, key="families_ec")
+            persons_ec = st.number_input("Persons in ECs", min_value=0, value=0, key="persons_ec")
         with col2:
-            families_outside = st.number_input("Families Outside ECs", min_value=0, value=0)
-            persons_outside = st.number_input("Persons Outside ECs", min_value=0, value=0)
+            families_outside = st.number_input("Families Outside ECs", min_value=0, value=0, key="families_outside")
+            persons_outside = st.number_input("Persons Outside ECs", min_value=0, value=0, key="persons_outside")
         
         # Damages
         st.markdown("#### 🏚️ Damage Assessment")
         col1, col2 = st.columns(2)
         with col1:
-            totally_damaged = st.number_input("Totally Damaged Houses", min_value=0, value=0)
-            partially_damaged = st.number_input("Partially Damaged Houses", min_value=0, value=0)
+            totally_damaged = st.number_input("Totally Damaged Houses", min_value=0, value=0, key="totally")
+            partially_damaged = st.number_input("Partially Damaged Houses", min_value=0, value=0, key="partially")
         with col2:
-            affected_families = st.number_input("Affected Families", min_value=0, value=0)
-            affected_persons = st.number_input("Affected Persons", min_value=0, value=0)
+            affected_families = st.number_input("Affected Families", min_value=0, value=0, key="affected_families")
+            affected_persons = st.number_input("Affected Persons", min_value=0, value=0, key="affected_persons")
         
         # Resources
         st.markdown("#### 📦 Resources Provided")
         col1, col2, col3 = st.columns(3)
         with col1:
-            food_packs = st.number_input("Food Packs", min_value=0, value=0)
+            food_packs = st.number_input("Food Packs", min_value=0, value=0, key="food_packs")
         with col2:
-            hygiene_kits = st.number_input("Hygiene Kits", min_value=0, value=0)
+            hygiene_kits = st.number_input("Hygiene Kits", min_value=0, value=0, key="hygiene_kits")
         with col3:
-            family_kits = st.number_input("Family Kits", min_value=0, value=0)
+            family_kits = st.number_input("Family Kits", min_value=0, value=0, key="family_kits")
         
         # Response
         st.markdown("#### 🚑 Response Actions")
-        response_actions = st.text_area("Response Actions Taken", height=100)
+        response_actions = st.text_area("Response Actions Taken", height=100, key="response")
         
         # Needs
         st.markdown("#### 🎯 Needs Assessment")
         col1, col2, col3 = st.columns(3)
         with col1:
-            priority1 = st.text_area("Priority 1 Needs", placeholder="Food, Medical, Water", height=80)
+            priority1 = st.text_area("Priority 1 Needs", placeholder="Food, Medical, Water", height=80, key="priority1")
         with col2:
-            priority2 = st.text_area("Priority 2 Needs", placeholder="Shelter, Clothing", height=80)
+            priority2 = st.text_area("Priority 2 Needs", placeholder="Shelter, Clothing", height=80, key="priority2")
         with col3:
-            priority3 = st.text_area("Priority 3 Needs", placeholder="Cash for Work", height=80)
+            priority3 = st.text_area("Priority 3 Needs", placeholder="Cash for Work", height=80, key="priority3")
         
         # Photo
         st.markdown("#### 📸 Photo Documentation")
-        photo = st.file_uploader("Upload photo", type=['jpg', 'jpeg', 'png'])
-        photo_caption = st.text_input("Photo Caption")
+        photo = st.file_uploader("Upload photo", type=['jpg', 'jpeg', 'png'], key="photo_upload")
+        photo_caption = st.text_input("Photo Caption", key="photo_caption")
         
         submitted = st.form_submit_button("💾 Submit Report", type="primary")
         
@@ -736,7 +740,6 @@ def show_mdrrmo_data_entry():
             st.success(f"✅ Report for {municipality} submitted!")
             st.balloons()
             st.rerun()
-
 
 # =============================================================================
 # SECTION 3: PROVINCIAL CONSOLIDATION (with Auto-Extraction)
