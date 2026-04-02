@@ -9,7 +9,7 @@ from tabs.drrm_intelligence import show as show_drrm
 from utils.database import init_session_state
 from tabs.plan_management import show as show_plan_management
 from tabs.about_indc import show as show_about_indc
-from tabs.situation_report import show as show_situation_report
+from tabs.provincial_sitrep import show as show_provincial_sitrep
 from tabs.trainings import show as show_trainings
 from tabs.ldrrmf_utilization import show as show_ldrrmf
 from tabs.climate_change import show as show_climate_change
@@ -86,7 +86,7 @@ with st.sidebar:
         "📊 PERFORMANCE MANAGEMENT": "performance_management",
         "📚 TRAININGS": "trainings",
         "💰 LDRRMF UTILIZATION": "ldrrmf",
-        "📡 SITUATION REPORT": "situation_report",
+        "📡 PROVINCIAL SITREP": "provincial_sitrep",
         "📄 DOCUMENT STUDIO": "document_studio",
         "📁 KNOWLEDGE REPOSITORY": "knowledge_repository",
         "🗺️ GEOSPATIAL LIBRARY": "geospatial_library",
@@ -178,8 +178,8 @@ elif choice == "📚 TRAININGS":
 elif choice == "💰 LDRRMF UTILIZATION":
     show_ldrrmf()
 
-elif choice == "📡 SITUATION REPORT":
-    show_situation_report()
+elif choice == "📡 PROVINCIAL SITREP":
+    show_provincial_sitrep()
 
 elif choice == "🗺️ GEOSPATIAL LIBRARY":
     show_geospatial_library()
