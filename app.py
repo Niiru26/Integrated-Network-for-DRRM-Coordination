@@ -178,8 +178,8 @@ elif choice == "📚 TRAININGS":
 elif choice == "💰 LDRRMF UTILIZATION":
     show_ldrrmf()
 
-elif choice == "📡 PROVINCIAL SITREP":
-    show_provincial_sitrep()
+elif choice == "📡 SITUATION REPORT":
+    show_situation_report()
 
 elif choice == "🗺️ GEOSPATIAL LIBRARY":
     show_geospatial_library()
