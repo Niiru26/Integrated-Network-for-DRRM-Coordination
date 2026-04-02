@@ -1031,6 +1031,519 @@ def show_manual_consolidation_entry():
             st.success(f"✅ Manual consolidation for {incident_name} saved!")
             st.balloons()
             st.rerun()
+# Add this function to your situation_report.py file
+
+def generate_professional_sitrep(reports, pdra_data=None):
+    """Generate a professionally formatted SITREP matching the official template"""
+    
+    # Calculate totals from reports
+    total_families_ec = sum([r.get('displaced', {}).get('families_in_ec', 0) for r in reports])
+    total_persons_ec = sum([r.get('displaced', {}).get('persons_in_ec', 0) for r in reports])
+    total_families_out = sum([r.get('displaced', {}).get('families_outside', 0) for r in reports])
+    total_persons_out = sum([r.get('displaced', {}).get('persons_outside', 0) for r in reports])
+    total_totally = sum([r.get('damages', {}).get('totally_damaged', 0) for r in reports])
+    total_partially = sum([r.get('damages', {}).get('partially_damaged', 0) for r in reports])
+    total_food = sum([r.get('resources', {}).get('food_packs', 0) for r in reports])
+    total_hygiene = sum([r.get('resources', {}).get('hygiene_kits', 0) for r in reports])
+    
+    # Get current date/time
+    now = datetime.now()
+    
+    # Build the HTML report
+    html = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Provincial SITREP - {now.strftime('%Y-%m-%d')}</title>
+        <meta charset="UTF-8">
+        <style>
+            @page {{
+                size: letter;
+                margin: 1in;
+            }}
+            body {{
+                font-family: 'Times New Roman', Times, serif;
+                font-size: 12pt;
+                line-height: 1.4;
+                margin: 0;
+                padding: 20px;
+            }}
+            .header {{
+                text-align: center;
+                margin-bottom: 20px;
+            }}
+            .header h1 {{
+                font-size: 16pt;
+                margin: 0;
+            }}
+            .header h2 {{
+                font-size: 14pt;
+                margin: 5px 0;
+            }}
+            .to-from {{
+                margin: 20px 0;
+            }}
+            .to-from p {{
+                margin: 3px 0;
+            }}
+            .subject {{
+                font-weight: bold;
+                margin: 15px 0;
+            }}
+            table {{
+                width: 100%;
+                border-collapse: collapse;
+                margin: 15px 0;
+            }}
+            th, td {{
+                border: 1px solid black;
+                padding: 8px;
+                text-align: left;
+                vertical-align: top;
+            }}
+            th {{
+                background-color: #f0f0f0;
+                font-weight: bold;
+            }}
+            .section-title {{
+                font-size: 14pt;
+                font-weight: bold;
+                margin: 20px 0 10px 0;
+                padding-bottom: 5px;
+                border-bottom: 2px solid black;
+            }}
+            .subsection-title {{
+                font-size: 12pt;
+                font-weight: bold;
+                margin: 15px 0 5px 0;
+            }}
+            .photo-gallery {{
+                display: flex;
+                flex-wrap: wrap;
+                gap: 15px;
+                margin: 15px 0;
+            }}
+            .photo-item {{
+                width: 200px;
+                text-align: center;
+            }}
+            .photo-caption {{
+                font-size: 10pt;
+                font-style: italic;
+            }}
+            .footer {{
+                margin-top: 30px;
+                text-align: center;
+                font-size: 10pt;
+            }}
+            .signature {{
+                margin-top: 30px;
+            }}
+            .risk-matrix {{
+                margin: 15px 0;
+            }}
+            .risk-level {{
+                padding: 10px;
+                text-align: center;
+                font-weight: bold;
+                color: white;
+            }}
+            .risk-green {{ background-color: green; }}
+            .risk-yellow {{ background-color: #DAA520; color: black; }}
+            .risk-orange {{ background-color: orange; color: black; }}
+            .risk-red {{ background-color: red; }}
+        </style>
+    </head>
+    <body>
+    
+    <div class="header">
+        <h1>REPUBLIC OF THE PHILIPPINES</h1>
+        <h2>PROVINCE OF MOUNTAIN PROVINCE</h2>
+        <h2>PROVINCIAL DISASTER RISK REDUCTION AND MANAGEMENT COUNCIL</h2>
+        <h2>Emergency Operations Center</h2>
+        <p>Appong Street, Jungle Town, Poblacion, Bontoc, Mountain Province</p>
+    </div>
+    
+    <div class="to-from">
+        <p><strong>TO:</strong> DIR. ALBERT A MOGOL AFP (Ret.)</p>
+        <p style="margin-left: 30px;">Regional Director, OCD-CAR & Chairperson, Cordillera RDRRMC</p>
+        <p><strong>THRU:</strong> BONIFACIO C. LACWASAN, JR.</p>
+        <p style="margin-left: 30px;">Provincial Governor and Chairperson, PDRRMC</p>
+        <p><strong>FROM:</strong> ATTY. EDWARD F. CHUMAWAR, JR.</p>
+        <p style="margin-left: 30px;">PDRRM Officer</p>
+    </div>
+    
+    <div class="subject">
+        <p><strong>SUBJECT:</strong> SITREP #{len(reports)}: Consolidated Report on {reports[0].get('incident_name', 'Disaster Event') if reports else 'Hazard Event'}</p>
+        <p><strong>DATE/TIME:</strong> {now.strftime('%d %B %Y')}; {now.strftime('%H%M')}H</p>
+    </div>
+    
+    <!-- SECTION I: SITUATION OVERVIEW -->
+    <div class="section-title">I. SITUATION OVERVIEW</div>
+    
+    <div class="subsection-title">Weather & Alert Level Statuses</div>
+    <table>
+        <tr>
+            <th>MUNICIPALITY</th>
+            <th>CLOUD</th>
+            <th>WIND</th>
+            <th>PRECIPITATION</th>
+            <th>ALERT STATUS</th>
+        </tr>
+    """
+    
+    # Add weather table rows
+    for r in reports:
+        weather = r.get('weather', {})
+        html += f"""
+        <tr>
+            <td>{r.get('municipality', 'N/A')}</td>
+            <td>{weather.get('cloud', 'N/A')}</td>
+            <td>{weather.get('wind', 'N/A')}</td>
+            <td>{weather.get('precipitation', 'N/A')}</td>
+            <td>{r.get('alert_level', 'White')}</td>
+        </tr>
+        """
+    
+    html += """
+    </table>
+    
+    <div class="subsection-title">Mountain Province Emergency Operations Center Alert Status</div>
+    <table>
+        <tr>
+            <th>ALERT LEVEL</th>
+            <th>STATUS</th>
+        </tr>
+    """
+    
+    # Determine overall alert level
+    alerts = [r.get('alert_level', 'White') for r in reports]
+    if 'Red' in alerts:
+        overall_alert = 'RED'
+    elif 'Blue' in alerts:
+        overall_alert = 'BLUE'
+    else:
+        overall_alert = 'WHITE'
+    
+    html += f"""
+        <tr>
+            <td>{overall_alert}</td>
+            <td>{'Response Operations' if overall_alert == 'RED' else 'Enhanced Preparedness' if overall_alert == 'BLUE' else 'Normal Monitoring'}</td>
+        </tr>
+    </table>
+    """
+    
+    # Add PDRA section if available
+    pdra = st.session_state.get('pdra_data', {})
+    if pdra.get('type'):
+        html += """
+    <div class="subsection-title">Pre-Disaster Risk Assessment (PDRA)</div>
+    <table>
+        <tr>
+            <th width="50%">Hazard</th>
+            <td>""" + str(pdra.get('type', 'N/A')) + """</td>
+        </tr>
+        <tr>
+            <th>Probability Rating</th>
+            <td>""" + str(pdra.get('risk_matrix', {}).get('probability', 'N/A')) + """/4</td>
+        </tr>
+        <tr>
+            <th>Impact Rating</th>
+            <td>""" + str(pdra.get('risk_matrix', {}).get('impact', 'N/A')) + """/5</td>
+        </tr>
+        <tr>
+            <th>Risk Level</th>
+            <td>""" + str(pdra.get('risk_matrix', {}).get('risk_level', 'N/A')) + """</td>
+        </tr>
+        <tr>
+            <th>Recommended Action</th>
+            <td>""" + str(pdra.get('risk_matrix', {}).get('action', 'N/A')) + """</td>
+        </tr>
+    </table>
+    """
+    
+    # SECTION II: INCIDENTS MONITORED
+    html += """
+    <div class="section-title">II. INCIDENTS MONITORED</div>
+    <table>
+        <tr>
+            <th>MUNICIPALITY</th>
+            <th>INCIDENT/S REPORTED</th>
+            <th>CASUALTIES</th>
+        </tr>
+    """
+    
+    for r in reports:
+        html += f"""
+        <tr>
+            <td>{r.get('municipality', 'N/A')}</td>
+            <td>{r.get('incidents', 'None reported')}</td>
+            <td>{r.get('casualties', 'None')}</td>
+        </tr>
+        """
+    
+    html += """
+    </table>
+    
+    <!-- SECTION III: STATUS OF LIFELINES -->
+    <div class="section-title">III. STATUS OF LIFELINES</div>
+    
+    <div class="subsection-title">Municipal Roads</div>
+    <table>
+        <tr>
+            <th>MUNICIPALITY</th>
+            <th>STATUS</th>
+            <th>REMARKS</th>
+        </tr>
+    """
+    
+    for r in reports:
+        roads = r.get('municipal_roads', {})
+        html += f"""
+        <tr>
+            <td>{r.get('municipality', 'N/A')}</td>
+            <td>{roads.get('status', 'N/A')}</td>
+            <td>{roads.get('remarks', '')}</td>
+        </tr>
+        """
+    
+    html += """
+    </table>
+    
+    <div class="subsection-title">Power & Communication</div>
+    <table>
+        <tr>
+            <th>MUNICIPALITY</th>
+            <th>POWER STATUS</th>
+            <th>POWER REMARKS</th>
+            <th>COMMUNICATION STATUS</th>
+            <th>COMMUNICATION REMARKS</th>
+        </tr>
+    """
+    
+    for r in reports:
+        utils = r.get('utilities', {})
+        power = utils.get('power', {})
+        comm = utils.get('communication', {})
+        html += f"""
+        <tr>
+            <td>{r.get('municipality', 'N/A')}</td>
+            <td>{power.get('status', 'N/A')}</td>
+            <td>{power.get('remarks', '')}</td>
+            <td>{comm.get('status', 'N/A')}</td>
+            <td>{comm.get('remarks', '')}</td>
+        </tr>
+        """
+    
+    # SECTION IV: DISPLACED POPULATION & DAMAGES
+    html += f"""
+    </table>
+    
+    <div class="section-title">IV. DISPLACED POPULATION & DAMAGES</div>
+    
+    <div class="subsection-title">Displaced Population</div>
+    <table>
+        <tr>
+            <th>LOCATION</th>
+            <th>FAMILIES</th>
+            <th>PERSONS</th>
+        </tr>
+        <tr>
+            <td>Inside Evacuation Centers</td>
+            <td>{total_families_ec:,}</td>
+            <td>{total_persons_ec:,}</td>
+        </tr>
+        <tr>
+            <td>Outside Evacuation Centers</td>
+            <td>{total_families_out:,}</td>
+            <td>{total_persons_out:,}</td>
+        </tr>
+    </table>
+    
+    <div class="subsection-title">Damaged Houses</div>
+    <table>
+        <tr>
+            <th>TYPE</th>
+            <th>NUMBER</th>
+        </tr>
+        <tr>
+            <td>Totally Damaged</td>
+            <td>{total_totally:,}</td>
+        </tr>
+        <tr>
+            <td>Partially Damaged</td>
+            <td>{total_partially:,}</td>
+        </tr>
+    </table>
+    
+    <!-- SECTION V: RESOURCES PROVIDED -->
+    <div class="section-title">V. RESOURCES PROVIDED</div>
+    <table>
+        <tr>
+            <th>ITEM</th>
+            <th>QUANTITY</th>
+        </tr>
+        <tr>
+            <td>Food Packs</td>
+            <td>{total_food:,}</td>
+        </tr>
+        <tr>
+            <td>Hygiene Kits</td>
+            <td>{total_hygiene:,}</td>
+        </tr>
+    </table>
+    """
+    
+    # SECTION VI: RESPONSE ACTIONS
+    html += """
+    <div class="section-title">VI. RESPONSE ACTIONS</div>
+    <table>
+        <tr>
+            <th>MUNICIPALITY</th>
+            <th>ACTIONS TAKEN</th>
+        </tr>
+    """
+    
+    for r in reports:
+        if r.get('response_actions'):
+            html += f"""
+            <tr>
+                <td>{r.get('municipality', 'N/A')}</td>
+                <td>{r.get('response_actions', '')}</td>
+            </tr>
+            """
+    
+    html += """
+    </table>
+    
+    <!-- SECTION VII: PHOTO DOCUMENTATION -->
+    <div class="section-title">VII. PHOTO DOCUMENTATION</div>
+    <div class="photo-gallery">
+    """
+    
+    # Add photos from reports
+    photo_count = 0
+    for r in reports:
+        photo = r.get('photo', {})
+        if photo.get('file'):
+            html += f"""
+            <div class="photo-item">
+                <div class="photo-caption">{r.get('municipality', 'N/A')}: {photo.get('caption', 'No caption')}</div>
+                <div class="photo-caption">Source: MDRRMO {r.get('municipality', '')}</div>
+            </div>
+            """
+            photo_count += 1
+    
+    if photo_count == 0:
+        html += "<p>No photos submitted for this report.</p>"
+    
+    html += """
+    </div>
+    
+    <!-- SECTION VIII: NEEDS ASSESSMENT -->
+    <div class="section-title">VIII. NEEDS ASSESSMENT</div>
+    <table>
+        <tr>
+            <th>PRIORITY</th>
+            <th>NEEDS</th>
+        </tr>
+    """
+    
+    # Collect needs from reports
+    priority1_list = []
+    priority2_list = []
+    priority3_list = []
+    for r in reports:
+        needs = r.get('needs', {})
+        if needs.get('priority1'):
+            priority1_list.append(needs.get('priority1'))
+        if needs.get('priority2'):
+            priority2_list.append(needs.get('priority2'))
+        if needs.get('priority3'):
+            priority3_list.append(needs.get('priority3'))
+    
+    html += f"""
+        <tr>
+            <td>Priority 1</td>
+            <td>{', '.join(set(priority1_list)) if priority1_list else 'None reported'}</td>
+        </tr>
+        <tr>
+            <td>Priority 2</td>
+            <td>{', '.join(set(priority2_list)) if priority2_list else 'None reported'}</td>
+        </tr>
+        <tr>
+            <td>Priority 3</td>
+            <td>{', '.join(set(priority3_list)) if priority3_list else 'None reported'}</td>
+        </tr>
+    </table>
+    
+    <!-- SIGNATURES -->
+    <div class="signature">
+        <p>Prepared by:</p>
+        <p style="margin-top: 30px;"><strong>TEAM ON DUTY</strong></p>
+        <p>MPDRRMC Emergency Operations Center</p>
+    </div>
+    
+    <div class="signature">
+        <p>Reviewed by:</p>
+        <p style="margin-top: 30px;"><strong>ATTY. EDWARD F. CHUMAWAR, JR.</strong></p>
+        <p>PDRRM Officer</p>
+    </div>
+    
+    <div class="footer">
+        <p>MPDRRMC Emergency Operations Center | Appong Street, Jungle Town, Poblacion, Bontoc, Mountain Province</p>
+        <p>Email: pdrrmo@mountainprovince.gov.ph | Hotline: (074) 123-4567</p>
+    </div>
+    
+    </body>
+    </html>
+    """
+    
+    return html
+
+
+def show_professional_report_preview():
+    """Show preview of professional SITREP and provide download options"""
+    
+    st.markdown("### 📄 Professional SITREP Preview")
+    st.caption("This report follows the official MPDRRMC SITREP format")
+    
+    reports = st.session_state.get('municipal_reports', [])
+    
+    if not reports:
+        st.warning("No reports available. Please submit municipal reports first.")
+        return
+    
+    # Generate the professional report
+    html_content = generate_professional_sitrep(reports)
+    
+    # Preview in an iframe
+    st.components.v1.html(html_content, height=800, scrolling=True)
+    
+    # Download options
+    st.markdown("---")
+    st.markdown("#### 📥 Download Options")
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("📄 Download as HTML", use_container_width=True):
+            st.download_button(
+                label="Click to Download",
+                data=html_content,
+                file_name=f"SITREP_{datetime.now().strftime('%Y%m%d_%H%M')}.html",
+                mime="text/html",
+                key="download_sitrep_html"
+            )
+    
+    with col2:
+        st.info("PDF conversion will be available in the next update. For now, open the HTML file and use Ctrl+P to print/save as PDF.")
+# After the Generate Consolidated Report button, add:
+
+st.markdown("---")
+st.markdown("### 📄 Professional SITREP Generator")
+
+if st.button("📑 Generate Professional SITREP (Official Format)", type="secondary", use_container_width=True):
+    show_professional_report_preview()
 
 # =============================================================================
 # SECTION 4: PREDICTIVE ANALYSIS (with summary statistics)
