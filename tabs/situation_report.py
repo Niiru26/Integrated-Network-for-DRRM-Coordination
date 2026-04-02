@@ -1,65 +1,21 @@
 # tabs/situation_report.py
 import streamlit as st
 import pandas as pd
-from datetime import datetime, date
-from utils.supabase_client import auto_sync_add, auto_sync_delete, auto_sync_update, is_connected, auto_sync_table
-from utils.pagasa_api import fetch_weather_data, refresh_weather_data
+from datetime import datetime, date, timedelta
 import plotly.express as px
 import json
+import os
+from utils.supabase_client import auto_sync_add, auto_sync_delete, auto_sync_update, is_connected, auto_sync_table
+from utils.pagasa_api import fetch_weather_data, refresh_weather_data
+from utils.local_storage import save_file_to_cloud, get_file_url
 
 def show():
-    """Display Situation Report Tab with Multi-User Data Entry"""
-    
-    # Load weather data on first load
-    if 'pagasa_weather' not in st.session_state:
-        with st.spinner("Fetching weather data from PAGASA..."):
-            fetch_weather_data()
+    """Display Enhanced Situation Report Tab with PDRA Integration"""
     
     st.markdown("# 📡 SITUATION REPORT")
-    st.caption("Enhanced Situation Report Form with Multi-User Data Entry and Predictive Analysis")
+    st.caption("Enhanced Situation Report with PDRA Guided Workflow and Multi-User Data Entry")
     
-    # Show sync status and user info
-    col_status, col_weather = st.columns([2, 1])
-    with col_status:
-        if is_connected():
-            st.success("☁️ Real-time Collaboration Enabled - Multiple users can input data simultaneously")
-        else:
-            st.warning("⚠️ Offline Mode - Single user only")
-    
-    with col_weather:
-        # Weather widget in the top right
-        with st.container():
-            st.markdown("### 🌦️ Current Weather")
-            
-            weather = st.session_state.get('pagasa_weather', {})
-            cyclones = weather.get('cyclones', {})
-            rainfall = weather.get('rainfall', {})
-            forecast = weather.get('forecast', {})
-            today_forecast = forecast.get('forecast', [{}])[0] if forecast.get('forecast') else {}
-            
-            if cyclones.get('has_active'):
-                st.error(f"⚠️ {cyclones.get('status', 'Active Cyclone')[:50]}")
-            else:
-                st.success("✅ No active cyclones")
-            
-            if rainfall.get('has_advisory'):
-                level = rainfall.get('advisory_level')
-                if level == "Red":
-                    st.error(f"🔴 {level} Rainfall Advisory")
-                elif level == "Orange":
-                    st.warning(f"🟠 {level} Rainfall Advisory")
-                else:
-                    st.warning(f"🟡 {level} Rainfall Advisory")
-            
-            if today_forecast:
-                st.caption(f"🌡️ {today_forecast.get('temp_min', 'N/A')}°C - {today_forecast.get('temp_max', 'N/A')}°C")
-                st.caption(f"💨 {today_forecast.get('wind_speed', 'N/A')}")
-            
-            if st.button("🔄 Refresh", key="refresh_weather_top"):
-                refresh_weather_data()
-                st.rerun()
-    
-    # Initialize session state for reports
+    # Initialize session state
     if 'municipal_reports' not in st.session_state:
         st.session_state.municipal_reports = []
     
@@ -69,212 +25,686 @@ def show():
     if 'sitrep_photos' not in st.session_state:
         st.session_state.sitrep_photos = []
     
-    # Create tabs for different user roles and views
+    if 'pdra_data' not in st.session_state:
+        st.session_state.pdra_data = {
+            "type": None,
+            "hazard": {},
+            "risk_matrix": {},
+            "anticipated_needs": {},
+            "other_matters": {}
+        }
+    
+    # Load weather data
+    if 'pagasa_weather' not in st.session_state:
+        fetch_weather_data()
+    
+    # Create main tabs
     tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
-        "📝 MDRRMO Data Entry",
-        "📊 PDRRMO Consolidation",
+        "📋 PDRA Wizard",
+        "📝 Municipal Data Entry",
+        "📊 Provincial Consolidation",
         "📈 Predictive Analysis",
-        "📸 Photo Documentation",
-        "📋 Archived Reports",
-        "🔗 Related Modules"
+        "📸 Photo Gallery",
+        "📜 Reference Guide"
     ])
     
     with tab1:
-        show_mdrrmo_data_entry()
+        show_pdra_wizard()
     
     with tab2:
-        show_pdrrmo_consolidation()
+        show_mdrrmo_data_entry()
     
     with tab3:
-        show_predictive_analysis()
+        show_pdrrmo_consolidation()
     
     with tab4:
-        show_photo_documentation()
+        show_predictive_analysis()
     
     with tab5:
-        show_archived_reports()
+        show_photo_gallery()
     
     with tab6:
-        show_related_modules()
+        show_reference_guide()
 
 
-def show_mdrrmo_data_entry():
-    """MDRRMO Data Entry Form - for municipal staff to input their data"""
+# =============================================================================
+# SECTION 1: PDRA WIZARD (Step-by-Step Guided Workflow)
+# =============================================================================
+
+def show_pdra_wizard():
+    """Step-by-step PDRA wizard with collapsible sections"""
     
-    st.markdown("### Municipal Situation Report Entry")
-    st.caption("MDRRMO Staff: Enter your municipality's data here. All entries are automatically synced for PDRRMO consolidation.")
+    st.markdown("### 📋 Pre-Disaster Risk Assessment (PDRA) Wizard")
+    st.caption("Complete the PDRA following the official guidelines")
     
-    # Select municipality
+    # Progress indicator
+    steps = ["PDRA Type", "Hazard Situation", "Risk Assessment", "Anticipated Needs", "Other Matters"]
+    completed = []
+    
+    if st.session_state.pdra_data.get("type"):
+        completed.append(0)
+    if st.session_state.pdra_data.get("hazard"):
+        completed.append(1)
+    if st.session_state.pdra_data.get("risk_matrix"):
+        completed.append(2)
+    if st.session_state.pdra_data.get("anticipated_needs"):
+        completed.append(3)
+    if st.session_state.pdra_data.get("other_matters"):
+        completed.append(4)
+    
+    # Progress bar
+    progress = len(completed) / len(steps)
+    st.progress(progress)
+    
+    # Display progress status
+    cols = st.columns(len(steps))
+    for i, step in enumerate(steps):
+        with cols[i]:
+            if i in completed:
+                st.markdown(f"✅ **{step}**")
+            else:
+                st.markdown(f"⏳ {step}")
+    
+    st.markdown("---")
+    
+    # Step 1: PDRA Type (Always expanded first)
+    with st.expander("📌 Step 1: PDRA Type", expanded=not st.session_state.pdra_data.get("type")):
+        pdra_type = st.radio(
+            "Select PDRA Type",
+            ["🌊 Weather-Related Hazard (Typhoon, Monsoon, LPA)",
+             "🎉 Planned Event (Festival, Sports, Election)",
+             "🌋 Other Hazard (Landslide, Earthquake, Fire)"],
+            key="pdra_type_select",
+            horizontal=True
+        )
+        
+        if st.button("✓ Confirm & Continue", key="confirm_type"):
+            st.session_state.pdra_data["type"] = pdra_type
+            st.rerun()
+    
+    # Step 2: Hazard Situation
+    if st.session_state.pdra_data.get("type"):
+        with st.expander("🌡️ Step 2: Hazard Situation", expanded=not st.session_state.pdra_data.get("hazard")):
+            show_hazard_situation()
+    
+    # Step 3: Risk & Impact Assessment
+    if st.session_state.pdra_data.get("hazard"):
+        with st.expander("⚠️ Step 3: Risk & Impact Assessment", expanded=not st.session_state.pdra_data.get("risk_matrix")):
+            show_risk_assessment()
+    
+    # Step 4: Anticipated Needs
+    if st.session_state.pdra_data.get("risk_matrix"):
+        with st.expander("📦 Step 4: Anticipated Needs", expanded=not st.session_state.pdra_data.get("anticipated_needs")):
+            show_anticipated_needs()
+    
+    # Step 5: Other Matters
+    if st.session_state.pdra_data.get("anticipated_needs"):
+        with st.expander("📋 Step 5: Other Matters", expanded=not st.session_state.pdra_data.get("other_matters")):
+            show_other_matters()
+    
+    # Display PDRA Summary if complete
+    if st.session_state.pdra_data.get("other_matters"):
+        st.markdown("---")
+        st.markdown("### ✅ PDRA Complete!")
+        
+        if st.button("📄 Generate PDRA Report", type="primary"):
+            generate_pdra_report()
+
+
+def show_hazard_situation():
+    """Display hazard situation based on PDRA type"""
+    
+    pdra_type = st.session_state.pdra_data.get("type", "")
+    
+    if "Weather" in pdra_type:
+        # Weather-related hazard
+        st.markdown("#### 🌦️ Weather Situation")
+        
+        # PAGASA integration
+        weather = st.session_state.get('pagasa_weather', {})
+        forecast = weather.get('forecast', {})
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("🔄 Fetch Latest PAGASA Data"):
+                refresh_weather_data()
+                st.rerun()
+        
+        with col2:
+            last_updated = weather.get('last_fetched')
+            if last_updated:
+                st.caption(f"Last updated: {last_updated.strftime('%Y-%m-%d %H:%M')}")
+        
+        # Display current weather
+        cyclones = weather.get('cyclones', {})
+        if cyclones.get('has_active'):
+            st.warning(f"⚠️ {cyclones.get('status', 'Active Tropical Cyclone')}")
+        
+        # Track map upload
+        st.markdown("#### 🗺️ Track Map")
+        track_map = st.file_uploader("Upload track map", type=['jpg', 'png', 'pdf'], key="track_map")
+        
+        if track_map:
+            st.success("Track map uploaded")
+        
+        # Potential risk areas
+        st.markdown("#### 📍 Potential Risk Areas")
+        risk_areas = st.text_area("Areas Affected", placeholder="e.g., CAR, Region I, Region II, Ilocos, Cagayan")
+        
+        # Winds and rainfall
+        col1, col2 = st.columns(2)
+        with col1:
+            wind_speed = st.selectbox("Wind Speed", ["<61 km/h", "62-88 km/h", "89-117 km/h", "118-220 km/h", ">220 km/h"])
+        with col2:
+            rainfall = st.selectbox("Rainfall Intensity", ["Light (<2.5mm/hr)", "Moderate (2.6-7.5mm/hr)", 
+                                                            "Heavy (7.6-15mm/hr)", "Intense (15.1-30mm/hr)", 
+                                                            "Torrential (>30mm/hr)"])
+        
+        # Save button
+        if st.button("💾 Save Hazard Situation", key="save_hazard_weather"):
+            st.session_state.pdra_data["hazard"] = {
+                "type": "weather",
+                "track_map": track_map.name if track_map else None,
+                "risk_areas": risk_areas,
+                "wind_speed": wind_speed,
+                "rainfall": rainfall,
+                "cyclones": cyclones.get('status') if cyclones.get('has_active') else None
+            }
+            st.success("Hazard situation saved!")
+            st.rerun()
+    
+    elif "Planned Event" in pdra_type:
+        # Planned event
+        st.markdown("#### 🎉 Event Details")
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            event_name = st.text_input("Event Name", placeholder="e.g., 18th Lang-ay Festival")
+            start_date = st.date_input("Start Date", date.today())
+        with col2:
+            event_location = st.text_input("Location", placeholder="e.g., Bontoc, Mountain Province")
+            end_date = st.date_input("End Date", date.today() + timedelta(days=7))
+        
+        # Weather outlook
+        st.markdown("#### 🌤️ Weather Outlook")
+        
+        # Get weather forecast from PAGASA
+        weather = st.session_state.get('pagasa_weather', {})
+        forecast = weather.get('forecast', {})
+        
+        if forecast.get('forecast'):
+            st.info(f"**Forecast:** {forecast.get('summary', 'Check PAGASA for latest updates')}")
+        
+        # What to expect
+        st.markdown("#### 📋 What to Expect")
+        expectations = st.multiselect("Select anticipated situations", [
+            "Influx of people (travelers/visitors)",
+            "Vehicular accidents",
+            "Fire incidents (forest/structural)",
+            "Prolonged period of hot and humid weather",
+            "Increase of heat-related stresses on health",
+            "Thunderstorms",
+            "Food poisoning",
+            "Gastroenteritis cases"
+        ])
+        
+        # Alert level
+        st.markdown("#### 🚨 Alert Level Status")
+        alert_level = st.selectbox("Alert Level", ["Alpha", "Blue", "Red", "White"])
+        
+        if st.button("💾 Save Event Details", key="save_hazard_event"):
+            st.session_state.pdra_data["hazard"] = {
+                "type": "planned_event",
+                "event_name": event_name,
+                "event_location": event_location,
+                "start_date": start_date.isoformat(),
+                "end_date": end_date.isoformat(),
+                "expectations": expectations,
+                "alert_level": alert_level
+            }
+            st.success("Event details saved!")
+            st.rerun()
+    
+    else:
+        # Other hazard
+        st.markdown("#### 🌋 Hazard Details")
+        
+        hazard_type = st.selectbox("Hazard Type", ["Landslide", "Earthquake", "Forest Fire", "Drought", "Other"])
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            location = st.text_input("Location/Area", placeholder="e.g., Bauko, Paracelis")
+            start_date = st.date_input("Start Date", date.today())
+        with col2:
+            intensity = st.text_input("Intensity/Magnitude", placeholder="e.g., Magnitude 5.2, Moderate")
+            end_date = st.date_input("End Date", date.today() + timedelta(days=3))
+        
+        description = st.text_area("Description", placeholder="Describe the hazard situation")
+        
+        if st.button("💾 Save Hazard Details", key="save_hazard_other"):
+            st.session_state.pdra_data["hazard"] = {
+                "type": "other",
+                "hazard_type": hazard_type,
+                "location": location,
+                "intensity": intensity,
+                "start_date": start_date.isoformat(),
+                "end_date": end_date.isoformat(),
+                "description": description
+            }
+            st.success("Hazard details saved!")
+            st.rerun()
+
+
+def show_risk_assessment():
+    """Show risk matrix with probability and impact ratings"""
+    
+    st.markdown("#### ⚠️ Risk & Impact Assessment")
+    
+    # Probability Rating Scale
+    st.markdown("##### 📊 Probability Rating")
+    st.caption("What is the likelihood of the hazard occurring?")
+    
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        prob_1 = st.button("1 - Unlikely", key="prob_1", use_container_width=True)
+    with col2:
+        prob_2 = st.button("2 - Less Likely", key="prob_2", use_container_width=True)
+    with col3:
+        prob_3 = st.button("3 - Highly Likely", key="prob_3", use_container_width=True)
+    with col4:
+        prob_4 = st.button("4 - Certain/Imminent", key="prob_4", use_container_width=True)
+    
+    probability = None
+    if prob_1:
+        probability = 1
+        st.info("**Unlikely:** The event will not happen anywhere in the jurisdiction in the next 72 hours")
+    elif prob_2:
+        probability = 2
+        st.info("**Less Likely:** Less than 50% possibility that the event will affect 2 or more areas")
+    elif prob_3:
+        probability = 3
+        st.info("**Highly Likely:** More than 50% possibility that the event will happen; 51-75% of area will be exposed")
+    elif prob_4:
+        probability = 4
+        st.warning("**Certain/Imminent:** 100% possibility that the event will affect 2 or more areas in the next 72 hours")
+    
+    st.markdown("---")
+    
+    # Impact Rating Scale
+    st.markdown("##### 💥 Impact Rating")
+    st.caption("What would be the severity of impacts if the hazard occurs?")
+    
+    col1, col2, col3, col4, col5 = st.columns(5)
+    with col1:
+        imp_1 = st.button("1 - Negligible", key="imp_1", use_container_width=True)
+    with col2:
+        imp_2 = st.button("2 - Minor", key="imp_2", use_container_width=True)
+    with col3:
+        imp_3 = st.button("3 - Moderate", key="imp_3", use_container_width=True)
+    with col4:
+        imp_4 = st.button("4 - Major", key="imp_4", use_container_width=True)
+    with col5:
+        imp_5 = st.button("5 - Catastrophic", key="imp_5", use_container_width=True)
+    
+    impact = None
+    if imp_1:
+        impact = 1
+        st.info("**Negligible:** No expected casualties or damage to properties")
+    elif imp_2:
+        impact = 2
+        st.info("**Minor:** The DRRMC can entirely manage the impacts, no assistance needed")
+    elif imp_3:
+        impact = 3
+        st.warning("**Moderate:** The DRRMC can manage the impacts, minimal assistance may be required")
+    elif imp_4:
+        impact = 4
+        st.warning("**Major:** The DRRMC can manage with progressive assistance required")
+    elif imp_5:
+        impact = 5
+        st.error("**Catastrophic:** The DRRMC will be overwhelmed; full assistance required")
+    
+    # Calculate risk level
+    if probability and impact:
+        risk_score = probability * impact
+        
+        st.markdown("---")
+        st.markdown("#### 🎯 Risk Level Assessment")
+        
+        if risk_score <= 4:
+            risk_level = "🟢 LOW RISK"
+            risk_color = "green"
+            action = "Requires monitoring and standby for assistance"
+        elif risk_score <= 8:
+            risk_level = "🟡 MEDIUM RISK"
+            risk_color = "yellow"
+            action = "Requires planning and preparatory action"
+        elif risk_score <= 12:
+            risk_level = "🟠 HIGH RISK"
+            risk_color = "orange"
+            action = "Requires high priority for action"
+        else:
+            risk_level = "🔴 EXTREME RISK"
+            risk_color = "red"
+            action = "Requires immediate action"
+        
+        st.markdown(f"""
+        <div style='background-color: {risk_color}; padding: 15px; border-radius: 10px; text-align: center; color: white;'>
+            <h3>{risk_level}</h3>
+            <p>{action}</p>
+            <p><strong>Risk Score:</strong> {risk_score}/20 (Probability: {probability} x Impact: {impact})</p>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # Save button
+        if st.button("💾 Save Risk Assessment", key="save_risk"):
+            st.session_state.pdra_data["risk_matrix"] = {
+                "probability": probability,
+                "impact": impact,
+                "risk_score": risk_score,
+                "risk_level": risk_level,
+                "action": action
+            }
+            st.success("Risk assessment saved!")
+            st.rerun()
+
+
+def show_anticipated_needs():
+    """Show anticipated needs table"""
+    
+    st.markdown("#### 📦 Anticipated Needs")
+    st.caption("Identify resources that may be needed during the event")
+    
+    # Food and Non-Food Items
+    st.markdown("##### 🍚 Food and Non-Food Items")
+    
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        food_packs = st.number_input("Family Food Packs", min_value=0, value=0)
+        hygiene_kits = st.number_input("Hygiene Kits", min_value=0, value=0)
+    with col2:
+        family_kits = st.number_input("Family Kits", min_value=0, value=0)
+        sleeping_kits = st.number_input("Sleeping Kits", min_value=0, value=0)
+    with col3:
+        water_containers = st.number_input("Water Containers", min_value=0, value=0)
+        tarpaulins = st.number_input("Tarpaulins", min_value=0, value=0)
+    
+    # Medicines
+    st.markdown("##### 💊 Medicines")
+    medicines = st.text_area("Medicines Needed", placeholder="List medicines and quantities", height=80)
+    
+    # Logistics and Equipment
+    st.markdown("##### 🚜 Logistics and Equipment")
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        handheld_radios = st.number_input("Handheld Radios", min_value=0, value=0)
+        gensets = st.number_input("Generators", min_value=0, value=0)
+        chainsaws = st.number_input("Chainsaws", min_value=0, value=0)
+    with col2:
+        clearing_equipment = st.number_input("Clearing Equipment (sets)", min_value=0, value=0)
+        water_rescue = st.number_input("Water Rescue Equipment (sets)", min_value=0, value=0)
+        ppe_sets = st.number_input("PPE Sets", min_value=0, value=0)
+    
+    # Vehicles
+    st.markdown("##### 🚗 Vehicles")
+    vehicles = st.text_area("Vehicles Available/Needed", placeholder="List vehicles and their status", height=80)
+    
+    # Save button
+    if st.button("💾 Save Anticipated Needs", key="save_needs"):
+        st.session_state.pdra_data["anticipated_needs"] = {
+            "food_packs": food_packs,
+            "hygiene_kits": hygiene_kits,
+            "family_kits": family_kits,
+            "sleeping_kits": sleeping_kits,
+            "water_containers": water_containers,
+            "tarpaulins": tarpaulins,
+            "medicines": medicines,
+            "handheld_radios": handheld_radios,
+            "gensets": gensets,
+            "chainsaws": chainsaws,
+            "clearing_equipment": clearing_equipment,
+            "water_rescue": water_rescue,
+            "ppe_sets": ppe_sets,
+            "vehicles": vehicles
+        }
+        st.success("Anticipated needs saved!")
+        st.rerun()
+
+
+def show_other_matters():
+    """Show other matters section"""
+    
+    st.markdown("#### 📋 Other Matters")
+    
+    # ARG Status
+    st.markdown("##### 🌧️ Automated Rain Gauge (ARG) Status")
+    
     municipalities = ["Barlig", "Bauko", "Besao", "Bontoc", "Natonin", "Paracelis", "Sabangan", "Sadanga", "Sagada", "Tadian"]
     
-    with st.form("sitrep_entry_form", clear_on_submit=False):
+    arg_status = {}
+    for mun in municipalities:
+        arg_status[mun] = st.selectbox(f"{mun}", ["Operational", "Down", "Under Repair"], key=f"arg_{mun}")
+    
+    # Geo-tagging
+    st.markdown("##### 📸 Geo-tagging for Landslide Reporting")
+    use_geo_tagging = st.checkbox("Use GPS Maps Camera Lite or other geo-tagging apps for landslide reporting")
+    
+    # Philsensor
+    st.markdown("##### 📡 Philsensor Status")
+    philsensor_status = st.selectbox("Philsensor Status", ["Operational", "Down", "Data Not Available"])
+    
+    # Additional Notes
+    st.markdown("##### 📝 Additional Notes")
+    additional_notes = st.text_area("Other matters not covered", height=100)
+    
+    # Save button
+    if st.button("✅ Complete PDRA", key="complete_pdra", type="primary"):
+        st.session_state.pdra_data["other_matters"] = {
+            "arg_status": arg_status,
+            "use_geo_tagging": use_geo_tagging,
+            "philsensor_status": philsensor_status,
+            "additional_notes": additional_notes
+        }
+        st.success("PDRA completed successfully!")
+        st.balloons()
+        st.rerun()
+
+
+def generate_pdra_report():
+    """Generate and display PDRA report"""
+    
+    pdra = st.session_state.pdra_data
+    
+    st.markdown("---")
+    st.markdown("### 📄 PDRA Report")
+    st.markdown(f"**Generated:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    
+    st.markdown("#### 📌 PDRA Type")
+    st.markdown(pdra.get("type", "Not specified"))
+    
+    st.markdown("#### 🌡️ Hazard Situation")
+    hazard = pdra.get("hazard", {})
+    for key, value in hazard.items():
+        if value:
+            st.markdown(f"- **{key.replace('_', ' ').title()}:** {value}")
+    
+    st.markdown("#### ⚠️ Risk Assessment")
+    risk = pdra.get("risk_matrix", {})
+    if risk:
+        st.markdown(f"- **Probability:** {risk.get('probability')}/4")
+        st.markdown(f"- **Impact:** {risk.get('impact')}/5")
+        st.markdown(f"- **Risk Score:** {risk.get('risk_score')}/20")
+        st.markdown(f"- **Risk Level:** {risk.get('risk_level')}")
+        st.markdown(f"- **Action:** {risk.get('action')}")
+    
+    st.markdown("#### 📦 Anticipated Needs")
+    needs = pdra.get("anticipated_needs", {})
+    if needs:
         col1, col2 = st.columns(2)
         with col1:
-            municipality = st.selectbox("Select Municipality *", municipalities, key="sitrep_municipality")
-            report_date = st.date_input("Report Date *", date.today(), key="sitrep_date")
-            report_time = st.time_input("Report Time *", datetime.now().time(), key="sitrep_time")
-            sitrep_number = st.number_input("SITREP Number *", min_value=1, value=1, step=1, key="sitrep_number")
+            st.markdown(f"- Food Packs: {needs.get('food_packs', 0)}")
+            st.markdown(f"- Hygiene Kits: {needs.get('hygiene_kits', 0)}")
+            st.markdown(f"- Family Kits: {needs.get('family_kits', 0)}")
+        with col2:
+            st.markdown(f"- Generators: {needs.get('gensets', 0)}")
+            st.markdown(f"- Chainsaws: {needs.get('chainsaws', 0)}")
+            st.markdown(f"- PPE Sets: {needs.get('ppe_sets', 0)}")
+    
+    st.markdown("#### 📋 Other Matters")
+    other = pdra.get("other_matters", {})
+    if other:
+        st.markdown(f"- **Philsensor Status:** {other.get('philsensor_status', 'N/A')}")
+        st.markdown(f"- **Geo-tagging:** {'Enabled' if other.get('use_geo_tagging') else 'Not enabled'}")
+    
+    # Export option
+    if st.button("📥 Export PDRA Report"):
+        st.info("Export functionality coming soon")
+
+
+# =============================================================================
+# SECTION 2: MDRRMO DATA ENTRY (with Roads Management)
+# =============================================================================
+
+def show_mdrrmo_data_entry():
+    """Municipal data entry with roads management"""
+    
+    st.markdown("### 📝 Municipal Situation Report Entry")
+    st.caption("MDRRMO Staff: Enter your municipality's data here")
+    
+    municipalities = ["Barlig", "Bauko", "Besao", "Bontoc", "Natonin", "Paracelis", "Sabangan", "Sadanga", "Sagada", "Tadian"]
+    
+    # National Roads list
+    national_roads = [
+        "Bontoc - Baguio Road",
+        "Bontoc - Cadre Road",
+        "Dantay - Sagada Road",
+        "Junction Talubin - Barlig - Natonin - Paracelis - Calaccad Road",
+        "Mt. Province - Cagayan via Tabuk - Enrile Road",
+        "Mt. Province - Ilocos Sur Road via Kayan",
+        "Mt. Province - Ilocos Sur Road via Tue",
+        "Mt. Province - Nueva Vizcaya Road"
+    ]
+    
+    with st.form("municipal_report_form", clear_on_submit=True):
+        col1, col2 = st.columns(2)
+        with col1:
+            municipality = st.selectbox("Municipality *", municipalities)
+            report_date = st.date_input("Report Date *", date.today())
+            report_time = st.time_input("Report Time *", datetime.now().time())
+            sitrep_number = st.number_input("SITREP Number *", min_value=1, value=1, step=1)
+            incident_name = st.text_input("Incident Name *", placeholder="e.g., TS PAENG")
         
         with col2:
-            incident_name = st.text_input("Incident Name *", placeholder="e.g., SITREP #01: Effects of TS PAENG (NALGAE)", key="sitrep_incident")
-            alert_level = st.selectbox("Alert Level *", ["Alpha", "Blue", "Red", "White"], key="sitrep_alert")
-            submitted_by = st.text_input("Reported By *", placeholder="Name and Position", key="sitrep_submitted_by")
-            contact_number = st.text_input("Contact Number", placeholder="Mobile number for follow-up", key="sitrep_contact")
+            alert_level = st.selectbox("Alert Level *", ["Alpha", "Blue", "Red", "White"])
+            submitted_by = st.text_input("Reported By *", placeholder="Name and Position")
+            contact_number = st.text_input("Contact Number")
         
         st.markdown("---")
-        st.markdown("### I. SITUATION OVERVIEW")
         
-        # Weather section
+        # Weather Section
         st.markdown("#### 🌦️ Weather Conditions")
-        
-        # Auto-fill with PAGASA data if available
-        default_cloud = "Partly Cloudy"
-        default_wind = "Light Wind"
-        default_precip = "Light"
-        
-        if 'pagasa_weather' in st.session_state:
-            forecast = st.session_state.pagasa_weather.get('forecast', {}).get('forecast', [])
-            if forecast:
-                today_weather = forecast[0]
-                weather_desc = today_weather.get('weather', '').lower()
-                if 'rain' in weather_desc:
-                    if 'light' in weather_desc:
-                        default_cloud = "Light Rains"
-                        default_precip = "Light"
-                    elif 'moderate' in weather_desc:
-                        default_cloud = "Moderate Rains"
-                        default_precip = "Moderate"
-                    elif 'heavy' in weather_desc:
-                        default_cloud = "Heavy Rains"
-                        default_precip = "Heavy"
-                elif 'cloudy' in weather_desc:
-                    default_cloud = "Cloudy"
-                elif 'clear' in weather_desc:
-                    default_cloud = "Clear"
-        
         col1, col2, col3 = st.columns(3)
         with col1:
-            cloud_condition = st.selectbox("Cloud Condition",
-                ["Clear", "Partly Cloudy", "Cloudy", "Light Rains", "Moderate Rains", "Heavy Rains", "Torrential Rains"],
-                key="sitrep_cloud")
+            cloud = st.selectbox("Cloud Condition", ["Clear", "Partly Cloudy", "Cloudy", "Light Rains", "Moderate Rains", "Heavy Rains"])
         with col2:
-            wind_condition = st.selectbox("Wind Condition",
-                ["Calm", "Light Wind", "Moderate Wind", "Strong Wind", "Gale Force", "Storm Force"],
-                key="sitrep_wind")
+            wind = st.selectbox("Wind Condition", ["Calm", "Light", "Moderate", "Strong", "Gale", "Storm"])
         with col3:
-            precipitation = st.selectbox("Precipitation",
-                ["None", "Light", "Moderate", "Heavy", "Torrential"],
-                key="sitrep_precip")
+            precipitation = st.selectbox("Precipitation", ["None", "Light", "Moderate", "Heavy", "Torrential"])
         
-        st.markdown("#### 📢 PAGASA Advisories")
-        pagasa_bulletin = st.text_area("Latest PAGASA Tropical Cyclone Bulletin",
-                                        placeholder="Paste or summarize the latest PAGASA bulletin...",
-                                        height=100,
-                                        key="sitrep_pagasa_bulletin")
-        pagasa_link = st.text_input("PAGASA Reference Link", 
-                                    placeholder="https://www.pagasa.dost.gov.ph/tropical-cyclone/severe-weather-bulletin",
-                                    key="sitrep_pagasa_link")
+        # Incidents
+        st.markdown("#### 📋 Incidents Reported")
+        incidents = st.text_area("Incident/s Reported", placeholder="List all incidents per barangay", height=100)
+        casualties = st.text_input("Casualties", placeholder="e.g., 0 dead, 2 injured, 1 missing")
         
-        st.markdown("---")
-        st.markdown("### II. INCIDENTS MONITORED")
+        # Roads Management
+        st.markdown("#### 🛣️ National Roads Status")
+        st.caption("Select roads in your municipality and their status")
         
+        roads_status = []
+        for road in national_roads:
+            with st.container():
+                col1, col2, col3 = st.columns([3, 2, 2])
+                with col1:
+                    include = st.checkbox(road, key=f"road_{road[:20]}")
+                with col2:
+                    if include:
+                        traffic = st.selectbox("Traffic", ["Passable", "One Lane Passable", "Not Passable"], key=f"traffic_{road[:20]}")
+                    else:
+                        traffic = None
+                with col3:
+                    if include:
+                        remarks = st.text_input("Remarks", placeholder="Road section details", key=f"remarks_{road[:20]}")
+                    else:
+                        remarks = None
+                if include:
+                    roads_status.append({
+                        "road": road,
+                        "traffic": traffic,
+                        "remarks": remarks
+                    })
+        
+        # Utilities
+        st.markdown("#### 🔌 Utilities")
         col1, col2 = st.columns(2)
         with col1:
-            incidents_reported = st.text_area("Incident/s Reported", placeholder="List all incidents per barangay", height=100, key="sitrep_incidents")
-            casualties = st.text_input("Casualties", placeholder="e.g., 0 dead, 2 injured, 1 missing", key="sitrep_casualties")
+            power = st.selectbox("Power Status", ["Normal", "Intermittent", "No Power"])
+            power_remarks = st.text_input("Power Remarks")
         with col2:
-            affected_areas = st.text_area("Affected Areas/Barangays", placeholder="List barangays affected", height=100, key="sitrep_affected_areas")
-            actions_taken = st.text_area("Initial Actions Taken", placeholder="Response actions already implemented", height=100, key="sitrep_actions")
+            comm = st.selectbox("Communication Status", ["Normal", "Intermittent", "No Signal"])
+            comm_remarks = st.text_input("Communication Remarks")
         
-        st.markdown("---")
-        st.markdown("### III. STATUS OF LIFELINES")
-        
-        st.markdown("#### Roads")
+        # Displaced Population
+        st.markdown("#### 🏠 Displaced Population")
         col1, col2 = st.columns(2)
         with col1:
-            national_roads_status = st.selectbox("National Roads Status", 
-                ["Fully Passable", "One Lane Passable", "Not Passable", "Closed"], 
-                key="sitrep_national_roads")
-            national_roads_remarks = st.text_input("Remarks", placeholder="Specific sections affected", key="sitrep_national_remarks")
+            families_ec = st.number_input("Families in ECs", min_value=0, value=0)
+            persons_ec = st.number_input("Persons in ECs", min_value=0, value=0)
         with col2:
-            provincial_roads_status = st.selectbox("Provincial Roads Status", 
-                ["Fully Passable", "One Lane Passable", "Not Passable", "Closed"], 
-                key="sitrep_provincial_roads")
-            provincial_roads_remarks = st.text_input("Remarks", placeholder="Specific sections affected", key="sitrep_provincial_remarks")
+            families_outside = st.number_input("Families Outside ECs", min_value=0, value=0)
+            persons_outside = st.number_input("Persons Outside ECs", min_value=0, value=0)
         
-        st.markdown("#### Utilities")
+        # Damages
+        st.markdown("#### 🏚️ Damage Assessment")
+        col1, col2 = st.columns(2)
+        with col1:
+            totally_damaged = st.number_input("Totally Damaged Houses", min_value=0, value=0)
+            partially_damaged = st.number_input("Partially Damaged Houses", min_value=0, value=0)
+        with col2:
+            affected_families = st.number_input("Affected Families", min_value=0, value=0)
+            affected_persons = st.number_input("Affected Persons", min_value=0, value=0)
+        
+        # Resources
+        st.markdown("#### 📦 Resources Provided")
         col1, col2, col3 = st.columns(3)
         with col1:
-            power_status = st.selectbox("Power Status", ["Normal", "Intermittent", "No Power"], key="sitrep_power")
-            power_remarks = st.text_input("Remarks", placeholder="Areas affected", key="sitrep_power_remarks")
+            food_packs = st.number_input("Food Packs", min_value=0, value=0)
         with col2:
-            water_status = st.selectbox("Water Status", ["Normal", "Intermittent", "No Supply"], key="sitrep_water")
-            water_remarks = st.text_input("Remarks", placeholder="Areas affected", key="sitrep_water_remarks")
+            hygiene_kits = st.number_input("Hygiene Kits", min_value=0, value=0)
         with col3:
-            comm_status = st.selectbox("Communication Status", ["Normal", "Intermittent", "No Signal"], key="sitrep_comm")
-            comm_remarks = st.text_input("Remarks", placeholder="Network/s affected", key="sitrep_comm_remarks")
+            family_kits = st.number_input("Family Kits", min_value=0, value=0)
         
-        st.markdown("---")
-        st.markdown("### IV. DISPLACED POPULATION")
+        # Response
+        st.markdown("#### 🚑 Response Actions")
+        response_actions = st.text_area("Response Actions Taken", height=100)
         
-        col1, col2 = st.columns(2)
-        with col1:
-            families_in_ec = st.number_input("Families in ECs", min_value=0, value=0, key="sitrep_families_ec")
-            persons_in_ec = st.number_input("Persons in ECs", min_value=0, value=0, key="sitrep_persons_ec")
-        with col2:
-            families_outside = st.number_input("Families Outside ECs", min_value=0, value=0, key="sitrep_families_out")
-            persons_outside = st.number_input("Persons Outside ECs", min_value=0, value=0, key="sitrep_persons_out")
-        
-        st.markdown("---")
-        st.markdown("### V. DAMAGE ASSESSMENT")
-        
-        col1, col2 = st.columns(2)
-        with col1:
-            totally_damaged = st.number_input("Totally Damaged Houses", min_value=0, value=0, key="sitrep_totally_damaged")
-            partially_damaged = st.number_input("Partially Damaged Houses", min_value=0, value=0, key="sitrep_partially_damaged")
-        with col2:
-            affected_families = st.number_input("Affected Families", min_value=0, value=0, key="sitrep_affected_families")
-            affected_persons = st.number_input("Affected Persons", min_value=0, value=0, key="sitrep_affected_persons")
-        
-        st.markdown("---")
-        st.markdown("### VI. RESOURCES PROVIDED")
-        
+        # Needs
+        st.markdown("#### 🎯 Needs Assessment")
         col1, col2, col3 = st.columns(3)
         with col1:
-            food_packs = st.number_input("Food Packs Distributed", min_value=0, value=0, key="sitrep_food_packs")
+            priority1 = st.text_area("Priority 1 Needs", placeholder="Food, Medical, Water", height=80)
         with col2:
-            hygiene_kits = st.number_input("Hygiene Kits Distributed", min_value=0, value=0, key="sitrep_hygiene_kits")
+            priority2 = st.text_area("Priority 2 Needs", placeholder="Shelter, Clothing", height=80)
         with col3:
-            family_kits = st.number_input("Family Kits Distributed", min_value=0, value=0, key="sitrep_family_kits")
+            priority3 = st.text_area("Priority 3 Needs", placeholder="Cash for Work", height=80)
         
-        st.markdown("---")
-        st.markdown("### VII. RESPONSE ACTIVITIES")
+        # Photo
+        st.markdown("#### 📸 Photo Documentation")
+        photo = st.file_uploader("Upload photo", type=['jpg', 'jpeg', 'png'])
+        photo_caption = st.text_input("Photo Caption")
         
-        response_activities = st.text_area("Response Actions Taken", 
-            placeholder="List response activities, deployments, and operations", 
-            height=100,
-            key="sitrep_response")
+        submitted = st.form_submit_button("💾 Submit Report", type="primary")
         
-        st.markdown("### VIII. NEEDS ASSESSMENT")
-        
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            priority1 = st.text_area("Priority 1 Needs", placeholder="Search & Rescue, Food, Medical, Water", height=80, key="sitrep_priority1")
-        with col2:
-            priority2 = st.text_area("Priority 2 Needs", placeholder="Shelter, Clothing, Non-food items", height=80, key="sitrep_priority2")
-        with col3:
-            priority3 = st.text_area("Priority 3 Needs", placeholder="Cash for Work, Rehabilitation", height=80, key="sitrep_priority3")
-        
-        st.markdown("### IX. REMARKS")
-        remarks = st.text_area("Additional Remarks", placeholder="Other relevant information", height=80, key="sitrep_remarks")
-        
-        submitted = st.form_submit_button("💾 Submit Situation Report", type="primary")
-        
-        if submitted:
-            if not municipality or not incident_name:
-                st.error("Please fill in all required fields (*)")
-                return
-            
+        if submitted and municipality and incident_name:
             report = {
                 "id": int(datetime.now().timestamp() * 1000),
                 "sitrep_number": sitrep_number,
@@ -285,323 +715,343 @@ def show_mdrrmo_data_entry():
                 "alert_level": alert_level,
                 "submitted_by": submitted_by,
                 "contact_number": contact_number,
-                "weather": {
-                    "cloud": cloud_condition,
-                    "wind": wind_condition,
-                    "precipitation": precipitation,
-                    "pagasa_bulletin": pagasa_bulletin,
-                    "pagasa_link": pagasa_link
-                },
-                "incidents": {
-                    "reported": incidents_reported,
-                    "casualties": casualties,
-                    "affected_areas": affected_areas,
-                    "actions_taken": actions_taken
-                },
-                "lifelines": {
-                    "national_roads": {"status": national_roads_status, "remarks": national_roads_remarks},
-                    "provincial_roads": {"status": provincial_roads_status, "remarks": provincial_roads_remarks},
-                    "power": {"status": power_status, "remarks": power_remarks},
-                    "water": {"status": water_status, "remarks": water_remarks},
-                    "communication": {"status": comm_status, "remarks": comm_remarks}
-                },
-                "displaced": {
-                    "families_in_ec": families_in_ec,
-                    "persons_in_ec": persons_in_ec,
-                    "families_outside": families_outside,
-                    "persons_outside": persons_outside
-                },
-                "damages": {
-                    "totally_damaged_houses": totally_damaged,
-                    "partially_damaged_houses": partially_damaged,
-                    "affected_families": affected_families,
-                    "affected_persons": affected_persons
-                },
-                "resources": {
-                    "food_packs": food_packs,
-                    "hygiene_kits": hygiene_kits,
-                    "family_kits": family_kits
-                },
-                "response_activities": response_activities,
-                "needs": {
-                    "priority1": priority1,
-                    "priority2": priority2,
-                    "priority3": priority3
-                },
-                "remarks": remarks,
+                "weather": {"cloud": cloud, "wind": wind, "precipitation": precipitation},
+                "incidents": incidents,
+                "casualties": casualties,
+                "roads": roads_status,
+                "utilities": {"power": power, "power_remarks": power_remarks, "communication": comm, "comm_remarks": comm_remarks},
+                "displaced": {"families_in_ec": families_ec, "persons_in_ec": persons_ec,
+                             "families_outside": families_outside, "persons_outside": persons_outside},
+                "damages": {"totally_damaged": totally_damaged, "partially_damaged": partially_damaged,
+                           "affected_families": affected_families, "affected_persons": affected_persons},
+                "resources": {"food_packs": food_packs, "hygiene_kits": hygiene_kits, "family_kits": family_kits},
+                "response_actions": response_actions,
+                "needs": {"priority1": priority1, "priority2": priority2, "priority3": priority3},
+                "photo": {"file": photo.name if photo else None, "caption": photo_caption},
                 "created_at": datetime.now().isoformat(),
                 "status": "Submitted"
             }
             
             auto_sync_add('municipal_reports', 'municipal_reports', report)
-            st.success(f"✅ Situation Report #{sitrep_number} for {municipality} submitted and synced!")
+            st.success(f"✅ Report for {municipality} submitted!")
             st.balloons()
             st.rerun()
 
 
+# =============================================================================
+# SECTION 3: PROVINCIAL CONSOLIDATION (with Auto-Extraction)
+# =============================================================================
+
 def show_pdrrmo_consolidation():
-    """PDRRMO Consolidation View - Aggregates all municipal reports"""
+    """Provincial consolidation with auto-extraction from municipal reports"""
     
-    st.markdown("### Provincial Situation Report Consolidation")
-    st.caption("Consolidated data from all municipalities - Auto-updates as new reports come in")
+    st.markdown("### 📊 Provincial Situation Report Consolidation")
+    st.caption("Auto-extracted data from municipal reports")
     
+    # Load municipal reports
     auto_sync_table('municipal_reports', 'municipal_reports')
     reports = st.session_state.get('municipal_reports', [])
     
     if not reports:
-        st.info("No situation reports submitted yet. MDRRMO staff can enter data in the Data Entry tab.")
+        st.info("No municipal reports submitted yet.")
         return
     
     df = pd.DataFrame(reports)
     
-    st.markdown("#### 📊 Summary Statistics")
+    # Auto-extract summary data
+    st.markdown("#### 📈 Summary Statistics (Auto-Extracted)")
+    
     col1, col2, col3, col4 = st.columns(4)
     with col1:
         st.metric("Municipalities Reporting", df['municipality'].nunique())
     with col2:
         st.metric("Total Reports", len(df))
     with col3:
-        total_affected = df['damages'].apply(lambda x: x.get('affected_families', 0) if isinstance(x, dict) else 0).sum()
-        st.metric("Affected Families", f"{total_affected:,}")
+        total_affected = sum([r.get('damages', {}).get('affected_families', 0) for r in reports])
+        st.metric("Total Affected Families", f"{total_affected:,}")
     with col4:
-        active_alerts = len(df[df['alert_level'] != 'White'])
+        active_alerts = len([r for r in reports if r.get('alert_level') != 'White'])
         st.metric("Active Alerts", active_alerts)
     
-    st.markdown("#### 📋 Municipal Reports")
+    # Weather Summary Table
+    st.markdown("#### 🌦️ Weather Summary by Municipality")
+    weather_data = []
+    for r in reports:
+        weather = r.get('weather', {})
+        weather_data.append({
+            "Municipality": r.get('municipality'),
+            "Cloud": weather.get('cloud', 'N/A'),
+            "Wind": weather.get('wind', 'N/A'),
+            "Precipitation": weather.get('precipitation', 'N/A'),
+            "Alert Level": r.get('alert_level', 'N/A')
+        })
+    st.dataframe(pd.DataFrame(weather_data), use_container_width=True, hide_index=True)
     
-    for idx, row in df.iterrows():
-        with st.expander(f"📋 {row['municipality']} - SITREP #{row['sitrep_number']} ({row['report_date']}) | Alert: {row.get('alert_level', 'N/A')}"):
-            col1, col2 = st.columns(2)
-            with col1:
-                st.markdown(f"**Incident:** {row.get('incident_name', 'N/A')}")
-                st.markdown(f"**Reported By:** {row.get('submitted_by', 'N/A')}")
-                
-                weather = row.get('weather', {})
-                st.markdown(f"**Weather:** {weather.get('cloud', 'N/A')}, {weather.get('wind', 'N/A')}")
-                
-                damages = row.get('damages', {})
-                st.markdown(f"**Damaged Houses:** {damages.get('totally_damaged_houses', 0)} Total / {damages.get('partially_damaged_houses', 0)} Partial")
-            
-            with col2:
-                displaced = row.get('displaced', {})
-                st.markdown(f"**Displaced:** {displaced.get('families_in_ec', 0)} in ECs")
-                st.markdown(f"**Affected:** {damages.get('affected_families', 0)} families")
-                
-                resources = row.get('resources', {})
-                st.markdown(f"**Resources:** {resources.get('food_packs', 0)} food packs")
-            
-            st.markdown(f"**Incidents:** {row.get('incidents', {}).get('reported', 'None reported')}")
-            st.markdown(f"**Response:** {row.get('response_activities', 'None reported')}")
-            
-            needs = row.get('needs', {})
-            st.markdown(f"**Needs:** P1: {needs.get('priority1', 'N/A')}")
+    # Incidents Summary
+    st.markdown("#### 📋 Incidents Reported")
+    incidents_data = []
+    for r in reports:
+        incidents_data.append({
+            "Municipality": r.get('municipality'),
+            "Incidents": r.get('incidents', 'None reported'),
+            "Casualties": r.get('casualties', 'None')
+        })
+    st.dataframe(pd.DataFrame(incidents_data), use_container_width=True, hide_index=True)
+    
+    # Roads Summary
+    st.markdown("#### 🛣️ National Roads Status")
+    roads_summary = []
+    for r in reports:
+        for road in r.get('roads', []):
+            roads_summary.append({
+                "Municipality": r.get('municipality'),
+                "Road": road.get('road'),
+                "Traffic": road.get('traffic'),
+                "Remarks": road.get('remarks')
+            })
+    if roads_summary:
+        st.dataframe(pd.DataFrame(roads_summary), use_container_width=True, hide_index=True)
+    
+    # Damages Summary
+    st.markdown("#### 🏚️ Damage Summary")
+    total_totally = sum([r.get('damages', {}).get('totally_damaged', 0) for r in reports])
+    total_partially = sum([r.get('damages', {}).get('partially_damaged', 0) for r in reports])
+    col1, col2 = st.columns(2)
+    with col1:
+        st.metric("Totally Damaged Houses", total_totally)
+    with col2:
+        st.metric("Partially Damaged Houses", total_partially)
+    
+    # Resources Summary
+    st.markdown("#### 📦 Resources Distributed")
+    total_food = sum([r.get('resources', {}).get('food_packs', 0) for r in reports])
+    total_hygiene = sum([r.get('resources', {}).get('hygiene_kits', 0) for r in reports])
+    col1, col2 = st.columns(2)
+    with col1:
+        st.metric("Food Packs", total_food)
+    with col2:
+        st.metric("Hygiene Kits", total_hygiene)
+    
+    # Generate Consolidated Report button
+    st.markdown("---")
+    if st.button("📄 Generate Consolidated Provincial SITREP", type="primary", use_container_width=True):
+        generate_consolidated_report(reports)
 
+
+def generate_consolidated_report(reports):
+    """Generate consolidated provincial SITREP"""
+    
+    # Calculate totals
+    total_families_ec = sum([r.get('displaced', {}).get('families_in_ec', 0) for r in reports])
+    total_persons_ec = sum([r.get('displaced', {}).get('persons_in_ec', 0) for r in reports])
+    total_families_out = sum([r.get('displaced', {}).get('families_outside', 0) for r in reports])
+    total_persons_out = sum([r.get('displaced', {}).get('persons_outside', 0) for r in reports])
+    
+    st.markdown("---")
+    st.markdown("### 📄 Consolidated Provincial SITREP")
+    st.markdown(f"**Generated:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    
+    st.markdown("#### 📊 DISPLACED POPULATION")
+    col1, col2 = st.columns(2)
+    with col1:
+        st.markdown("**Inside Evacuation Centers**")
+        st.markdown(f"- Families: {total_families_ec:,}")
+        st.markdown(f"- Persons: {total_persons_ec:,}")
+    with col2:
+        st.markdown("**Outside Evacuation Centers**")
+        st.markdown(f"- Families: {total_families_out:,}")
+        st.markdown(f"- Persons: {total_persons_out:,}")
+    
+    st.markdown("#### 🏚️ DAMAGES")
+    total_totally = sum([r.get('damages', {}).get('totally_damaged', 0) for r in reports])
+    total_partially = sum([r.get('damages', {}).get('partially_damaged', 0) for r in reports])
+    st.markdown(f"- **Totally Damaged Houses:** {total_totally}")
+    st.markdown(f"- **Partially Damaged Houses:** {total_partially}")
+    
+    st.markdown("#### 📦 RESOURCES PROVIDED")
+    total_food = sum([r.get('resources', {}).get('food_packs', 0) for r in reports])
+    total_hygiene = sum([r.get('resources', {}).get('hygiene_kits', 0) for r in reports])
+    st.markdown(f"- **Food Packs:** {total_food}")
+    st.markdown(f"- **Hygiene Kits:** {total_hygiene}")
+    
+    # Save to main reports
+    main_report = {
+        "id": int(datetime.now().timestamp() * 1000),
+        "title": f"SITREP {datetime.now().strftime('%Y%m%d')}",
+        "date": datetime.now().isoformat(),
+        "municipalities": [r.get('municipality') for r in reports],
+        "displaced": {
+            "families_in_ec": total_families_ec,
+            "persons_in_ec": total_persons_ec,
+            "families_outside": total_families_out,
+            "persons_outside": total_persons_out
+        },
+        "damages": {
+            "totally_damaged": total_totally,
+            "partially_damaged": total_partially
+        },
+        "resources": {
+            "food_packs": total_food,
+            "hygiene_kits": total_hygiene
+        },
+        "created_at": datetime.now().isoformat()
+    }
+    
+    auto_sync_add('main_reports', 'main_reports', main_report)
+    st.success("✅ Consolidated report saved!")
+    
+    # Export option
+    if st.button("📥 Export as PDF"):
+        st.info("PDF export coming soon")
+
+
+# =============================================================================
+# SECTION 4: PREDICTIVE ANALYSIS
+# =============================================================================
 
 def show_predictive_analysis():
-    """Predictive and Projective Analysis using historical data"""
+    """Predictive analysis from historical reports"""
     
-    st.markdown("### Predictive & Projective Analysis")
-    st.caption("Analysis of historical situation reports to predict future impacts")
+    st.markdown("### 📈 Predictive Analysis")
+    st.caption("Analyze patterns and predict future impacts")
     
-    auto_sync_table('municipal_reports', 'municipal_reports')
     reports = st.session_state.get('municipal_reports', [])
     
-    if len(reports) < 3:
-        st.info("Need at least 3 reports for meaningful predictive analysis. Continue collecting data.")
+    if len(reports) < 5:
+        st.info("Need at least 5 reports for meaningful analysis")
         return
     
     df = pd.DataFrame(reports)
     
     # Extract numeric fields
     df['affected_families'] = df['damages'].apply(lambda x: x.get('affected_families', 0) if isinstance(x, dict) else 0)
-    df['totally_damaged'] = df['damages'].apply(lambda x: x.get('totally_damaged_houses', 0) if isinstance(x, dict) else 0)
     
-    st.markdown("#### 📊 Historical Trends")
-    
-    col1, col2 = st.columns(2)
-    with col1:
-        fig = px.bar(df.groupby('municipality')['affected_families'].sum().reset_index(),
-                     x='municipality', y='affected_families',
-                     title='Total Affected Families by Municipality')
-        st.plotly_chart(fig, use_container_width=True)
-    
-    with col2:
-        fig = px.pie(df, values='totally_damaged', names='municipality', title='Distribution of Damaged Houses')
-        st.plotly_chart(fig, use_container_width=True)
-    
-    st.markdown("#### 🔮 Risk Assessment")
-    
-    risk_scores = []
-    for municipality in df['municipality'].unique():
-        mun_data = df[df['municipality'] == municipality]
+    # Risk by municipality
+    risk_data = []
+    for mun in df['municipality'].unique():
+        mun_data = df[df['municipality'] == mun]
         avg_affected = mun_data['affected_families'].mean()
         risk_score = min(avg_affected / 10, 100)
-        risk_scores.append({
-            "Municipality": municipality,
+        risk_data.append({
+            "Municipality": mun,
             "Risk Score": round(risk_score, 1),
-            "Risk Level": "High" if risk_score > 50 else "Medium" if risk_score > 20 else "Low",
-            "Reports": len(mun_data)
+            "Risk Level": "High" if risk_score > 50 else "Medium" if risk_score > 20 else "Low"
         })
     
-    risk_df = pd.DataFrame(risk_scores).sort_values('Risk Score', ascending=False)
+    risk_df = pd.DataFrame(risk_data).sort_values('Risk Score', ascending=False)
     st.dataframe(risk_df, use_container_width=True, hide_index=True)
+    
+    # Trend chart
+    if 'report_date' in df.columns:
+        df['report_date'] = pd.to_datetime(df['report_date'])
+        timeline = df.groupby('report_date')['affected_families'].sum().reset_index()
+        fig = px.line(timeline, x='report_date', y='affected_families', title="Affected Families Trend")
+        st.plotly_chart(fig, use_container_width=True)
 
 
-def show_photo_documentation():
-    """Photo documentation section"""
-    
-    st.markdown("### Photo Documentation")
-    st.caption("Visual documentation of incidents, damages, and response activities")
-    
-    if 'sitrep_photos' not in st.session_state:
-        st.session_state.sitrep_photos = []
-    
-    st.markdown("#### 📸 Upload Photos")
-    municipalities = ["Barlig", "Bauko", "Besao", "Bontoc", "Natonin", "Paracelis", "Sabangan", "Sadanga", "Sagada", "Tadian"]
-    
-    col1, col2 = st.columns(2)
-    with col1:
-        photo_municipality = st.selectbox("Municipality", municipalities, key="photo_municipality")
-        photo_location = st.text_input("Location", placeholder="Specific barangay or sitio", key="photo_location")
-        photo_description = st.text_area("Description", placeholder="What does this photo show?", key="photo_description")
-    with col2:
-        photo_incident = st.text_input("Related Incident", placeholder="e.g., Landslide", key="photo_incident")
-        photo_date = st.date_input("Photo Date", date.today(), key="photo_date")
-        photographer = st.text_input("Photographer", placeholder="Name", key="photo_photographer")
-    
-    uploaded_files = st.file_uploader("Select photos", type=['jpg', 'jpeg', 'png'], accept_multiple_files=True, key="photo_upload")
-    
-    if uploaded_files and st.button("📸 Add Photos", key="add_photos"):
-        for file in uploaded_files:
-            photo = {
-                "id": int(datetime.now().timestamp() * 1000),
-                "municipality": photo_municipality,
-                "location": photo_location,
-                "description": photo_description,
-                "incident": photo_incident,
-                "date": photo_date.isoformat(),
-                "photographer": photographer,
-                "filename": file.name,
-                "uploaded_at": datetime.now().isoformat()
-            }
-            st.session_state.sitrep_photos.append(photo)
-        st.success(f"✅ {len(uploaded_files)} photos added!")
-        st.rerun()
-    
-    if st.session_state.sitrep_photos:
-        st.markdown("#### 📷 Photo Gallery")
-        for photo in reversed(st.session_state.sitrep_photos):
-            with st.expander(f"📸 {photo.get('municipality')} - {photo.get('location')} ({photo.get('date')})"):
-                st.markdown(f"**Description:** {photo.get('description', 'No description')}")
-                st.markdown(f"**Incident:** {photo.get('incident', 'N/A')}")
-                st.markdown(f"**Photographer:** {photo.get('photographer', 'Unknown')}")
-                if st.button(f"🗑️ Delete", key=f"del_photo_{photo.get('id')}"):
-                    st.session_state.sitrep_photos = [p for p in st.session_state.sitrep_photos if p.get('id') != photo.get('id')]
-                    st.rerun()
+# =============================================================================
+# SECTION 5: PHOTO GALLERY
+# =============================================================================
 
-
-def show_archived_reports():
-    """View archived situation reports"""
+def show_photo_gallery():
+    """Display photo gallery from all reports"""
     
-    st.markdown("### Archived Situation Reports")
-    
-    auto_sync_table('municipal_reports', 'municipal_reports')
-    auto_sync_table('main_reports', 'main_reports')
+    st.markdown("### 📸 Situation Report Photo Gallery")
+    st.caption("Photos from municipal reports")
     
     reports = st.session_state.get('municipal_reports', [])
-    main_reports = st.session_state.get('main_reports', [])
     
-    if not reports and not main_reports:
-        st.info("No archived reports found.")
+    photos = []
+    for r in reports:
+        photo = r.get('photo', {})
+        if photo.get('file'):
+            photos.append({
+                "municipality": r.get('municipality'),
+                "caption": photo.get('caption'),
+                "file": photo.get('file'),
+                "date": r.get('report_date')
+            })
+    
+    if not photos:
+        st.info("No photos uploaded yet")
         return
     
-    if main_reports:
-        st.markdown("#### 📄 Consolidated Reports")
-        for report in sorted(main_reports, key=lambda x: x.get('created_at', ''), reverse=True):
-            with st.expander(f"SITREP #{report.get('sitrep_number', 'N/A')}: {report.get('title', 'Untitled')}"):
-                st.json(report)
-    
-    if reports:
-        st.markdown("#### 🏘️ Municipal Reports")
-        for report in sorted(reports, key=lambda x: x.get('created_at', ''), reverse=True)[:20]:
-            with st.expander(f"{report.get('municipality', 'Unknown')} - SITREP #{report.get('sitrep_number')} ({report.get('report_date', 'Unknown')})"):
-                st.json(report)
+    cols = st.columns(3)
+    for i, photo in enumerate(photos):
+        with cols[i % 3]:
+            st.markdown(f"**{photo.get('municipality')}**")
+            st.caption(photo.get('caption', 'No caption'))
+            st.caption(f"Date: {photo.get('date', 'N/A')}")
+            st.markdown("---")
 
 
-def show_related_modules():
-    """Show connections to other modules"""
+# =============================================================================
+# SECTION 6: REFERENCE GUIDE
+# =============================================================================
+
+def show_reference_guide():
+    """Reference guide for PDRA and SitRep"""
     
-    st.markdown("### 🔗 Situation Report - Related Modules")
-    st.caption("How Situation Report connects with other INDC modules")
+    st.markdown("### 📜 Reference Guide")
+    st.caption("Official guidelines and reference materials")
     
-    col1, col2 = st.columns(2)
+    tabs = st.tabs(["PDRA Guidelines", "Hazard Classification", "Alert Levels", "Probability & Impact Scales"])
     
-    with col1:
+    with tabs[0]:
         st.markdown("""
-        ### 📊 DRRM Intelligence
-        **Connection:** Situation reports feed into predictive analytics and risk assessment
+        ### 📋 PDRA Guidelines
         
-        - **Risk Analysis:** Incident data validates hazard models
-        - **Trend Analysis:** Historical reports identify patterns
-        - **Vulnerability Assessment:** Affected populations highlight vulnerable areas
+        **Legal Bases:**
+        - NDRRMC Memorandum Circular No. 63, s. 2021
+        - Republic Act No. 10121 – Philippine DRRM Act of 2010
+        - Sendai Framework for Disaster Risk Reduction 2015-2030
         
-        ### 📋 Plan Management
-        **Connection:** Incident data validates and updates DRRM plans
-        
-        - **Plan Validation:** Actual incidents test plan assumptions
-        - **Resource Allocation:** Damage data informs budget priorities
-        - **PPA Adjustment:** Response gaps identify needed programs
+        **Triggers for PDRA:**
+        - Threat of hydro-meteorological hazards
+        - Existence of slow-onset geological hazards
+        - Threat to disruption of lifelines
+        - Threat of disease incidence
+        - Threat to environment and natural resources
         """)
     
-    with col2:
+    with tabs[1]:
         st.markdown("""
-        ### 📚 Trainings
-        **Connection:** Response effectiveness links to training needs assessment
+        ### 🌊 Hazard Classification (UNDRR)
         
-        - **Capacity Gaps:** Response challenges identify training needs
-        - **Skill Validation:** Actual response tests training effectiveness
-        - **Certification Tracking:** Link trained responders to actual response
-        
-        ### 💰 LDRRMF Utilization
-        **Connection:** Disaster impacts drive fund allocation and resource mobilization
-        
-        - **Emergency Funding:** Damage assessments trigger fund releases
-        - **Resource Tracking:** Relief goods distribution tracked against needs
-        - **Recovery Budget:** Rehabilitation needs inform budget planning
+        | Category | Examples |
+        |----------|----------|
+        | Hydrometeorological | Typhoons, floods, droughts, thunderstorms |
+        | Geological | Earthquakes, landslides, volcanic eruptions |
+        | Biological | Disease outbreaks, epidemics |
+        | Technological | Industrial accidents, infrastructure failures |
         """)
     
-    st.markdown("---")
-    st.markdown("### 📋 Quick Links to Related Modules")
+    with tabs[2]:
+        st.markdown("""
+        ### 🚨 Alert Levels
+        
+        | Level | Description | Action |
+        |-------|-------------|--------|
+        | **Alpha** | Initial monitoring | Prepare resources, monitor situation |
+        | **Blue** | Enhanced preparedness | Activate EOC, preposition supplies |
+        | **Red** | Response operations | Full activation, response deployment |
+        | **White** | All clear | Stand down, recovery phase |
+        """)
     
-    col1, col2, col3, col4 = st.columns(4)
-    with col1:
-        if st.button("📊 Go to DRRM Intelligence", use_container_width=True, key="link_drrm"):
-            st.session_state.navigation = "📊 DRRM INTELLIGENCE"
-            st.rerun()
-    with col2:
-        if st.button("📋 Go to Plan Management", use_container_width=True, key="link_plan"):
-            st.session_state.navigation = "📋 PLAN MANAGEMENT"
-            st.rerun()
-    with col3:
-        if st.button("📚 Go to Trainings", use_container_width=True, key="link_trainings"):
-            st.session_state.navigation = "📚 TRAININGS"
-            st.rerun()
-    with col4:
-        if st.button("💰 Go to LDRRMF", use_container_width=True, key="link_ldrrmf"):
-            st.session_state.navigation = "💰 LDRRMF UTILIZATION"
-            st.rerun()
-    
-    st.markdown("---")
-    st.markdown("### 📊 Current Data Summary")
-    
-    reports = st.session_state.get('municipal_reports', [])
-    if reports:
-        df = pd.DataFrame(reports)
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            st.metric("Total Reports", len(df))
-        with col2:
-            st.metric("Municipalities", df['municipality'].nunique())
-        with col3:
-            active = len(df[df['alert_level'] != 'White']) if 'alert_level' in df.columns else 0
-            st.metric("Active Alerts", active)
+    with tabs[3]:
+        st.markdown("""
+        ### 📊 Probability & Impact Scales
+        
+        **Probability Rating:**
+        - **1 - Unlikely**: Will not happen in 72 hours
+        - **2 - Less Likely**: <50% chance of affecting 2+ areas
+        - **3 - Highly Likely**: >50% chance, 51-75% area exposed
+        - **4 - Certain/Imminent**: 100% chance in next 72 hours
+        
+        **Impact Rating:**
+        - **1 - Negligible**: No casualties/damage
+        - **2 - Minor**: DRRMC can manage alone
+        - **3 - Moderate**: Manage with minimal assistance
+        - **4 - Major**: Progressive assistance required
+        - **5 - Catastrophic**: Overwhelmed, full assistance needed
+        """)
