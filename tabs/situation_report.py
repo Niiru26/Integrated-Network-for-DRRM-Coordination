@@ -774,17 +774,34 @@ def show_mdrrmo_data_entry():
 # =============================================================================
 
 def show_pdrrmo_consolidation():
-    """Provincial consolidation with auto-extraction from municipal reports"""
+    """Provincial consolidation with auto-extraction AND manual entry"""
     
     st.markdown("### 📊 Provincial Situation Report Consolidation")
-    st.caption("Auto-extracted data from municipal reports")
+    st.caption("Auto-extracted data from municipal reports + Manual entry option")
     
     # Load municipal reports
     auto_sync_table('municipal_reports', 'municipal_reports')
     reports = st.session_state.get('municipal_reports', [])
     
+    # Toggle between auto and manual mode
+    col1, col2 = st.columns([2, 1])
+    with col1:
+        input_mode = st.radio(
+            "Select Input Mode",
+            ["📊 Auto-Extracted from Municipal Reports", "✏️ Manual Data Entry"],
+            horizontal=True,
+            key="consolidation_mode"
+        )
+    with col2:
+        if st.button("🔄 Refresh Data", key="refresh_consolidation"):
+            st.rerun()
+    
+    if input_mode == "✏️ Manual Data Entry":
+        show_manual_consolidation_entry()
+        return
+    
     if not reports:
-        st.info("No municipal reports submitted yet.")
+        st.info("No municipal reports submitted yet. Use Manual Data Entry mode or wait for submissions.")
         return
     
     df = pd.DataFrame(reports)
@@ -852,10 +869,10 @@ def show_pdrrmo_consolidation():
             "Municipality": r.get('municipality'),
             "Power": power.get('status', 'N/A'),
             "Power Remarks": power.get('remarks', ''),
-            "Power Affected Barangays": power.get('affected_barangays', ''),
+            "Power Affected": power.get('affected_barangays', ''),
             "Communication": comm.get('status', 'N/A'),
             "Comm Remarks": comm.get('remarks', ''),
-            "Comm Affected Barangays": comm.get('affected_barangays', '')
+            "Comm Affected": comm.get('affected_barangays', '')
         })
     st.dataframe(pd.DataFrame(utils_data), use_container_width=True, hide_index=True)
     
@@ -879,74 +896,141 @@ def show_pdrrmo_consolidation():
     with col2:
         st.metric("Hygiene Kits", total_hygiene)
     
+    # Response Summary
+    st.markdown("#### 🚑 Response Actions Summary")
+    response_summary = []
+    for r in reports:
+        if r.get('response_actions'):
+            response_summary.append({
+                "Municipality": r.get('municipality'),
+                "Actions": r.get('response_actions', '')[:100] + "..."
+            })
+    if response_summary:
+        st.dataframe(pd.DataFrame(response_summary), use_container_width=True, hide_index=True)
+    
     # Generate Consolidated Report button
     st.markdown("---")
     if st.button("📄 Generate Consolidated Provincial SITREP", type="primary", use_container_width=True):
         generate_consolidated_report(reports)
 
 
-def generate_consolidated_report(reports):
-    """Generate consolidated provincial SITREP"""
+def show_manual_consolidation_entry():
+    """Manual data entry for provincial consolidation"""
     
-    # Calculate totals
-    total_families_ec = sum([r.get('displaced', {}).get('families_in_ec', 0) for r in reports])
-    total_persons_ec = sum([r.get('displaced', {}).get('persons_in_ec', 0) for r in reports])
-    total_families_out = sum([r.get('displaced', {}).get('families_outside', 0) for r in reports])
-    total_persons_out = sum([r.get('displaced', {}).get('persons_outside', 0) for r in reports])
+    st.markdown("### ✏️ Manual Provincial Data Entry")
+    st.caption("Use this when municipal reports are received via text, call, or other means")
     
-    st.markdown("---")
-    st.markdown("### 📄 Consolidated Provincial SITREP")
-    st.markdown(f"**Generated:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    municipalities = ["Barlig", "Bauko", "Besao", "Bontoc", "Natonin", "Paracelis", "Sabangan", "Sadanga", "Sagada", "Tadian"]
     
-    st.markdown("#### 📊 DISPLACED POPULATION")
-    col1, col2 = st.columns(2)
-    with col1:
-        st.markdown("**Inside Evacuation Centers**")
-        st.markdown(f"- Families: {total_families_ec:,}")
-        st.markdown(f"- Persons: {total_persons_ec:,}")
-    with col2:
-        st.markdown("**Outside Evacuation Centers**")
-        st.markdown(f"- Families: {total_families_out:,}")
-        st.markdown(f"- Persons: {total_persons_out:,}")
-    
-    st.markdown("#### 🏚️ DAMAGES")
-    total_totally = sum([r.get('damages', {}).get('totally_damaged', 0) for r in reports])
-    total_partially = sum([r.get('damages', {}).get('partially_damaged', 0) for r in reports])
-    st.markdown(f"- **Totally Damaged Houses:** {total_totally}")
-    st.markdown(f"- **Partially Damaged Houses:** {total_partially}")
-    
-    st.markdown("#### 📦 RESOURCES PROVIDED")
-    total_food = sum([r.get('resources', {}).get('food_packs', 0) for r in reports])
-    total_hygiene = sum([r.get('resources', {}).get('hygiene_kits', 0) for r in reports])
-    st.markdown(f"- **Food Packs:** {total_food}")
-    st.markdown(f"- **Hygiene Kits:** {total_hygiene}")
-    
-    # Save to main reports
-    main_report = {
-        "id": int(datetime.now().timestamp() * 1000),
-        "title": f"SITREP {datetime.now().strftime('%Y%m%d')}",
-        "date": datetime.now().isoformat(),
-        "municipalities": [r.get('municipality') for r in reports],
-        "displaced": {
-            "families_in_ec": total_families_ec,
-            "persons_in_ec": total_persons_ec,
-            "families_outside": total_families_out,
-            "persons_outside": total_persons_out
-        },
-        "damages": {
-            "totally_damaged": total_totally,
-            "partially_damaged": total_partially
-        },
-        "resources": {
-            "food_packs": total_food,
-            "hygiene_kits": total_hygiene
-        },
-        "created_at": datetime.now().isoformat()
-    }
-    
-    auto_sync_add('main_reports', 'main_reports', main_report)
-    st.success("✅ Consolidated report saved!")
-
+    with st.form("manual_consolidation_form", clear_on_submit=True):
+        st.markdown("#### 📍 Basic Information")
+        col1, col2 = st.columns(2)
+        with col1:
+            incident_name = st.text_input("Incident Name *", placeholder="e.g., TS PAENG, Structural Fire")
+            report_date = st.date_input("Report Date *", date.today())
+            sitrep_number = st.number_input("SITREP Number", min_value=1, value=1)
+        with col2:
+            alert_level = st.selectbox("Alert Level", ["White", "Blue", "Red"])
+            prepared_by = st.text_input("Prepared By", placeholder="Name")
+        
+        st.markdown("---")
+        
+        # Municipal data table
+        st.markdown("#### 🏘️ Municipal Data Entry")
+        st.caption("Enter data for each municipality that reported")
+        
+        municipal_data = []
+        for i, mun in enumerate(municipalities):
+            with st.expander(f"📋 {mun}", expanded=i < 3):
+                col1, col2 = st.columns(2)
+                with col1:
+                    has_report = st.checkbox(f"Has report for {mun}", key=f"has_report_{mun}")
+                
+                if has_report:
+                    with col2:
+                        alert = st.selectbox("Alert Level", ["White", "Blue", "Red"], key=f"alert_{mun}")
+                    
+                    st.markdown("**Weather**")
+                    col1, col2, col3 = st.columns(3)
+                    with col1:
+                        cloud = st.selectbox("Cloud", ["Clear", "Cloudy", "Light Rains", "Heavy Rains"], key=f"cloud_{mun}")
+                    with col2:
+                        wind = st.selectbox("Wind", ["Calm", "Light", "Moderate", "Strong"], key=f"wind_{mun}")
+                    with col3:
+                        rain = st.selectbox("Rain", ["None", "Light", "Moderate", "Heavy"], key=f"rain_{mun}")
+                    
+                    st.markdown("**Impact**")
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        families_affected = st.number_input("Affected Families", min_value=0, value=0, key=f"families_{mun}")
+                        totally_damaged = st.number_input("Totally Damaged Houses", min_value=0, value=0, key=f"total_{mun}")
+                    with col2:
+                        persons_affected = st.number_input("Affected Persons", min_value=0, value=0, key=f"persons_{mun}")
+                        partially_damaged = st.number_input("Partially Damaged Houses", min_value=0, value=0, key=f"partial_{mun}")
+                    
+                    st.markdown("**Resources**")
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        food_packs = st.number_input("Food Packs", min_value=0, value=0, key=f"food_{mun}")
+                    with col2:
+                        hygiene_kits = st.number_input("Hygiene Kits", min_value=0, value=0, key=f"hygiene_{mun}")
+                    
+                    incidents = st.text_area("Incidents Reported", placeholder="List incidents", key=f"incidents_{mun}")
+                    response = st.text_area("Response Actions", placeholder="Actions taken", key=f"response_{mun}")
+                    
+                    municipal_data.append({
+                        "municipality": mun,
+                        "alert_level": alert,
+                        "weather": {"cloud": cloud, "wind": wind, "precipitation": rain},
+                        "damages": {
+                            "affected_families": families_affected,
+                            "affected_persons": persons_affected,
+                            "totally_damaged": totally_damaged,
+                            "partially_damaged": partially_damaged
+                        },
+                        "resources": {"food_packs": food_packs, "hygiene_kits": hygiene_kits},
+                        "incidents": incidents,
+                        "response_actions": response
+                    })
+        
+        st.markdown("---")
+        
+        # Summary totals
+        if municipal_data:
+            st.markdown("#### 📊 Manual Entry Summary")
+            total_families = sum([d['damages']['affected_families'] for d in municipal_data])
+            total_food = sum([d['resources']['food_packs'] for d in municipal_data])
+            total_totally = sum([d['damages']['totally_damaged'] for d in municipal_data])
+            
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.metric("Total Affected Families", total_families)
+            with col2:
+                st.metric("Total Food Packs", total_food)
+            with col3:
+                st.metric("Totally Damaged Houses", total_totally)
+        
+        submitted = st.form_submit_button("💾 Save Manual Consolidation", type="primary")
+        
+        if submitted and incident_name and municipal_data:
+            # Create manual report
+            manual_report = {
+                "id": int(datetime.now().timestamp() * 1000),
+                "incident_name": incident_name,
+                "report_date": report_date.isoformat(),
+                "sitrep_number": sitrep_number,
+                "alert_level": alert_level,
+                "prepared_by": prepared_by,
+                "type": "manual",
+                "municipal_data": municipal_data,
+                "created_at": datetime.now().isoformat()
+            }
+            
+            # Save to main reports
+            auto_sync_add('main_reports', 'main_reports', manual_report)
+            st.success(f"✅ Manual consolidation for {incident_name} saved!")
+            st.balloons()
+            st.rerun()
 
 # =============================================================================
 # SECTION 4: PREDICTIVE ANALYSIS (with summary statistics)
