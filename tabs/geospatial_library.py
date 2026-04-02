@@ -9,6 +9,23 @@ import subprocess
 from PIL import Image
 from utils.local_storage import save_file, delete_file, get_file_size, file_exists
 
+# Add this function at the top, after imports
+def format_file_size(size_bytes):
+    """Format file size in human-readable format"""
+    if size_bytes == 0:
+        return "0 B"
+    for unit in ['B', 'KB', 'MB', 'GB']:
+        if size_bytes < 1024:
+            return f"{size_bytes:.1f} {unit}"
+        size_bytes /= 1024
+    return f"{size_bytes:.1f} TB"
+
+def get_file_size(file_path):
+    """Get file size in human-readable format"""
+    if not file_path or not os.path.exists(file_path):
+        return "0 B"
+    return format_file_size(os.path.getsize(file_path))
+
 def show():
     """Display Geospatial Library Tab - Repository of GIS-generated maps"""
     
@@ -192,15 +209,15 @@ def show_map_gallery(categories):
 
 
 def show_upload_map(categories):
-    """Upload new GIS maps"""
+    """Upload new GIS maps with clear form after submission"""
     
     st.markdown("### 📤 Upload GIS Map")
     st.caption("Add new maps to the library (JPEG, PNG, PDF formats)")
     
-    # Municipalities list
     municipalities = ["Province-wide", "Barlig", "Bauko", "Besao", "Bontoc", "Natonin", "Paracelis", "Sabangan", "Sadanga", "Sagada", "Tadian"]
     
-    with st.form("upload_map_form", clear_on_submit=False):
+    # Use clear_on_submit=True to reset form after submission
+    with st.form("upload_map_form", clear_on_submit=True):
         col1, col2 = st.columns(2)
         
         with col1:
@@ -217,8 +234,6 @@ def show_upload_map(categories):
         
         description = st.text_area("Description", placeholder="Brief description of the map and its purpose", height=100)
         
-        st.markdown("#### 📎 Upload Map File")
-        st.caption("Supported formats: JPG, JPEG, PNG, PDF")
         uploaded_file = st.file_uploader("Select map file", type=['jpg', 'jpeg', 'png', 'pdf'])
         
         submitted = st.form_submit_button("📤 Upload Map", type="primary")
@@ -239,7 +254,7 @@ def show_upload_map(categories):
             with open(file_path, "wb") as f:
                 f.write(uploaded_file.getbuffer())
             
-            # Get file info
+            # Get file info - use the format_file_size function
             file_size_bytes = os.path.getsize(file_path)
             file_size = format_file_size(file_size_bytes)
             
@@ -274,7 +289,6 @@ def show_upload_map(categories):
         
         elif submitted and not uploaded_file:
             st.error("Please select a file to upload")
-
 
 def show_map_categories(categories):
     """Display information about map categories and 3D PRISM"""
@@ -493,3 +507,19 @@ def show_upload_map(categories):
         
         elif submitted and not uploaded_file:
             st.error("Please select a file to upload")
+
+def format_file_size(size_bytes):
+    """Format file size in human-readable format"""
+    if size_bytes == 0:
+        return "0 B"
+    for unit in ['B', 'KB', 'MB', 'GB']:
+        if size_bytes < 1024:
+            return f"{size_bytes:.1f} {unit}"
+        size_bytes /= 1024
+    return f"{size_bytes:.1f} TB"
+
+def get_file_size(file_path):
+    """Get file size in human-readable format"""
+    if not file_path or not os.path.exists(file_path):
+        return "0 B"
+    return format_file_size(os.path.getsize(file_path))            

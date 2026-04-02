@@ -556,7 +556,7 @@ def show_hazard_documentation():
             roads_affected = st.text_area("Affected Roads", placeholder="List affected roads and sections...",
                                          height=60, help="List roads damaged or blocked")
         
-        st.markdown("#### 💰 Economic Damage (in Philippine Pesos)")
+        st.markdown("#### 💰 Economic Damage")
         col_e1, col_e2, col_e3 = st.columns(3)
         with col_e1:
             damage_agriculture = st.number_input("Agriculture Damage (₱)", min_value=0.0, value=0.0, step=1000.0,

@@ -100,7 +100,7 @@ def show_rationale():
     st.markdown("""
     It is from this practical experience that the **INDC app was conceived and designed**. The application was 
     developed not only to gather and organize data efficiently, but more importantly, to **help analyze existing 
-    datasets and generate descriptipredictive and projective insights** that can support better decision-making.
+    datasets and generate descriptive, predictive and projective insights** that can support better decision-making.
     
     By integrating and simplifying complex information, the app aims to help LGUs and local DRRM offices 
     move beyond routine data collection and compliance reporting toward a **culture of learning, foresight, 

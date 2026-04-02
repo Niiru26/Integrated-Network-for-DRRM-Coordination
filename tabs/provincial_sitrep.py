@@ -97,6 +97,152 @@ def save_sitrep_to_cloud(sitrep):
     return False
 
 
+def show_national_roads_manager():
+    """Manage national roads outside the form"""
+    
+    st.markdown("##### National Roads & Bridges")
+    
+    if 'national_roads' not in st.session_state:
+        st.session_state.national_roads = [
+            {"id": 1, "name": "Bontoc - Baguio Road (S00504LZ)", "sections": []},
+            {"id": 2, "name": "Bontoc - Cadre Road (S03996LZ)", "sections": []},
+            {"id": 3, "name": "Dantay - Sagada Road (S00509LZ)", "sections": []},
+            {"id": 4, "name": "Junction Talubin - Barlig - Natonin - Paracelis - Calaccad Road (S00534LZ)", "sections": []},
+            {"id": 5, "name": "Mt. Province - Cagayan via Tabuk - Enrile Road (S00514LZ)", "sections": []},
+            {"id": 6, "name": "Mt. Province - Ilocos Sur Road via Kayan (S00531LZ)", "sections": []},
+            {"id": 7, "name": "Mt. Province - Ilocos Sur Road via Tue (S00530LZ)", "sections": []},
+            {"id": 8, "name": "Mt. Province - Nueva Vizcaya Road (S00512LZ)", "sections": []}
+        ]
+    
+    # Display existing roads with sections
+    for road in st.session_state.national_roads:
+        with st.expander(f"🛣️ {road['name']}"):
+            # Add new section
+            col1, col2, col3, col4, col5 = st.columns([2, 1.5, 1.5, 2, 1])
+            with col1:
+                new_section = st.text_input("Road Section", placeholder="e.g., Napu Section", key=f"new_section_{road['id']}")
+            with col2:
+                new_traffic = st.selectbox("Traffic", ["Passable", "One Lane Passable", "Not Passable", "Closed"], key=f"new_traffic_{road['id']}")
+            with col3:
+                new_status = st.selectbox("Status", ["Normal", "Under Repair", "Clearing", "Closed"], key=f"new_status_{road['id']}")
+            with col4:
+                new_actions = st.selectbox("Actions Taken", 
+                    ["Monitoring", "Clearing Operations", "Repair Ongoing", "Traffic Management", "Road Closed", "Emergency Response"],
+                    key=f"new_actions_{road['id']}")
+            with col5:
+                if st.button("➕ Add", key=f"add_section_{road['id']}"):
+                    if new_section:
+                        road['sections'].append({
+                            "section": new_section,
+                            "traffic": new_traffic,
+                            "status": new_status,
+                            "actions": new_actions,
+                            "remarks": ""
+                        })
+                        st.rerun()
+            
+            # Display existing sections
+            for idx, section in enumerate(road['sections']):
+                col1, col2, col3, col4, col5, col6 = st.columns([2, 1.5, 1.5, 2, 1.5, 0.5])
+                with col1:
+                    section_name = st.text_input("Section", value=section['section'], key=f"section_{road['id']}_{idx}")
+                with col2:
+                    traffic = st.selectbox("Traffic", ["Passable", "One Lane Passable", "Not Passable", "Closed"], 
+                                          index=["Passable", "One Lane Passable", "Not Passable", "Closed"].index(section['traffic']),
+                                          key=f"traffic_{road['id']}_{idx}")
+                with col3:
+                    status = st.selectbox("Status", ["Normal", "Under Repair", "Clearing", "Closed"],
+                                        index=["Normal", "Under Repair", "Clearing", "Closed"].index(section['status']),
+                                        key=f"status_{road['id']}_{idx}")
+                with col4:
+                    actions = st.selectbox("Actions Taken", 
+                        ["Monitoring", "Clearing Operations", "Repair Ongoing", "Traffic Management", "Road Closed", "Emergency Response"],
+                                        key=f"actions_{road['id']}_{idx}")
+                with col5:
+                    remarks = st.text_input("Remarks", value=section.get('remarks', ''), key=f"remarks_{road['id']}_{idx}")
+                with col6:
+                    if st.button("🗑️", key=f"del_section_{road['id']}_{idx}"):
+                        road['sections'].pop(idx)
+                        st.rerun()
+                
+                # Update section data
+                section['section'] = section_name
+                section['traffic'] = traffic
+                section['status'] = status
+                section['actions'] = actions
+                section['remarks'] = remarks
+    
+    # Add new national road
+    st.markdown("##### ➕ Add New National Road")
+    col1, col2 = st.columns([3, 1])
+    with col1:
+        new_road_name = st.text_input("New National Road Name", placeholder="Enter new national road name", key="new_national_road")
+    with col2:
+        if st.button("➕ Add National Road", key="add_national_road", use_container_width=True):
+            if new_road_name:
+                new_id = max([r['id'] for r in st.session_state.national_roads]) + 1 if st.session_state.national_roads else 1
+                st.session_state.national_roads.append({
+                    "id": new_id,
+                    "name": new_road_name,
+                    "sections": []
+                })
+                st.rerun()
+
+
+def show_provincial_roads_manager():
+    """Manage provincial roads outside the form"""
+    
+    st.markdown("##### Provincial Roads & Bridges")
+    
+    if 'provincial_roads' not in st.session_state:
+        st.session_state.provincial_roads = [
+            {"id": 1, "name": "Abatan - Bagnen Road", "status": "Passable", "remarks": ""},
+            {"id": 2, "name": "Abatan - Maba-ay Road", "status": "Passable", "remarks": ""},
+            {"id": 3, "name": "Balicanao - Am-am Road", "status": "Passable", "remarks": ""},
+            {"id": 4, "name": "Bontoc - Mainit Road", "status": "Passable", "remarks": ""},
+            {"id": 5, "name": "Bontoc - Maligcong Road", "status": "Passable", "remarks": ""},
+            {"id": 6, "name": "Sagada - Payeo Road", "status": "Passable", "remarks": ""},
+            {"id": 7, "name": "Tadian - Nacawang Road", "status": "Passable", "remarks": ""},
+            {"id": 8, "name": "Natonin - Toboy - Aguinaldo Road", "status": "Passable", "remarks": ""}
+        ]
+    
+    # Display Provincial Roads
+    for road in st.session_state.provincial_roads:
+        col1, col2, col3, col4 = st.columns([3, 1.5, 2, 0.5])
+        with col1:
+            road_name = st.text_input("Road Name", value=road['name'], key=f"prov_road_{road['id']}")
+        with col2:
+            road_status = st.selectbox("Status", ["Passable", "One Lane Passable", "Not Passable", "Closed"],
+                                      index=["Passable", "One Lane Passable", "Not Passable", "Closed"].index(road['status']),
+                                      key=f"prov_status_{road['id']}")
+        with col3:
+            road_remarks = st.text_input("Remarks", value=road.get('remarks', ''), key=f"prov_remarks_{road['id']}")
+        with col4:
+            if st.button("🗑️", key=f"del_prov_road_{road['id']}"):
+                st.session_state.provincial_roads = [r for r in st.session_state.provincial_roads if r['id'] != road['id']]
+                st.rerun()
+        
+        road['name'] = road_name
+        road['status'] = road_status
+        road['remarks'] = road_remarks
+    
+    # Add new provincial road
+    col1, col2 = st.columns([3, 1])
+    with col1:
+        new_prov_road = st.text_input("New Provincial Road Name", placeholder="Enter new provincial road name", key="new_provincial_road")
+    with col2:
+        if st.button("➕ Add Provincial Road", key="add_provincial_road", use_container_width=True):
+            if new_prov_road:
+                new_id = max([r['id'] for r in st.session_state.provincial_roads]) + 1 if st.session_state.provincial_roads else 1
+                st.session_state.provincial_roads.append({
+                    "id": new_id,
+                    "name": new_prov_road,
+                    "status": "Passable",
+                    "remarks": ""
+                })
+                st.rerun()
+
+
 def show_provincial_sitrep_form():
     """Main Provincial SitRep Form"""
     
@@ -111,6 +257,21 @@ def show_provincial_sitrep_form():
     
     st.markdown("---")
     
+    # ===== ROAD MANAGEMENT SECTION (OUTSIDE THE FORM) =====
+    st.markdown("#### 🛣️ Roads Management")
+    st.caption("Manage national and provincial roads before filling the SITREP form")
+    
+    # National Roads Management
+    with st.expander("Manage National Roads", expanded=False):
+        show_national_roads_manager()
+    
+    # Provincial Roads Management
+    with st.expander("Manage Provincial Roads", expanded=False):
+        show_provincial_roads_manager()
+    
+    st.markdown("---")
+    
+    # ===== MAIN FORM STARTS HERE =====
     with st.form("provincial_sitrep_form", clear_on_submit=False):
         # ===== HEADER SECTION =====
         st.markdown("#### 📋 HEADER")
@@ -213,149 +374,32 @@ def show_provincial_sitrep_form():
                 "casualties": casualties
             })
         
-        # ===== SECTION III: STATUS OF LIFELINES =====
+        # ===== SECTION III: STATUS OF LIFELINES (References to pre-defined roads) =====
         st.markdown("---")
         st.markdown("#### III. STATUS OF LIFELINES")
         
-        # National Roads with add/edit/delete functionality
+        # National Roads - Reference only (sections already managed)
         st.markdown("##### 3.1 National Roads & Bridges")
+        st.caption("Refer to the Roads Management section above to add/edit road sections")
         
-        if 'national_roads' not in st.session_state:
-            st.session_state.national_roads = [
-                {"id": 1, "name": "Bontoc - Baguio Road (S00504LZ)", "sections": []},
-                {"id": 2, "name": "Bontoc - Cadre Road (S03996LZ)", "sections": []},
-                {"id": 3, "name": "Dantay - Sagada Road (S00509LZ)", "sections": []},
-                {"id": 4, "name": "Junction Talubin - Barlig - Natonin - Paracelis - Calaccad Road (S00534LZ)", "sections": []},
-                {"id": 5, "name": "Mt. Province - Cagayan via Tabuk - Enrile Road (S00514LZ)", "sections": []},
-                {"id": 6, "name": "Mt. Province - Ilocos Sur Road via Kayan (S00531LZ)", "sections": []},
-                {"id": 7, "name": "Mt. Province - Ilocos Sur Road via Tue (S00530LZ)", "sections": []},
-                {"id": 8, "name": "Mt. Province - Nueva Vizcaya Road (S00512LZ)", "sections": []}
-            ]
+        # Display current national roads status summary
+        if st.session_state.national_roads:
+            for road in st.session_state.national_roads:
+                with st.expander(f"📋 {road['name']}"):
+                    if road['sections']:
+                        for section in road['sections']:
+                            st.markdown(f"- **{section['section']}:** {section['traffic']} | {section['status']} | Actions: {section['actions']}")
+                            if section.get('remarks'):
+                                st.caption(f"  Remarks: {section['remarks']}")
+                    else:
+                        st.caption("No sections reported")
         
-        # Display National Roads with sections
-        for road in st.session_state.national_roads:
-            with st.expander(f"🛣️ {road['name']}"):
-                # Add new section
-                col1, col2, col3, col4, col5 = st.columns([2, 1.5, 1.5, 2, 1])
-                with col1:
-                    new_section = st.text_input("Road Section", placeholder="e.g., Napu Section", key=f"new_section_{road['id']}")
-                with col2:
-                    new_traffic = st.selectbox("Traffic", ["Passable", "One Lane Passable", "Not Passable", "Closed"], key=f"new_traffic_{road['id']}")
-                with col3:
-                    new_status = st.selectbox("Status", ["Normal", "Under Repair", "Clearing", "Closed"], key=f"new_status_{road['id']}")
-                with col4:
-                    new_actions = st.selectbox("Actions Taken", 
-                        ["Monitoring", "Clearing Operations", "Repair Ongoing", "Traffic Management", "Road Closed", "Emergency Response"],
-                        key=f"new_actions_{road['id']}")
-                with col5:
-                    if st.button("➕ Add", key=f"add_section_{road['id']}"):
-                        if new_section:
-                            road['sections'].append({
-                                "section": new_section,
-                                "traffic": new_traffic,
-                                "status": new_status,
-                                "actions": new_actions,
-                                "remarks": ""
-                            })
-                            st.rerun()
-                
-                # Display existing sections
-                for idx, section in enumerate(road['sections']):
-                    col1, col2, col3, col4, col5, col6 = st.columns([2, 1.5, 1.5, 2, 1.5, 0.5])
-                    with col1:
-                        section_name = st.text_input("Section", value=section['section'], key=f"section_{road['id']}_{idx}")
-                    with col2:
-                        traffic = st.selectbox("Traffic", ["Passable", "One Lane Passable", "Not Passable", "Closed"], 
-                                              index=["Passable", "One Lane Passable", "Not Passable", "Closed"].index(section['traffic']),
-                                              key=f"traffic_{road['id']}_{idx}")
-                    with col3:
-                        status = st.selectbox("Status", ["Normal", "Under Repair", "Clearing", "Closed"],
-                                            index=["Normal", "Under Repair", "Clearing", "Closed"].index(section['status']),
-                                            key=f"status_{road['id']}_{idx}")
-                    with col4:
-                        actions = st.selectbox("Actions Taken", 
-                            ["Monitoring", "Clearing Operations", "Repair Ongoing", "Traffic Management", "Road Closed", "Emergency Response"],
-                                            key=f"actions_{road['id']}_{idx}")
-                    with col5:
-                        remarks = st.text_input("Remarks", value=section.get('remarks', ''), key=f"remarks_{road['id']}_{idx}")
-                    with col6:
-                        if st.button("🗑️", key=f"del_section_{road['id']}_{idx}"):
-                            road['sections'].pop(idx)
-                            st.rerun()
-                    
-                    # Update section data
-                    section['section'] = section_name
-                    section['traffic'] = traffic
-                    section['status'] = status
-                    section['actions'] = actions
-                    section['remarks'] = remarks
-        
-        # Add new national road
-        st.markdown("##### ➕ Add New National Road")
-        col1, col2 = st.columns([3, 1])
-        with col1:
-            new_road_name = st.text_input("New Road Name", placeholder="Enter new national road name")
-        with col2:
-            if st.button("➕ Add National Road", use_container_width=True):
-                if new_road_name:
-                    new_id = max([r['id'] for r in st.session_state.national_roads]) + 1 if st.session_state.national_roads else 1
-                    st.session_state.national_roads.append({
-                        "id": new_id,
-                        "name": new_road_name,
-                        "sections": []
-                    })
-                    st.rerun()
-        
-        # Provincial Roads (similar structure)
+        # Provincial Roads - Reference only
         st.markdown("##### 3.2 Provincial Roads & Bridges")
         
-        if 'provincial_roads' not in st.session_state:
-            st.session_state.provincial_roads = [
-                {"id": 1, "name": "Abatan - Bagnen Road", "status": "Passable", "remarks": ""},
-                {"id": 2, "name": "Abatan - Maba-ay Road", "status": "Passable", "remarks": ""},
-                {"id": 3, "name": "Balicanao - Am-am Road", "status": "Passable", "remarks": ""},
-                {"id": 4, "name": "Bontoc - Mainit Road", "status": "Passable", "remarks": ""},
-                {"id": 5, "name": "Bontoc - Maligcong Road", "status": "Passable", "remarks": ""},
-                {"id": 6, "name": "Sagada - Payeo Road", "status": "Passable", "remarks": ""},
-                {"id": 7, "name": "Tadian - Nacawang Road", "status": "Passable", "remarks": ""},
-                {"id": 8, "name": "Natonin - Toboy - Aguinaldo Road", "status": "Passable", "remarks": ""}
-            ]
-        
-        # Display Provincial Roads
-        for road in st.session_state.provincial_roads:
-            col1, col2, col3, col4 = st.columns([3, 1.5, 2, 0.5])
-            with col1:
-                road_name = st.text_input("Road Name", value=road['name'], key=f"prov_road_{road['id']}")
-            with col2:
-                road_status = st.selectbox("Status", ["Passable", "One Lane Passable", "Not Passable", "Closed"],
-                                          index=["Passable", "One Lane Passable", "Not Passable", "Closed"].index(road['status']),
-                                          key=f"prov_status_{road['id']}")
-            with col3:
-                road_remarks = st.text_input("Remarks", value=road.get('remarks', ''), key=f"prov_remarks_{road['id']}")
-            with col4:
-                if st.button("🗑️", key=f"del_prov_road_{road['id']}"):
-                    st.session_state.provincial_roads = [r for r in st.session_state.provincial_roads if r['id'] != road['id']]
-                    st.rerun()
-            
-            road['name'] = road_name
-            road['status'] = road_status
-            road['remarks'] = road_remarks
-        
-        # Add new provincial road
-        col1, col2 = st.columns([3, 1])
-        with col1:
-            new_prov_road = st.text_input("New Provincial Road Name", placeholder="Enter new provincial road name")
-        with col2:
-            if st.button("➕ Add Provincial Road", use_container_width=True):
-                if new_prov_road:
-                    new_id = max([r['id'] for r in st.session_state.provincial_roads]) + 1 if st.session_state.provincial_roads else 1
-                    st.session_state.provincial_roads.append({
-                        "id": new_id,
-                        "name": new_prov_road,
-                        "status": "Passable",
-                        "remarks": ""
-                    })
-                    st.rerun()
+        if st.session_state.provincial_roads:
+            prov_df = pd.DataFrame(st.session_state.provincial_roads)
+            st.dataframe(prov_df[['name', 'status', 'remarks']], use_container_width=True, hide_index=True)
         
         # Power & Communication
         st.markdown("##### 3.3 Power & Communication")
