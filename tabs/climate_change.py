@@ -637,15 +637,23 @@ def show_mpcfs_scurve_tracker(component="infrastructure"):
         st.session_state[f'{prefix}original_plan'] = original_plan
         st.session_state[f'{prefix}revised_plan'] = revised_plan
         st.session_state[f'{prefix}actual'] = actual
-        st.session_state[f'{prefix}cost'] = [p * CONTRACT_AMOUNT / 100 for p in actual]
+        st.session_state[f'{prefix}cost'] = [p * CONTRACT_AMOUNT / 100 for p in actual]  # This is a LIST
         st.session_state[f'{prefix}last_updated'] = datetime.now().isoformat()
     
     weeks = list(range(1, 194))
     
-    # Get current progress
-    current_week = max([i for i, val in enumerate(st.session_state[f'{prefix}actual']) if val > 0], default=0)
-    current_actual = st.session_state[f'{prefix}actual'][current_week] if current_week < len(st.session_state[f'{prefix}actual']) else 0
-    current_revised = st.session_state[f'{prefix}revised_plan'][current_week] if current_week < len(st.session_state[f'{prefix}revised_plan']) else 0
+    # Get current progress - FIXED: handle list properly
+    actual_list = st.session_state[f'{prefix}actual']
+    revised_list = st.session_state[f'{prefix}revised_plan']
+    
+    # Find current week (last week with actual > 0)
+    current_week = 0
+    for i, val in enumerate(actual_list):
+        if val > 0:
+            current_week = i
+    
+    current_actual = actual_list[current_week] if current_week < len(actual_list) else 0
+    current_revised = revised_list[current_week] if current_week < len(revised_list) else 0
     
     physical_variance = current_actual - current_revised
     current_cost = current_actual * CONTRACT_AMOUNT / 100
@@ -656,7 +664,6 @@ def show_mpcfs_scurve_tracker(component="infrastructure"):
     st.session_state['infrastructure_progress'] = current_actual
     st.session_state['infrastructure_target'] = current_revised
     st.session_state['infrastructure_cost'] = current_cost
-    st.session_state['infrastructure_weekly'] = st.session_state[f'{prefix}actual'][:52]
     
     # KPI Cards
     col1, col2, col3, col4, col5 = st.columns(5)
@@ -719,7 +726,7 @@ def show_mpcfs_scurve_tracker(component="infrastructure"):
         # Editable Table
         st.markdown("### 📝 Edit Plan Data")
         
-        # Show limited rows for editing (first 52 weeks or last 12 weeks)
+        # Show limited rows for editing
         edit_range = st.radio("Show weeks:", ["First 52 weeks", "Last 12 weeks", "Current +/- 10 weeks"], horizontal=True)
         
         if edit_range == "First 52 weeks":
@@ -766,39 +773,47 @@ def show_mpcfs_scurve_tracker(component="infrastructure"):
             st.success("✅ All changes saved!")
             st.rerun()
     
-    # S-CURVE CHART (Same as before)
+    # S-CURVE CHART
     st.markdown("### 📈 S-Curve: Planned vs Actual Progress")
     
+    # Ensure all lists have same length
+    max_len = len(st.session_state[f'{prefix}original_plan'])
+    
     plot_df = pd.DataFrame({
-        "Week": weeks[:len(st.session_state[f'{prefix}original_plan'])],
-        "Original Plan (%)": st.session_state[f'{prefix}original_plan'],
-        "Revised Plan (%)": st.session_state[f'{prefix}revised_plan'],
-        "Actual Progress (%)": st.session_state[f'{prefix}actual']
+        "Week": weeks[:max_len],
+        "Original Plan (%)": st.session_state[f'{prefix}original_plan'][:max_len],
+        "Revised Plan (%)": st.session_state[f'{prefix}revised_plan'][:max_len],
+        "Actual Progress (%)": st.session_state[f'{prefix}actual'][:max_len]
     })
     
     fig = go.Figure()
     fig.add_trace(go.Scatter(x=plot_df["Week"], y=plot_df["Original Plan (%)"], mode='lines', name='Original Plan', line=dict(color='#3498db', width=2, dash='dash')))
     fig.add_trace(go.Scatter(x=plot_df["Week"], y=plot_df["Revised Plan (%)"], mode='lines', name='Revised Plan', line=dict(color='#f39c12', width=2, dash='dot')))
     fig.add_trace(go.Scatter(x=plot_df["Week"], y=plot_df["Actual Progress (%)"], mode='lines+markers', name='Actual Progress', line=dict(color='#2ecc71', width=3), marker=dict(size=4)))
-    fig.add_vline(x=current_week, line_dash="dash", line_color="red", annotation_text=f"Current: Week {current_week}", annotation_position="top right")
+    fig.add_vline(x=current_week + 1, line_dash="dash", line_color="red", annotation_text=f"Current: Week {current_week + 1}", annotation_position="top right")
     fig.update_layout(title="Project Progress S-Curve", xaxis_title="Week Number (Sept 2024 → May 2028)", yaxis_title="Cumulative Progress (%)", yaxis_range=[0, 105], height=500, hovermode='x unified')
     st.plotly_chart(fig, use_container_width=True)
     
-    # COST S-CURVE CHART
+    # COST S-CURVE CHART - FIXED: now using list comprehension correctly
     st.markdown("### 💰 Cost S-Curve: Planned vs Actual Expenditure")
     
+    cost_list = st.session_state[f'{prefix}cost']
+    # Ensure cost_list is a list
+    if not isinstance(cost_list, list):
+        cost_list = [cost_list] * max_len
+    
     cost_df = pd.DataFrame({
-        "Week": weeks[:len(st.session_state[f'{prefix}original_plan'])],
-        "Original Plan (₱M)": [p * CONTRACT_AMOUNT / 100 / 1_000_000 for p in st.session_state[f'{prefix}original_plan']],
-        "Revised Plan (₱M)": [p * CONTRACT_AMOUNT / 100 / 1_000_000 for p in st.session_state[f'{prefix}revised_plan']],
-        "Actual Cost (₱M)": [c / 1_000_000 for c in st.session_state[f'{prefix}cost']]
+        "Week": weeks[:max_len],
+        "Original Plan (₱M)": [p * CONTRACT_AMOUNT / 100 / 1_000_000 for p in st.session_state[f'{prefix}original_plan'][:max_len]],
+        "Revised Plan (₱M)": [p * CONTRACT_AMOUNT / 100 / 1_000_000 for p in st.session_state[f'{prefix}revised_plan'][:max_len]],
+        "Actual Cost (₱M)": [cost_list[i] / 1_000_000 if i < len(cost_list) else 0 for i in range(max_len)]
     })
     
     fig2 = go.Figure()
     fig2.add_trace(go.Scatter(x=cost_df["Week"], y=cost_df["Original Plan (₱M)"], mode='lines', name='Original Plan (₱M)', line=dict(color='#3498db', width=2, dash='dash')))
     fig2.add_trace(go.Scatter(x=cost_df["Week"], y=cost_df["Revised Plan (₱M)"], mode='lines', name='Revised Plan (₱M)', line=dict(color='#f39c12', width=2, dash='dot')))
     fig2.add_trace(go.Scatter(x=cost_df["Week"], y=cost_df["Actual Cost (₱M)"], mode='lines+markers', name='Actual Cost (₱M)', line=dict(color='#e74c3c', width=3), marker=dict(size=4)))
-    fig2.add_vline(x=current_week, line_dash="dash", line_color="red")
+    fig2.add_vline(x=current_week + 1, line_dash="dash", line_color="red")
     fig2.update_layout(title="Project Cost S-Curve (in Million ₱)", xaxis_title="Week Number", yaxis_title="Cumulative Cost (₱ Million)", height=450, hovermode='x unified')
     st.plotly_chart(fig2, use_container_width=True)
     
@@ -812,25 +827,30 @@ def show_mpcfs_scurve_tracker(component="infrastructure"):
         if role != "Viewer":
             col1, col2 = st.columns(2)
             with col1:
-                week_to_update = st.slider("Select Week", 1, min(80, len(st.session_state[f'{prefix}actual'])), current_week + 1)
+                week_to_update = st.slider("Select Week", 1, min(80, len(actual_list)), current_week + 1)
             with col2:
                 if role in ["Project Engineer", "Project Manager"]:
                     new_progress = st.number_input("Physical Progress (%)", 0.0, 100.0, 
-                                                   value=float(st.session_state[f'{prefix}actual'][week_to_update-1]), step=0.5, key=f"{prefix}_progress")
+                                                   value=float(actual_list[week_to_update-1]), step=0.5, key=f"{prefix}_progress")
                     if st.button("✅ Update Progress", type="primary"):
-                        st.session_state[f'{prefix}actual'][week_to_update-1] = new_progress
-                        st.session_state[f'{prefix}cost'][week_to_update-1] = new_progress * CONTRACT_AMOUNT / 100
+                        actual_list[week_to_update-1] = new_progress
+                        cost_list[week_to_update-1] = new_progress * CONTRACT_AMOUNT / 100
+                        st.session_state[f'{prefix}actual'] = actual_list
+                        st.session_state[f'{prefix}cost'] = cost_list
                         st.session_state[f'{prefix}last_updated'] = datetime.now().isoformat()
                         st.success(f"✅ Week {week_to_update} updated to {new_progress}%")
                         st.rerun()
                 
                 if role in ["Finance Officer", "Project Manager"]:
+                    current_cost_val = cost_list[week_to_update-1] if week_to_update-1 < len(cost_list) else 0
                     new_cost = st.number_input("Actual Cost (₱)", 0.0, float(CONTRACT_AMOUNT),
-                                               value=float(st.session_state[f'{prefix}cost'][week_to_update-1]), step=100000.0, key=f"{prefix}_cost")
+                                               value=float(current_cost_val), step=100000.0, key=f"{prefix}_cost_input")
                     if st.button("💰 Update Cost", type="primary"):
                         new_progress_from_cost = (new_cost / CONTRACT_AMOUNT) * 100
-                        st.session_state[f'{prefix}actual'][week_to_update-1] = new_progress_from_cost
-                        st.session_state[f'{prefix}cost'][week_to_update-1] = new_cost
+                        actual_list[week_to_update-1] = new_progress_from_cost
+                        cost_list[week_to_update-1] = new_cost
+                        st.session_state[f'{prefix}actual'] = actual_list
+                        st.session_state[f'{prefix}cost'] = cost_list
                         st.session_state[f'{prefix}last_updated'] = datetime.now().isoformat()
                         st.success(f"✅ Week {week_to_update} cost updated to ₱{new_cost:,.2f}")
                         st.rerun()
@@ -839,16 +859,16 @@ def show_mpcfs_scurve_tracker(component="infrastructure"):
     st.markdown("---")
     st.markdown("### 📋 Progress Variance Summary")
     
-    start_week = max(0, current_week - 11)
+    start_week_viz = max(0, current_week - 11)
     variance_data = []
-    for i in range(start_week, min(current_week + 1, len(st.session_state[f'{prefix}actual']))):
+    for i in range(start_week_viz, min(current_week + 1, len(actual_list))):
         variance_data.append({
             "Week": i + 1,
-            "Actual (%)": f"{st.session_state[f'{prefix}actual'][i]:.2f}",
+            "Actual (%)": f"{actual_list[i]:.2f}",
             "Original Plan (%)": f"{st.session_state[f'{prefix}original_plan'][i]:.2f}",
             "Revised Plan (%)": f"{st.session_state[f'{prefix}revised_plan'][i]:.2f}",
-            "Δ vs Original": f"{st.session_state[f'{prefix}actual'][i] - st.session_state[f'{prefix}original_plan'][i]:+.2f}%",
-            "Δ vs Revised": f"{st.session_state[f'{prefix}actual'][i] - st.session_state[f'{prefix}revised_plan'][i]:+.2f}%"
+            "Δ vs Original": f"{actual_list[i] - st.session_state[f'{prefix}original_plan'][i]:+.2f}%",
+            "Δ vs Revised": f"{actual_list[i] - st.session_state[f'{prefix}revised_plan'][i]:+.2f}%"
         })
     
     if variance_data:
