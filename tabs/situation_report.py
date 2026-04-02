@@ -217,7 +217,7 @@ def show_header_section():
         <h3>PROVINCE OF MOUNTAIN PROVINCE</h3>
         <h3>PROVINCIAL DISASTER RISK REDUCTION AND MANAGEMENT COUNCIL</h3>
         <h4>Emergency Operations Center</h4>
-        <p>Appong Street, Jungle Town, Poblacion, Bontoc, Mountain Province</p>
+        <p>Jungle Town, Poblacion, Bontoc, Mountain Province</p>
     </div>
     """, unsafe_allow_html=True)
     
@@ -256,14 +256,15 @@ def show_situation_overview():
     
     st.markdown("### I. SITUATION OVERVIEW")
     
-    # PAGASA Bulletin
+    # PAGASA Bulletin - use a direct variable, not session state assignment
     pagasa_bulletin = st.text_area(
         "PAGASA Tropical Cyclone Bulletin",
         value=st.session_state.get('pagasa_bulletin', ''),
         placeholder="Paste the latest PAGASA bulletin here...",
         height=150,
-        key="pagasa_bulletin"
+        key="pagasa_bulletin_input"
     )
+    # Store in session state without causing conflict
     st.session_state.pagasa_bulletin = pagasa_bulletin
     
     st.markdown("#### Weather & Alert Level Statuses")
@@ -331,7 +332,6 @@ def show_situation_overview():
         index=["White", "Blue", "Red"].index(st.session_state.get('overall_alert', 'White'))
     )
     st.session_state.overall_alert = overall_alert
-
 
 def show_risk_communication_monitor():
     """Section for tracking issuances and communications"""
