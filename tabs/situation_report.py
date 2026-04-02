@@ -25,6 +25,9 @@ def show():
     if 'sitrep_photos' not in st.session_state:
         st.session_state.sitrep_photos = []
     
+    if 'archived_sitreps' not in st.session_state:
+        st.session_state.archived_sitreps = []
+    
     if 'pdra_data' not in st.session_state:
         st.session_state.pdra_data = {
             "type": None,
@@ -39,13 +42,14 @@ def show():
         fetch_weather_data()
     
     # Create main tabs
-    tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
+    tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
         "📋 PDRA Wizard",
         "📝 Municipal Data Entry",
         "📊 Provincial Consolidation",
         "📈 Predictive Analysis",
         "📸 Photo Gallery",
-        "📜 Reference Guide"
+        "📁 Archived SitReps",
+        "🔗 Related Modules"
     ])
     
     with tab1:
@@ -64,7 +68,10 @@ def show():
         show_photo_gallery()
     
     with tab6:
-        show_reference_guide()
+        show_archived_sitreps()
+    
+    with tab7:
+        show_related_modules()
 
 
 # =============================================================================
@@ -113,7 +120,7 @@ def show_pdra_wizard():
             "Select PDRA Type",
             ["🌊 Weather-Related Hazard (Typhoon, Monsoon, LPA)",
              "🎉 Planned Event (Festival, Sports, Election)",
-             "🌋 Other Hazard (Landslide, Earthquake, Fire)"],
+             "🔥 Other Hazard (Landslide, Earthquake, Fire, Vehicular Accident)"],
             key="pdra_type_select",
             horizontal=True
         )
@@ -162,7 +169,6 @@ def show_hazard_situation():
         
         # PAGASA integration
         weather = st.session_state.get('pagasa_weather', {})
-        forecast = weather.get('forecast', {})
         
         col1, col2 = st.columns(2)
         with col1:
@@ -235,9 +241,9 @@ def show_hazard_situation():
         if forecast.get('forecast'):
             st.info(f"**Forecast:** {forecast.get('summary', 'Check PAGASA for latest updates')}")
         
-        # What to expect
+        # What to expect (multiselect that adds items)
         st.markdown("#### 📋 What to Expect")
-        expectations = st.multiselect("Select anticipated situations", [
+        expectations = st.multiselect("Select anticipated situations (click to add)", [
             "Influx of people (travelers/visitors)",
             "Vehicular accidents",
             "Fire incidents (forest/structural)",
@@ -248,9 +254,15 @@ def show_hazard_situation():
             "Gastroenteritis cases"
         ])
         
-        # Alert level
+        # Display selected expectations
+        if expectations:
+            st.markdown("**Selected:**")
+            for exp in expectations:
+                st.markdown(f"- {exp}")
+        
+        # Alert level (White, Blue, Red only)
         st.markdown("#### 🚨 Alert Level Status")
-        alert_level = st.selectbox("Alert Level", ["Alpha", "Blue", "Red", "White"])
+        alert_level = st.selectbox("Alert Level", ["White", "Blue", "Red"])
         
         if st.button("💾 Save Event Details", key="save_hazard_event"):
             st.session_state.pdra_data["hazard"] = {
@@ -269,7 +281,7 @@ def show_hazard_situation():
         # Other hazard
         st.markdown("#### 🌋 Hazard Details")
         
-        hazard_type = st.selectbox("Hazard Type", ["Landslide", "Earthquake", "Forest Fire", "Drought", "Other"])
+        hazard_type = st.selectbox("Hazard Type", ["Landslide", "Earthquake", "Forest Fire", "Structural Fire", "Vehicular Accident", "Drought", "Other"])
         
         col1, col2 = st.columns(2)
         with col1:
@@ -562,28 +574,26 @@ def generate_pdra_report():
 
 
 # =============================================================================
-# SECTION 2: MDRRMO DATA ENTRY (with Roads Management)
+# SECTION 2: MDRRMO DATA ENTRY (Improved with all your requests)
 # =============================================================================
 
 def show_mdrrmo_data_entry():
-    """Municipal data entry with roads management"""
+    """Municipal data entry with improved fields"""
     
     st.markdown("### 📝 Municipal Situation Report Entry")
     st.caption("MDRRMO Staff: Enter your municipality's data here")
     
     municipalities = ["Barlig", "Bauko", "Besao", "Bontoc", "Natonin", "Paracelis", "Sabangan", "Sadanga", "Sagada", "Tadian"]
     
-    # National Roads list with unique IDs
-    national_roads = [
-        {"id": 1, "name": "Bontoc - Baguio Road"},
-        {"id": 2, "name": "Bontoc - Cadre Road"},
-        {"id": 3, "name": "Dantay - Sagada Road"},
-        {"id": 4, "name": "Junction Talubin - Barlig - Natonin - Paracelis - Calaccad Road"},
-        {"id": 5, "name": "Mt. Province - Cagayan via Tabuk - Enrile Road"},
-        {"id": 6, "name": "Mt. Province - Ilocos Sur Road via Kayan"},
-        {"id": 7, "name": "Mt. Province - Ilocos Sur Road via Tue"},
-        {"id": 8, "name": "Mt. Province - Nueva Vizcaya Road"}
-    ]
+    # Response action templates based on event type
+    response_templates = {
+        "Structural Fire": ["Fire suppression operations", "Evacuation of affected residents", "Establishment of temporary shelter", "Damage assessment", "Distribution of relief goods"],
+        "Vehicular Accident": ["Rescue operations", "Traffic management", "Medical assistance", "Clearing operations", "Investigation"],
+        "Landslide": ["Search and rescue", "Road clearing", "Evacuation of affected families", "Damage assessment", "Relief distribution"],
+        "Flood": ["Pre-emptive evacuation", "Rescue operations", "Relief distribution", "Damage assessment", "Clearing operations"],
+        "Typhoon": ["Pre-emptive evacuation", "Storm tracking", "Relief prepositioning", "Damage assessment", "Clearing operations"],
+        "General": ["Monitoring", "Assessment", "Coordination with agencies", "Public information", "Resource mobilization"]
+    }
     
     with st.form("municipal_report_form", clear_on_submit=True):
         col1, col2 = st.columns(2)
@@ -592,12 +602,12 @@ def show_mdrrmo_data_entry():
             report_date = st.date_input("Report Date *", date.today(), key="report_date")
             report_time = st.time_input("Report Time *", datetime.now().time(), key="report_time")
             sitrep_number = st.number_input("SITREP Number *", min_value=1, value=1, step=1, key="sitrep_num")
-            incident_name = st.text_input("Incident Name *", placeholder="e.g., TS PAENG", key="incident_name")
+            incident_name = st.text_input("Incident Name *", placeholder="e.g., TS PAENG, Structural Fire", key="incident_name")
         
         with col2:
-            alert_level = st.selectbox("Alert Level *", ["Alpha", "Blue", "Red", "White"], key="alert_level")
+            alert_level = st.selectbox("Alert Level *", ["White", "Blue", "Red"], key="alert_level")
             submitted_by = st.text_input("Reported By *", placeholder="Name and Position", key="submitted_by")
-            contact_number = st.text_input("Contact Number", key="contact_num")
+            mdrrmo_hotline = st.text_input("MDRRMO Hotline", placeholder="Contact number", key="hotline")
         
         st.markdown("---")
         
@@ -613,49 +623,39 @@ def show_mdrrmo_data_entry():
         
         # Incidents
         st.markdown("#### 📋 Incidents Reported")
+        st.info("Note: Report all incidents including vehicular accidents, structural fires, etc.")
         incidents = st.text_area("Incident/s Reported", placeholder="List all incidents per barangay", height=100, key="incidents")
         casualties = st.text_input("Casualties", placeholder="e.g., 0 dead, 2 injured, 1 missing", key="casualties")
         
-        # Roads Management - FIXED with unique keys
-        st.markdown("#### 🛣️ National Roads Status")
-        st.caption("Select roads in your municipality and their status")
+        # Municipal Road Status (changed from National Roads)
+        st.markdown("#### 🛣️ Municipal Road Status")
+        st.caption("Report status of roads within your municipality")
         
-        roads_status = []
-        for road in national_roads:
-            road_id = road["id"]
-            road_name = road["name"]
-            # Create a unique key for each checkbox using road_id
-            include = st.checkbox(road_name, key=f"road_include_{road_id}")
-            
-            if include:
-                col1, col2 = st.columns(2)
-                with col1:
-                    traffic = st.selectbox(
-                        "Traffic", 
-                        ["Passable", "One Lane Passable", "Not Passable"], 
-                        key=f"road_traffic_{road_id}"
-                    )
-                with col2:
-                    remarks = st.text_input(
-                        "Remarks", 
-                        placeholder="Road section details", 
-                        key=f"road_remarks_{road_id}"
-                    )
-                roads_status.append({
-                    "road": road_name,
-                    "traffic": traffic,
-                    "remarks": remarks
-                })
-        
-        # Utilities
-        st.markdown("#### 🔌 Utilities")
         col1, col2 = st.columns(2)
         with col1:
-            power = st.selectbox("Power Status", ["Normal", "Intermittent", "No Power"], key="power")
-            power_remarks = st.text_input("Power Remarks", key="power_remarks")
+            municipal_roads_status = st.selectbox("Municipal Roads Status", ["Fully Passable", "Partially Passable", "Not Passable", "Under Repair"], key="mun_roads")
         with col2:
+            municipal_roads_remarks = st.text_input("Remarks", placeholder="Specific road sections affected", key="mun_roads_remarks")
+        
+        # Utilities with Affected Barangays
+        st.markdown("#### 🔌 Utilities")
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            st.markdown("**Power Status**")
+            power = st.selectbox("Power Status", ["Normal", "Intermittent", "No Power"], key="power")
+            # Power Remarks with dropdown
+            power_remarks_options = ["No information", "Ongoing repair", "Weather-related", "Technical issue", "Scheduled maintenance", "Other"]
+            power_remarks = st.selectbox("Power Remarks", power_remarks_options, key="power_remarks")
+            affected_barangays_power = st.text_input("Affected Barangays (Power)", placeholder="List affected barangays", key="affected_power")
+        
+        with col2:
+            st.markdown("**Communication Status**")
             comm = st.selectbox("Communication Status", ["Normal", "Intermittent", "No Signal"], key="comm")
-            comm_remarks = st.text_input("Communication Remarks", key="comm_remarks")
+            # Communication Remarks with dropdown
+            comm_remarks_options = ["No information", "Network issue", "Equipment failure", "Weather-related", "Technical issue", "Other"]
+            comm_remarks = st.selectbox("Communication Remarks", comm_remarks_options, key="comm_remarks")
+            affected_barangays_comm = st.text_input("Affected Barangays (Communication)", placeholder="List affected barangays", key="affected_comm")
         
         # Displaced Population
         st.markdown("#### 🏠 Displaced Population")
@@ -687,9 +687,28 @@ def show_mdrrmo_data_entry():
         with col3:
             family_kits = st.number_input("Family Kits", min_value=0, value=0, key="family_kits")
         
-        # Response
+        # Response Actions with Template Selection
         st.markdown("#### 🚑 Response Actions")
-        response_actions = st.text_area("Response Actions Taken", height=100, key="response")
+        
+        # Event type selection for template
+        event_type_for_template = st.selectbox("Event Type for Response Template", 
+                                               ["General", "Structural Fire", "Vehicular Accident", "Landslide", "Flood", "Typhoon"],
+                                               key="event_type_template")
+        
+        # Show template buttons
+        if event_type_for_template in response_templates:
+            st.markdown("**Quick Add Response Actions (click to add):**")
+            template_cols = st.columns(len(response_templates[event_type_for_template]))
+            for i, action in enumerate(response_templates[event_type_for_template]):
+                with template_cols[i % 4]:
+                    if st.button(action, key=f"template_{action[:10]}"):
+                        # This will add to the text area - handled by JavaScript-like behavior
+                        st.session_state.temp_response = st.session_state.get('temp_response', '') + f"\n• {action}"
+                        st.rerun()
+        
+        # Response actions text area
+        default_response = st.session_state.get('temp_response', '')
+        response_actions = st.text_area("Response Actions Taken", value=default_response, height=120, key="response")
         
         # Needs
         st.markdown("#### 🎯 Needs Assessment")
@@ -709,6 +728,10 @@ def show_mdrrmo_data_entry():
         submitted = st.form_submit_button("💾 Submit Report", type="primary")
         
         if submitted and municipality and incident_name:
+            # Clear temp response
+            if 'temp_response' in st.session_state:
+                del st.session_state.temp_response
+            
             report = {
                 "id": int(datetime.now().timestamp() * 1000),
                 "sitrep_number": sitrep_number,
@@ -718,12 +741,15 @@ def show_mdrrmo_data_entry():
                 "incident_name": incident_name,
                 "alert_level": alert_level,
                 "submitted_by": submitted_by,
-                "contact_number": contact_number,
+                "mdrrmo_hotline": mdrrmo_hotline,
                 "weather": {"cloud": cloud, "wind": wind, "precipitation": precipitation},
                 "incidents": incidents,
                 "casualties": casualties,
-                "roads": roads_status,
-                "utilities": {"power": power, "power_remarks": power_remarks, "communication": comm, "comm_remarks": comm_remarks},
+                "municipal_roads": {"status": municipal_roads_status, "remarks": municipal_roads_remarks},
+                "utilities": {
+                    "power": {"status": power, "remarks": power_remarks, "affected_barangays": affected_barangays_power},
+                    "communication": {"status": comm, "remarks": comm_remarks, "affected_barangays": affected_barangays_comm}
+                },
                 "displaced": {"families_in_ec": families_ec, "persons_in_ec": persons_ec,
                              "families_outside": families_outside, "persons_outside": persons_outside},
                 "damages": {"totally_damaged": totally_damaged, "partially_damaged": partially_damaged,
@@ -741,8 +767,9 @@ def show_mdrrmo_data_entry():
             st.balloons()
             st.rerun()
 
+
 # =============================================================================
-# SECTION 3: PROVINCIAL CONSOLIDATION (with Auto-Extraction)
+# SECTION 3: PROVINCIAL CONSOLIDATION
 # =============================================================================
 
 def show_pdrrmo_consolidation():
@@ -801,19 +828,35 @@ def show_pdrrmo_consolidation():
         })
     st.dataframe(pd.DataFrame(incidents_data), use_container_width=True, hide_index=True)
     
-    # Roads Summary
-    st.markdown("#### 🛣️ National Roads Status")
-    roads_summary = []
+    # Municipal Roads Summary
+    st.markdown("#### 🛣️ Municipal Roads Status")
+    roads_data = []
     for r in reports:
-        for road in r.get('roads', []):
-            roads_summary.append({
-                "Municipality": r.get('municipality'),
-                "Road": road.get('road'),
-                "Traffic": road.get('traffic'),
-                "Remarks": road.get('remarks')
-            })
-    if roads_summary:
-        st.dataframe(pd.DataFrame(roads_summary), use_container_width=True, hide_index=True)
+        roads = r.get('municipal_roads', {})
+        roads_data.append({
+            "Municipality": r.get('municipality'),
+            "Status": roads.get('status', 'N/A'),
+            "Remarks": roads.get('remarks', '')
+        })
+    st.dataframe(pd.DataFrame(roads_data), use_container_width=True, hide_index=True)
+    
+    # Utilities Summary
+    st.markdown("#### 🔌 Utilities Status")
+    utils_data = []
+    for r in reports:
+        utils = r.get('utilities', {})
+        power = utils.get('power', {})
+        comm = utils.get('communication', {})
+        utils_data.append({
+            "Municipality": r.get('municipality'),
+            "Power": power.get('status', 'N/A'),
+            "Power Remarks": power.get('remarks', ''),
+            "Power Affected Barangays": power.get('affected_barangays', ''),
+            "Communication": comm.get('status', 'N/A'),
+            "Comm Remarks": comm.get('remarks', ''),
+            "Comm Affected Barangays": comm.get('affected_barangays', '')
+        })
+    st.dataframe(pd.DataFrame(utils_data), use_container_width=True, hide_index=True)
     
     # Damages Summary
     st.markdown("#### 🏚️ Damage Summary")
@@ -902,18 +945,14 @@ def generate_consolidated_report(reports):
     
     auto_sync_add('main_reports', 'main_reports', main_report)
     st.success("✅ Consolidated report saved!")
-    
-    # Export option
-    if st.button("📥 Export as PDF"):
-        st.info("PDF export coming soon")
 
 
 # =============================================================================
-# SECTION 4: PREDICTIVE ANALYSIS
+# SECTION 4: PREDICTIVE ANALYSIS (with summary statistics)
 # =============================================================================
 
 def show_predictive_analysis():
-    """Predictive analysis from historical reports"""
+    """Predictive analysis from historical reports with summary statistics"""
     
     st.markdown("### 📈 Predictive Analysis")
     st.caption("Analyze patterns and predict future impacts")
@@ -926,10 +965,41 @@ def show_predictive_analysis():
     
     df = pd.DataFrame(reports)
     
+    # Extract date fields
+    if 'report_date' in df.columns:
+        df['report_date'] = pd.to_datetime(df['report_date'])
+        df['year'] = df['report_date'].dt.year
+        df['quarter'] = df['report_date'].dt.quarter
+        df['month'] = df['report_date'].dt.month
+    
     # Extract numeric fields
     df['affected_families'] = df['damages'].apply(lambda x: x.get('affected_families', 0) if isinstance(x, dict) else 0)
     
+    # Summary Statistics by Quarter
+    st.markdown("#### 📊 Summary Statistics by Quarter")
+    if 'quarter' in df.columns and 'year' in df.columns:
+        quarterly = df.groupby(['year', 'quarter'])['affected_families'].sum().reset_index()
+        fig = px.bar(quarterly, x='quarter', y='affected_families', color='year', 
+                     title="Affected Families by Quarter", barmode='group')
+        st.plotly_chart(fig, use_container_width=True)
+    
+    # Summary Statistics by Year
+    st.markdown("#### 📊 Summary Statistics by Year")
+    if 'year' in df.columns:
+        yearly = df.groupby('year')['affected_families'].sum().reset_index()
+        fig = px.bar(yearly, x='year', y='affected_families', title="Affected Families by Year")
+        st.plotly_chart(fig, use_container_width=True)
+    
+    # Summary by Event Type
+    st.markdown("#### 📊 Summary by Incident Type")
+    if 'incident_name' in df.columns:
+        incident_counts = df['incident_name'].value_counts().reset_index()
+        incident_counts.columns = ['Incident Type', 'Count']
+        fig = px.pie(incident_counts, values='Count', names='Incident Type', title="Incidents by Type")
+        st.plotly_chart(fig, use_container_width=True)
+    
     # Risk by municipality
+    st.markdown("#### 🎯 Municipal Risk Assessment")
     risk_data = []
     for mun in df['municipality'].unique():
         mun_data = df[df['municipality'] == mun]
@@ -946,7 +1016,6 @@ def show_predictive_analysis():
     
     # Trend chart
     if 'report_date' in df.columns:
-        df['report_date'] = pd.to_datetime(df['report_date'])
         timeline = df.groupby('report_date')['affected_families'].sum().reset_index()
         fig = px.line(timeline, x='report_date', y='affected_families', title="Affected Families Trend")
         st.plotly_chart(fig, use_container_width=True)
@@ -989,72 +1058,183 @@ def show_photo_gallery():
 
 
 # =============================================================================
-# SECTION 6: REFERENCE GUIDE
+# SECTION 6: ARCHIVED SITREPS
 # =============================================================================
 
-def show_reference_guide():
-    """Reference guide for PDRA and SitRep"""
+def show_archived_sitreps():
+    """Store and manage archived situation reports"""
     
-    st.markdown("### 📜 Reference Guide")
-    st.caption("Official guidelines and reference materials")
+    st.markdown("### 📁 Archived Situation Reports")
+    st.caption("Store, view, and manage previous situation reports")
     
-    tabs = st.tabs(["PDRA Guidelines", "Hazard Classification", "Alert Levels", "Probability & Impact Scales"])
+    # Initialize archived reports
+    if 'archived_sitreps' not in st.session_state:
+        st.session_state.archived_sitreps = []
     
-    with tabs[0]:
+    # Upload new archive
+    with st.expander("📤 Upload Archived SitRep", expanded=False):
+        with st.form("upload_archive_form"):
+            col1, col2 = st.columns(2)
+            with col1:
+                archive_title = st.text_input("Report Title", placeholder="e.g., SITREP #01 - TS PAENG")
+                archive_date = st.date_input("Report Date", date.today())
+            with col2:
+                archive_type = st.selectbox("Report Type", ["SITREP", "PDRA Report", "Consolidated Report", "Annual Report"])
+                archive_incident = st.text_input("Incident Name", placeholder="e.g., Typhoon Paeng")
+            
+            archive_description = st.text_area("Description", placeholder="Brief description of the report")
+            uploaded_file = st.file_uploader("Upload File", type=['pdf', 'docx', 'xlsx'], key="archive_upload")
+            
+            submitted = st.form_submit_button("📎 Upload to Archive")
+            
+            if submitted and archive_title and uploaded_file:
+                # Save to local storage
+                folder = "local_storage/sitrep_archives"
+                os.makedirs(folder, exist_ok=True)
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                filename = f"{timestamp}_{uploaded_file.name}"
+                file_path = os.path.join(folder, filename)
+                
+                with open(file_path, "wb") as f:
+                    f.write(uploaded_file.getbuffer())
+                
+                archive = {
+                    "id": int(datetime.now().timestamp() * 1000),
+                    "title": archive_title,
+                    "date": archive_date.isoformat(),
+                    "type": archive_type,
+                    "incident": archive_incident,
+                    "description": archive_description,
+                    "file_path": file_path,
+                    "filename": filename,
+                    "file_size": get_file_size(file_path),
+                    "uploaded_at": datetime.now().isoformat()
+                }
+                st.session_state.archived_sitreps.append(archive)
+                st.success(f"✅ '{archive_title}' archived!")
+                st.rerun()
+    
+    # Display archived reports
+    if st.session_state.archived_sitreps:
+        df = pd.DataFrame(st.session_state.archived_sitreps)
+        
+        # Filters
+        col1, col2 = st.columns(2)
+        with col1:
+            type_filter = st.selectbox("Filter by Type", ["All"] + list(df['type'].unique()))
+        with col2:
+            search = st.text_input("Search", placeholder="Search by title...")
+        
+        filtered = df.copy()
+        if type_filter != "All":
+            filtered = filtered[filtered['type'] == type_filter]
+        if search:
+            filtered = filtered[filtered['title'].str.contains(search, case=False)]
+        
+        st.dataframe(filtered[['title', 'date', 'type', 'incident', 'file_size']], use_container_width=True, hide_index=True)
+        
+        # Action buttons for each archive
+        for archive in filtered.to_dict('records'):
+            with st.expander(f"📄 {archive['title']} ({archive['date']})"):
+                col1, col2 = st.columns(2)
+                with col1:
+                    st.markdown(f"**Type:** {archive['type']}")
+                    st.markdown(f"**Incident:** {archive.get('incident', 'N/A')}")
+                    st.markdown(f"**Description:** {archive.get('description', 'No description')}")
+                with col2:
+                    st.markdown(f"**Uploaded:** {archive.get('uploaded_at', 'N/A')[:10]}")
+                    st.markdown(f"**File Size:** {archive.get('file_size', 'N/A')}")
+                
+                col1, col2, col3 = st.columns(3)
+                with col1:
+                    if archive.get('file_path') and os.path.exists(archive['file_path']):
+                        with open(archive['file_path'], "rb") as f:
+                            st.download_button("📥 Download", f, file_name=archive['filename'], key=f"dl_archive_{archive['id']}")
+                with col2:
+                    st.button("🖨️ Print", key=f"print_archive_{archive['id']}")
+                with col3:
+                    if st.button("🗑️ Delete", key=f"del_archive_{archive['id']}"):
+                        if archive.get('file_path') and os.path.exists(archive['file_path']):
+                            os.remove(archive['file_path'])
+                        st.session_state.archived_sitreps = [a for a in st.session_state.archived_sitreps if a['id'] != archive['id']]
+                        st.rerun()
+    else:
+        st.info("No archived reports yet. Use the upload form above to add reports.")
+
+
+# =============================================================================
+# SECTION 7: RELATED MODULES
+# =============================================================================
+
+def show_related_modules():
+    """Show connections to other modules"""
+    
+    st.markdown("### 🔗 Related Modules")
+    st.caption("How Situation Report connects with other INDC modules")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
         st.markdown("""
-        ### 📋 PDRA Guidelines
+        ### 📊 DRRM Intelligence
+        - Situation reports feed into hazard event database
+        - Incident data validates risk models
+        - Response effectiveness tracked over time
+        - Historical data for predictive analytics
         
-        **Legal Bases:**
-        - NDRRMC Memorandum Circular No. 63, s. 2021
-        - Republic Act No. 10121 – Philippine DRRM Act of 2010
-        - Sendai Framework for Disaster Risk Reduction 2015-2030
-        
-        **Triggers for PDRA:**
-        - Threat of hydro-meteorological hazards
-        - Existence of slow-onset geological hazards
-        - Threat to disruption of lifelines
-        - Threat of disease incidence
-        - Threat to environment and natural resources
+        ### 📋 Plan Management
+        - Incident data informs DRRM plan updates
+        - Response gaps identify needed PPAs
+        - Resource allocation based on incident patterns
         """)
     
-    with tabs[1]:
+    with col2:
         st.markdown("""
-        ### 🌊 Hazard Classification (UNDRR)
+        ### 🌍 Climate Change
+        - Weather patterns from situation reports
+        - Climate adaptation effectiveness
+        - Early warning system validation
         
-        | Category | Examples |
-        |----------|----------|
-        | Hydrometeorological | Typhoons, floods, droughts, thunderstorms |
-        | Geological | Earthquakes, landslides, volcanic eruptions |
-        | Biological | Disease outbreaks, epidemics |
-        | Technological | Industrial accidents, infrastructure failures |
+        ### 📚 Trainings
+        - Response actions linked to training
+        - Capacity gaps identified from incidents
+        - Training effectiveness measurement
+        
+        ### 📁 Knowledge Repository
+        - Archived SITREPs stored for reference
+        - PDRA guidelines and templates
+        - Best practices documentation
         """)
     
-    with tabs[2]:
-        st.markdown("""
-        ### 🚨 Alert Levels
-        
-        | Level | Description | Action |
-        |-------|-------------|--------|
-        | **Alpha** | Initial monitoring | Prepare resources, monitor situation |
-        | **Blue** | Enhanced preparedness | Activate EOC, preposition supplies |
-        | **Red** | Response operations | Full activation, response deployment |
-        | **White** | All clear | Stand down, recovery phase |
-        """)
+    st.markdown("---")
+    st.markdown("### 📋 Quick Links")
     
-    with tabs[3]:
-        st.markdown("""
-        ### 📊 Probability & Impact Scales
-        
-        **Probability Rating:**
-        - **1 - Unlikely**: Will not happen in 72 hours
-        - **2 - Less Likely**: <50% chance of affecting 2+ areas
-        - **3 - Highly Likely**: >50% chance, 51-75% area exposed
-        - **4 - Certain/Imminent**: 100% chance in next 72 hours
-        
-        **Impact Rating:**
-        - **1 - Negligible**: No casualties/damage
-        - **2 - Minor**: DRRMC can manage alone
-        - **3 - Moderate**: Manage with minimal assistance
-        - **4 - Major**: Progressive assistance required
-        - **5 - Catastrophic**: Overwhelmed, full assistance needed
-        """)
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        if st.button("📊 Go to DRRM Intelligence", use_container_width=True):
+            st.session_state.navigation = "📊 DRRM INTELLIGENCE"
+            st.rerun()
+    with col2:
+        if st.button("📋 Go to Plan Management", use_container_width=True):
+            st.session_state.navigation = "📋 PLAN MANAGEMENT"
+            st.rerun()
+    with col3:
+        if st.button("📚 Go to Trainings", use_container_width=True):
+            st.session_state.navigation = "📚 TRAININGS"
+            st.rerun()
+    with col4:
+        if st.button("📁 Go to Knowledge Repository", use_container_width=True):
+            st.session_state.navigation = "📁 KNOWLEDGE REPOSITORY"
+            st.rerun()
+
+
+def get_file_size(file_path):
+    """Get file size in human-readable format"""
+    if not file_path or not os.path.exists(file_path):
+        return "0 B"
+    size = os.path.getsize(file_path)
+    for unit in ['B', 'KB', 'MB', 'GB']:
+        if size < 1024:
+            return f"{size:.1f} {unit}"
+        size /= 1024
+    return f"{size:.1f} TB"

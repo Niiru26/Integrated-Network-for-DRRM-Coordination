@@ -68,7 +68,7 @@ with st.sidebar:
 
     st.markdown("""
     <div style='text-align: center; margin-top: 5px; margin-bottom: 10px;'>
-        <h1 style='color: #1E3A8A; margin: 0; padding: 0; font-size: 2rem; font-weight: bold; letter-spacing: 1px; line-height: 1.2;'>MPDRRMO</h1>
+        <h1 style='color: #1E3A8A; margin: 0; padding: 0; font-size: 2rem; font-weight: bold; letter-spacing: 1px; line-height: 1.2;'>MPDRRMC</h1>
         <p style='color: #2563EB; margin: 4px 0 0 0; padding: 0; font-size: 1.3rem; font-weight: 500; line-height: 1.3;'>
             Climate & Disaster Risk<br>Data Governance Platform
         </p>
@@ -119,12 +119,12 @@ with st.sidebar:
     create_state_snapshot_button()
 
     st.markdown("---")
-    st.caption("© 2026 MPDRRMO | Mountain Province")
+    st.caption("© 2026 MPDRRMC | Mountain Province")
 
 # Main content routing
 if choice == "🎯 COMMAND CENTER":
     st.markdown("<h1 class='main-header'>🎯 COMMAND CENTER</h1>", unsafe_allow_html=True)
-    st.markdown("### The MPDRRMO Climate & Disaster Risk Data Governance Platform")
+    st.markdown("### The MPDRRMC Climate & Disaster Risk Data Governance Platform")
     st.caption("Integrated Network for Disaster Risk Reduction and Climate Change Adaptation")
 
     col1, col2, col3, col4 = st.columns(4)
@@ -212,7 +212,7 @@ elif choice == "🏛️ ABOUT INDC":
 
 elif choice == "⚙️ SETTINGS":
     show_settings()
-    
+
 else:
     st.info("Tab coming soon!")
 
