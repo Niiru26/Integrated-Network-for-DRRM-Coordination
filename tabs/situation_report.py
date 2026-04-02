@@ -595,6 +595,30 @@ def show_mdrrmo_data_entry():
         "General": ["Monitoring", "Assessment", "Coordination with agencies", "Public information", "Resource mobilization"]
     }
     
+    # Event type selection for template (moved OUTSIDE the form)
+    st.markdown("#### 🚑 Response Actions")
+    
+    event_type_for_template = st.selectbox("Select Event Type for Response Template", 
+                                           ["General", "Structural Fire", "Vehicular Accident", "Landslide", "Flood", "Typhoon"],
+                                           key="event_type_template",
+                                           help="Select the event type to see suggested response actions")
+    
+    # Display template buttons OUTSIDE the form
+    if event_type_for_template in response_templates:
+        st.markdown("**Quick Add Response Actions (click to add to the text area below):**")
+        template_cols = st.columns(min(len(response_templates[event_type_for_template]), 4))
+        for i, action in enumerate(response_templates[event_type_for_template]):
+            with template_cols[i % 4]:
+                if st.button(f"➕ {action}", key=f"template_{action[:15].replace(' ', '_')}"):
+                    # Store the action to be added to the text area
+                    current = st.session_state.get('response_actions_text', '')
+                    st.session_state.response_actions_text = current + f"\n• {action}"
+                    st.rerun()
+    
+    # Response actions text area (will be populated from session state)
+    default_response = st.session_state.get('response_actions_text', '')
+    
+    # Now the form starts here
     with st.form("municipal_report_form", clear_on_submit=True):
         col1, col2 = st.columns(2)
         with col1:
@@ -627,7 +651,7 @@ def show_mdrrmo_data_entry():
         incidents = st.text_area("Incident/s Reported", placeholder="List all incidents per barangay", height=100, key="incidents")
         casualties = st.text_input("Casualties", placeholder="e.g., 0 dead, 2 injured, 1 missing", key="casualties")
         
-        # Municipal Road Status (changed from National Roads)
+        # Municipal Road Status
         st.markdown("#### 🛣️ Municipal Road Status")
         st.caption("Report status of roads within your municipality")
         
@@ -644,7 +668,6 @@ def show_mdrrmo_data_entry():
         with col1:
             st.markdown("**Power Status**")
             power = st.selectbox("Power Status", ["Normal", "Intermittent", "No Power"], key="power")
-            # Power Remarks with dropdown
             power_remarks_options = ["No information", "Ongoing repair", "Weather-related", "Technical issue", "Scheduled maintenance", "Other"]
             power_remarks = st.selectbox("Power Remarks", power_remarks_options, key="power_remarks")
             affected_barangays_power = st.text_input("Affected Barangays (Power)", placeholder="List affected barangays", key="affected_power")
@@ -652,7 +675,6 @@ def show_mdrrmo_data_entry():
         with col2:
             st.markdown("**Communication Status**")
             comm = st.selectbox("Communication Status", ["Normal", "Intermittent", "No Signal"], key="comm")
-            # Communication Remarks with dropdown
             comm_remarks_options = ["No information", "Network issue", "Equipment failure", "Weather-related", "Technical issue", "Other"]
             comm_remarks = st.selectbox("Communication Remarks", comm_remarks_options, key="comm_remarks")
             affected_barangays_comm = st.text_input("Affected Barangays (Communication)", placeholder="List affected barangays", key="affected_comm")
@@ -687,28 +709,8 @@ def show_mdrrmo_data_entry():
         with col3:
             family_kits = st.number_input("Family Kits", min_value=0, value=0, key="family_kits")
         
-        # Response Actions with Template Selection
-        st.markdown("#### 🚑 Response Actions")
-        
-        # Event type selection for template
-        event_type_for_template = st.selectbox("Event Type for Response Template", 
-                                               ["General", "Structural Fire", "Vehicular Accident", "Landslide", "Flood", "Typhoon"],
-                                               key="event_type_template")
-        
-        # Show template buttons
-        if event_type_for_template in response_templates:
-            st.markdown("**Quick Add Response Actions (click to add):**")
-            template_cols = st.columns(len(response_templates[event_type_for_template]))
-            for i, action in enumerate(response_templates[event_type_for_template]):
-                with template_cols[i % 4]:
-                    if st.button(action, key=f"template_{action[:10]}"):
-                        # This will add to the text area - handled by JavaScript-like behavior
-                        st.session_state.temp_response = st.session_state.get('temp_response', '') + f"\n• {action}"
-                        st.rerun()
-        
-        # Response actions text area
-        default_response = st.session_state.get('temp_response', '')
-        response_actions = st.text_area("Response Actions Taken", value=default_response, height=120, key="response")
+        # Response actions text area (inside form)
+        response_actions = st.text_area("Response Actions Taken", value=default_response, height=120, key="response_actions_text")
         
         # Needs
         st.markdown("#### 🎯 Needs Assessment")
@@ -728,9 +730,9 @@ def show_mdrrmo_data_entry():
         submitted = st.form_submit_button("💾 Submit Report", type="primary")
         
         if submitted and municipality and incident_name:
-            # Clear temp response
-            if 'temp_response' in st.session_state:
-                del st.session_state.temp_response
+            # Clear the stored response text after submission
+            if 'response_actions_text' in st.session_state:
+                del st.session_state.response_actions_text
             
             report = {
                 "id": int(datetime.now().timestamp() * 1000),
@@ -766,7 +768,6 @@ def show_mdrrmo_data_entry():
             st.success(f"✅ Report for {municipality} submitted!")
             st.balloons()
             st.rerun()
-
 
 # =============================================================================
 # SECTION 3: PROVINCIAL CONSOLIDATION
