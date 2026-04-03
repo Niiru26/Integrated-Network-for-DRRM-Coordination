@@ -568,7 +568,7 @@ def show_mpcfs_master_dashboard():
         st.markdown("- Establish research protocols")
         
 def show_mpcfs_scurve_tracker(component="infrastructure"):
-    """MPCFS Infrastructure S-Curve Tracker with Edit-in-App Features"""
+    """MPCFS Infrastructure S-Curve Tracker with Itemized Work Details"""
     
     component_titles = {
         "infrastructure": {"name": "Infrastructure", "icon": "🏗️", "amount": 249_040_900.00},
@@ -581,306 +581,269 @@ def show_mpcfs_scurve_tracker(component="infrastructure"):
     st.markdown(f"#### {comp['icon']} {comp['name']} Component - S-Curve Tracker")
     st.caption(f"Track physical and financial progress | Contract: ₱{comp['amount']:,.2f}")
     
-    # Contract Information
     CONTRACT_AMOUNT = comp['amount'] if comp['amount'] > 0 else 249_040_900.00
     
-    # Session state keys for this component
     prefix = f"{component}_"
     
-    # Initialize data if not exists
-    if f'{prefix}original_plan' not in st.session_state:
-        # Infrastructure data from your Excel
-        if component == "infrastructure":
-            original_plan = [
-                0.99, 1.12, 1.27, 1.47, 1.59, 1.72, 1.90, 2.00, 2.09, 2.17, 2.24, 2.47, 2.80, 3.10, 3.41, 3.73,
-                4.03, 4.33, 4.63, 4.98, 5.32, 5.66, 6.01, 6.21, 6.91, 7.62, 9.34, 11.06, 12.79, 14.74, 16.71, 18.34,
-                19.97, 21.70, 23.70, 25.71, 27.64, 29.54, 31.39, 33.18, 34.90, 36.54, 38.17, 39.81, 41.39, 42.93,
-                44.40, 45.31, 45.66, 46.21, 46.90, 47.50, 48.10, 48.70, 49.32, 49.94, 50.56, 51.19, 51.82, 52.50,
-                53.22, 53.65, 54.42, 55.35, 56.10, 56.85, 57.60, 58.23, 58.86, 59.49, 60.09, 60.49, 61.01, 61.55,
-                62.04, 62.53, 63.01, 63.50, 63.98, 64.31, 64.43, 64.55, 65.03, 65.52, 65.96, 66.36, 66.76, 67.37,
-                67.99, 68.62, 69.26, 69.90, 70.44, 70.96, 71.46, 71.96, 72.47, 72.97, 73.48, 74.00, 74.50, 75.00,
-                75.33, 75.69, 76.05, 76.41, 76.77, 77.12, 77.46, 77.79, 78.12, 78.46, 78.80, 79.14, 79.48, 79.88,
-                80.26, 80.63, 81.00, 81.37, 81.82, 82.27, 82.80, 83.23, 83.65, 84.08, 84.74, 85.63, 86.52, 87.48,
-                88.66, 90.23, 91.80, 93.79, 95.79, 97.61, 99.16, 99.34, 99.96, 100.00
-            ]
-            while len(original_plan) < 193:
-                original_plan.append(100.00)
-            
-            revised_plan = [
-                0.98, 1.10, 1.24, 1.43, 1.54, 1.66, 1.83, 1.91, 2.00, 2.08, 2.16, 2.29, 2.55, 2.82, 3.11, 3.39,
-                3.68, 3.97, 4.26, 4.55, 4.82, 5.10, 5.38, 5.86, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24,
-                6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24,
-                6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.56,
-                6.95, 7.44, 7.93, 8.42, 8.93, 9.52, 10.11, 10.71, 11.31, 11.99, 12.68, 13.31, 13.94, 14.63, 15.32,
-                16.02, 16.72, 17.44, 18.22, 19.00, 19.77, 20.55, 21.33, 22.12, 22.97, 23.79, 24.63, 25.50, 26.36,
-                27.25, 28.14, 29.03, 29.91, 30.80, 31.69, 32.58, 33.37, 34.17, 35.26, 36.03, 36.52, 37.00, 37.37,
-                37.73, 38.03, 38.34, 38.64, 38.94, 39.24, 39.55, 39.86, 40.19, 40.50, 40.82, 41.14, 41.62, 42.27,
-                42.96, 43.64, 44.33, 45.03, 45.72, 46.45, 47.22, 48.00, 48.77, 49.45, 50.14, 50.82, 51.51, 52.53,
-                53.57, 54.57, 55.44, 56.33, 57.44, 58.57, 59.69, 60.82, 61.88, 63.05, 64.20, 65.27, 66.35, 67.42,
-                68.50, 69.55, 70.60, 71.50, 72.23, 73.10, 74.03, 74.97, 75.90, 76.82, 77.53, 78.27, 79.06, 79.86,
-                80.70, 81.53, 82.37, 83.24, 83.96, 84.53, 85.11, 85.69, 85.94, 86.35, 86.84, 87.32, 87.66, 87.98,
-                88.19, 88.64, 89.09, 89.54, 90.05, 90.79, 91.86, 92.98, 94.49, 96.00, 97.42, 98.58, 99.03, 99.47, 99.50, 100.00
-            ]
-            while len(revised_plan) < 193:
-                revised_plan.append(100.00)
-            
-            actual = [
-                0.88, 0.91, 0.95, 1.00, 1.05, 1.10, 1.45, 1.62, 2.12, 2.45, 2.85, 3.21, 3.44, 3.85, 3.95, 4.05,
-                4.17, 4.30, 4.40, 4.50, 4.61, 4.70, 4.81, 4.89, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04,
-                5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04,
-                5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 7.33,
-                9.88, 11.61, 13.40, 15.45, 17.73, 20.02, 22.30, 24.59, 24.67, 24.75, 24.83, 24.92, 25.14, 25.34, 25.55, 25.75
-            ]
-            while len(actual) < 193:
-                actual.append(actual[-1] if actual else 25.75)
-        else:
-            # Placeholder for other components
-            original_plan = [0] * 193
-            revised_plan = [0] * 193
-            actual = [0] * 193
+    # ============================================================
+    # COMPLETE WORK ITEMS DATA (from your Excel)
+    # ============================================================
+    
+    if f'{prefix}work_items' not in st.session_state:
+        # All work items with their planned weights
+        work_items = [
+            {"no": "A.1.1 (8)", "description": "Provision of Field Office for the Engineer (Rental Basis)", "weight": 0.546, "planned": 0.547, "actual": 0.50, "cost": 1_360_800},
+            {"no": "A.1.2 (2)", "description": "Provision of 4x4 Pick Up Type Service Vehicle (Bare Rental)", "weight": 0.919, "planned": 0.919, "actual": 0.85, "cost": 2_289_000},
+            {"no": "B.3", "description": "Permits and Clearances", "weight": 0.126, "planned": 0.126, "actual": 0.126, "cost": 315_000},
+            {"no": "B.5", "description": "Project Billboard and Signboard", "weight": 0.004, "planned": 0.004, "actual": 0.004, "cost": 10_500},
+            {"no": "B.7 (2)", "description": "Occupational Safety and Health Program", "weight": 1.229, "planned": 1.229, "actual": 1.10, "cost": 3_061_108},
+            {"no": "B.9", "description": "Mobilization/Demobilization", "weight": 0.873, "planned": 0.873, "actual": 0.873, "cost": 2_174_130},
+            {"no": "B.13", "description": "Additional Geotechnical Investigation", "weight": 0.126, "planned": 0.126, "actual": 0.126, "cost": 315_000},
+            {"no": "B.25", "description": "Detailed Engineering and Architectural Design", "weight": 0.170, "planned": 0.170, "actual": 0.170, "cost": 424_499},
+            {"no": "101(1)", "description": "Removal of Structures and Obstructions", "weight": 0.004, "planned": 0.004, "actual": 0.004, "cost": 9_419},
+            {"no": "105(1)", "description": "Subgrade Preparation (Common Material)", "weight": 0.040, "planned": 0.040, "actual": 0.00, "cost": 0},
+            {"no": "200", "description": "Aggregate Subbase Course", "weight": 0.216, "planned": 0.216, "actual": 0.00, "cost": 0},
+            {"no": "311(1)a.5", "description": "PCC Pavement - Conventional Method, 280mm thk", "weight": 0.820, "planned": 0.820, "actual": 0.00, "cost": 0},
+            {"no": "404", "description": "Reinforcing Steel Bar, Grade 40", "weight": 1.417, "planned": 1.417, "actual": 1.20, "cost": 3_000_000},
+            {"no": "405", "description": "Structural Concrete Class A", "weight": 1.971, "planned": 1.971, "actual": 1.50, "cost": 3_500_000},
+            {"no": "803(1)a", "description": "Structure Excavation (Common Soil)", "weight": 0.628, "planned": 0.628, "actual": 0.50, "cost": 1_200_000},
+            {"no": "804(1)a", "description": "Embankment from Structure Excavation", "weight": 0.178, "planned": 0.178, "actual": 0.10, "cost": 250_000},
+            {"no": "804(4)", "description": "Gravel Fill", "weight": 0.632, "planned": 0.632, "actual": 0.40, "cost": 800_000},
+            {"no": "807 (2)", "description": "Softscape", "weight": 0.571, "planned": 0.571, "actual": 0.00, "cost": 0},
+            {"no": "807 (5)", "description": "Hardscape", "weight": 2.596, "planned": 2.596, "actual": 0.50, "cost": 1_200_000},
+            {"no": "1706(1)", "description": "Overhaul", "weight": 0.291, "planned": 0.291, "actual": 0.20, "cost": 500_000},
+            {"no": "900(1)c2", "description": "Structural Concrete for Footing and Slab on Fill", "weight": 1.710, "planned": 1.710, "actual": 1.00, "cost": 2_500_000},
+            {"no": "900(1)", "description": "Structural Concrete for Columns, Beams", "weight": 4.134, "planned": 4.123, "actual": 2.50, "cost": 6_000_000},
+            {"no": "902(1) a", "description": "Reinforcing Steel for Concrete Structures", "weight": 9.308, "planned": 9.308, "actual": 5.00, "cost": 12_000_000},
+            {"no": "903(1)", "description": "Formworks and Falseworks", "weight": 1.270, "planned": 1.270, "actual": 0.80, "cost": 2_000_000},
+            {"no": "1001(1)a5", "description": "Inlets, 350mm Concrete Inlet", "weight": 0.184, "planned": 0.184, "actual": 0.00, "cost": 0},
+            {"no": "1001(6)", "description": "Catch Basin (Concrete)", "weight": 0.011, "planned": 0.011, "actual": 0.00, "cost": 0},
+            {"no": "1001(8)", "description": "Sewer Line Works", "weight": 0.253, "planned": 0.253, "actual": 0.00, "cost": 0},
+            {"no": "1001(9)", "description": "Storm Drainage and Downspout", "weight": 0.194, "planned": 0.194, "actual": 0.00, "cost": 0},
+            {"no": "1001(11)", "description": "Septic Vault, Concrete", "weight": 0.436, "planned": 0.436, "actual": 0.00, "cost": 0},
+            {"no": "1002 (6)", "description": "Cold Waterline Pipes and Fittings", "weight": 0.368, "planned": 0.368, "actual": 0.00, "cost": 0},
+            {"no": "1002(4)", "description": "Plumbing Fixtures", "weight": 1.019, "planned": 1.019, "actual": 0.00, "cost": 0},
+            {"no": "1003(1)", "description": "Fiber Cement Board Ceiling", "weight": 1.160, "planned": 1.160, "actual": 0.00, "cost": 0},
+            {"no": "1003(2)h", "description": "Wood Wall", "weight": 0.873, "planned": 0.873, "actual": 0.00, "cost": 0},
+            {"no": "1003(12)", "description": "Fascia Board", "weight": 0.268, "planned": 0.268, "actual": 0.00, "cost": 0},
+            {"no": "1006 (6)", "description": "Steel Doors and Frames", "weight": 0.198, "planned": 0.198, "actual": 0.00, "cost": 0},
+            {"no": "1008 (2)", "description": "Aluminum Glass Window", "weight": 0.781, "planned": 0.781, "actual": 0.00, "cost": 0},
+            {"no": "1010(2)b", "description": "Doors, Wood Panel", "weight": 0.048, "planned": 0.008, "actual": 0.00, "cost": 0},
+            {"no": "1010(2)a", "description": "Doors, Flush", "weight": 0.096, "planned": 0.096, "actual": 0.00, "cost": 0},
+            {"no": "1011(2)", "description": "Roll-Up Doors", "weight": 0.165, "planned": 0.165, "actual": 0.00, "cost": 0},
+            {"no": "1013(2)a2", "description": "Metal Roofing Accessory (Flashings)", "weight": 0.056, "planned": 0.056, "actual": 0.00, "cost": 0},
+            {"no": "1013(2)c", "description": "Metal Roofing Accessory (Gutter)", "weight": 0.051, "planned": 0.051, "actual": 0.00, "cost": 0},
+            {"no": "1014(1)b2", "description": "Prepainted Metal Sheets", "weight": 1.331, "planned": 1.331, "actual": 0.00, "cost": 0},
+            {"no": "1016(1)a", "description": "Waterproofing Cement Base", "weight": 0.632, "planned": 0.632, "actual": 0.00, "cost": 0},
+            {"no": "1018(1)", "description": "Glazed Tiles and Trims", "weight": 0.320, "planned": 0.320, "actual": 0.00, "cost": 0},
+            {"no": "1018 (2)", "description": "Unglazed Tiles", "weight": 1.673, "planned": 1.673, "actual": 0.00, "cost": 0},
+            {"no": "1027(1)", "description": "Cement Plaster Finish", "weight": 0.859, "planned": 0.859, "actual": 0.00, "cost": 0},
+            {"no": "1032(1)a", "description": "Painting Works (Masonry/Concrete)", "weight": 1.608, "planned": 1.608, "actual": 0.00, "cost": 0},
+            {"no": "1032(1)a", "description": "Painting Works (Wood)", "weight": 0.009, "planned": 0.009, "actual": 0.00, "cost": 0},
+            {"no": "1032(1)c", "description": "Painting Works (Steel)", "weight": 1.005, "planned": 1.005, "actual": 0.00, "cost": 0},
+            {"no": "1033(1)", "description": "Metal Deck Panel", "weight": 2.487, "planned": 2.487, "actual": 0.00, "cost": 0},
+            {"no": "1046 (2) a1", "description": "CHB Non Load Bearing 100mm", "weight": 0.048, "planned": 0.048, "actual": 0.00, "cost": 0},
+            {"no": "1046 (2) a2", "description": "CHB Non Load Bearing 150mm", "weight": 1.658, "planned": 1.658, "actual": 0.00, "cost": 0},
+            {"no": "1047 (1)", "description": "Structural Steel", "weight": 14.170, "planned": 14.170, "actual": 8.50, "cost": 20_000_000},
+            {"no": "1047 (2)a", "description": "Structural Steel (Trusses)", "weight": 1.757, "planned": 1.757, "actual": 0.50, "cost": 1_200_000},
+            {"no": "1047 (2)b", "description": "Structural Steel (Purlins)", "weight": 0.332, "planned": 0.332, "actual": 0.00, "cost": 0},
+            {"no": "1047 (3)a", "description": "Metal Structure Accessories (Anchor Bolt)", "weight": 1.505, "planned": 1.505, "actual": 0.50, "cost": 1_200_000},
+            {"no": "1047 (3)b", "description": "Metal Structure Accessories (Sagrods)", "weight": 0.329, "planned": 0.329, "actual": 0.00, "cost": 0},
+            {"no": "1047 (3)c", "description": "Metal Structure Accessories (Turnbuckle)", "weight": 0.098, "planned": 0.098, "actual": 0.00, "cost": 0},
+            {"no": "1047 (3)d", "description": "Metal Structure Accessories (Cross Bracing)", "weight": 0.107, "planned": 0.107, "actual": 0.00, "cost": 0},
+            {"no": "1047 (5)", "description": "Metal Structure Accessories (Steel Plates)", "weight": 1.799, "planned": 1.799, "actual": 0.50, "cost": 1_200_000},
+            {"no": "1051 (6)", "description": "Railing", "weight": 0.636, "planned": 0.636, "actual": 0.00, "cost": 0},
+            {"no": "1100(10)", "description": "Conduits, Boxes & Fittings", "weight": 0.409, "planned": 0.409, "actual": 0.00, "cost": 0},
+            {"no": "1101(33)", "description": "Wires and Wiring Devices", "weight": 0.720, "planned": 0.720, "actual": 0.00, "cost": 0},
+            {"no": "1102 (1)", "description": "Panelboard with Main & Branch Breakers", "weight": 0.266, "planned": 0.266, "actual": 0.00, "cost": 0},
+            {"no": "1103(1)", "description": "Lighting Fixtures and Lamps", "weight": 1.279, "planned": 1.279, "actual": 0.00, "cost": 0},
+            {"no": "1202 (1)", "description": "Automatic Fire Sprinkler System", "weight": 2.725, "planned": 2.725, "actual": 0.00, "cost": 0},
+            {"no": "1208(1)", "description": "Fire Alarm System", "weight": 0.088, "planned": 0.088, "actual": 0.00, "cost": 0},
+            {"no": "1201(1)", "description": "Water Pumping System", "weight": 0.940, "planned": 0.940, "actual": 0.00, "cost": 0},
+            {"no": "1102(8)", "description": "Generator Set", "weight": 2.401, "planned": 2.401, "actual": 0.00, "cost": 0},
+            {"no": "1102(18)", "description": "Solar Panel with inverter, battery", "weight": 8.876, "planned": 8.876, "actual": 0.00, "cost": 0},
+            {"no": "1726", "description": "Electro Mechanical for Pumping Station", "weight": 0.675, "planned": 0.675, "actual": 0.00, "cost": 0},
+            {"no": "SPL-1", "description": "Furnitures", "weight": 0.801, "planned": 0.801, "actual": 0.00, "cost": 0},
+            {"no": "SPL-2", "description": "Retractable Seat", "weight": 0.905, "planned": 0.905, "actual": 0.00, "cost": 0},
+            {"no": "SPL-3", "description": "Appliances and Equipment", "weight": 2.440, "planned": 2.440, "actual": 0.00, "cost": 0},
+            {"no": "SPL-4", "description": "Automated Weather Stations (AWS)", "weight": 5.869, "planned": 5.869, "actual": 0.00, "cost": 0},
+            {"no": "SPL-5", "description": "Laboratory Equipment", "weight": 3.300, "planned": 3.299, "actual": 0.00, "cost": 0},
+        ]
         
-        st.session_state[f'{prefix}original_plan'] = original_plan
-        st.session_state[f'{prefix}revised_plan'] = revised_plan
-        st.session_state[f'{prefix}actual'] = actual
-        st.session_state[f'{prefix}cost'] = [p * CONTRACT_AMOUNT / 100 for p in actual]
-        st.session_state[f'{prefix}last_updated'] = datetime.now().isoformat()
+        st.session_state[f'{prefix}work_items'] = work_items
     
-    weeks = list(range(1, 194))
+    # Calculate overall progress from work items
+    work_items = st.session_state[f'{prefix}work_items']
     
-    # Get current progress - ensure we're working with lists
-    actual_list = st.session_state[f'{prefix}actual']
-    revised_list = st.session_state[f'{prefix}revised_plan']
-    original_list = st.session_state[f'{prefix}original_plan']
-    cost_list = st.session_state[f'{prefix}cost']
+    # Calculate weighted actual progress
+    total_weight = sum(item['weight'] for item in work_items)
+    weighted_actual = sum(item['weight'] * item['actual'] / 100 for item in work_items) if total_weight > 0 else 0
+    overall_progress = weighted_actual * 100 / total_weight if total_weight > 0 else 0
     
-    # Verify cost_list is a list
-    if not isinstance(cost_list, list):
-        # If it's a single float, convert to list
-        cost_list = [cost_list] * len(actual_list)
-        st.session_state[f'{prefix}cost'] = cost_list
+    total_actual_cost = sum(item['cost'] for item in work_items)
     
-    # Find current week (last week with actual > 0)
-    current_week = 0
-    for i, val in enumerate(actual_list):
-        if val > 0:
-            current_week = i
+    # Update session state for dashboard
+    st.session_state['infrastructure_progress'] = overall_progress
+    st.session_state['infrastructure_target'] = 25.75  # Target from original plan
+    st.session_state['infrastructure_cost'] = total_actual_cost
     
-    current_actual = actual_list[current_week] if current_week < len(actual_list) else 0
-    current_revised = revised_list[current_week] if current_week < len(revised_list) else 0
-    current_original = original_list[current_week] if current_week < len(original_list) else 0
-    
-    physical_variance = current_actual - current_revised
-    current_cost = current_actual * CONTRACT_AMOUNT / 100
-    planned_cost = current_revised * CONTRACT_AMOUNT / 100
-    cost_variance = current_cost - planned_cost
-    
-    # Store in session state for dashboard
-    st.session_state['infrastructure_progress'] = current_actual
-    st.session_state['infrastructure_target'] = current_revised
-    st.session_state['infrastructure_cost'] = current_cost  # Store as single value, not list
-    
-        # KPI Cards - Updated to 2 decimal places
+    # KPI Cards
     col1, col2, col3, col4, col5 = st.columns(5)
     with col1:
-        st.metric("Overall Progress", f"{current_actual:.2f}%", delta=f"{current_actual - current_revised:.2f}% vs Revised")
+        st.metric("Overall Progress", f"{overall_progress:.2f}%", delta=f"{overall_progress - 25.75:.2f}% vs Target")
     with col2:
-        st.metric("Physical Variance", f"{physical_variance:+.2f}%", 
-                  delta="Ahead" if physical_variance >= 0 else "Behind",
-                  delta_color="normal" if physical_variance >= 0 else "inverse")
+        variance = overall_progress - 25.75
+        st.metric("Physical Variance", f"{variance:+.2f}%", 
+                  delta="Ahead" if variance >= 0 else "Behind",
+                  delta_color="normal" if variance >= 0 else "inverse")
     with col3:
-        st.metric("Cost Utilized", f"₱{current_cost:,.2f}", delta=f"{(current_actual):.2f}% of Total")
+        st.metric("Cost Utilized", f"₱{total_actual_cost:,.2f}", delta=f"{(total_actual_cost/CONTRACT_AMOUNT)*100:.1f}% of Total")
     with col4:
-        st.metric("Cost Variance", f"₱{cost_variance:+,.2f}",
-                  delta="Under" if cost_variance <= 0 else "Over",
-                  delta_color="normal" if cost_variance <= 0 else "inverse")
+        planned_cost = 25.75 * CONTRACT_AMOUNT / 100
+        cost_var = total_actual_cost - planned_cost
+        st.metric("Cost Variance", f"₱{cost_var:+,.2f}",
+                  delta="Under" if cost_var <= 0 else "Over",
+                  delta_color="normal" if cost_var <= 0 else "inverse")
     with col5:
-        schedule_status = "✅ ON TRACK" if physical_variance >= -2 else "⚠️ BEHIND"
-        st.metric("Schedule Status", schedule_status, delta=f"Target: {current_revised:.2f}%")
+        schedule_status = "✅ ON TRACK" if variance >= -2 else "⚠️ BEHIND"
+        st.metric("Schedule Status", schedule_status)
     
     st.markdown("---")
     
-    # EDIT MODE TOGGLE
-    edit_mode = st.toggle("✏️ Edit Mode (Enable to modify plan data)", value=False)
+    # ============================================================
+    # ITEMIZED WORK DETAILS TABLE (Main Feature)
+    # ============================================================
     
-    if edit_mode:
-        st.warning("⚠️ Edit Mode Enabled: You can modify Original Plan, Revised Plan, and Actual Progress below.")
-        
-        # Data Management Section
-        st.markdown("### 💾 Data Management")
-        
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            if st.button("📥 Import from CSV", use_container_width=True):
-                st.info("CSV import feature - upload file with columns: Week, Original, Revised, Actual")
-        
-        with col2:
-            if st.button("💾 Export to CSV", use_container_width=True):
-                export_df = pd.DataFrame({
-                    "Week": weeks[:len(original_list)],
-                    "Original_Plan": original_list,
-                    "Revised_Plan": revised_list,
-                    "Actual_Progress": actual_list,
-                    "Actual_Cost": cost_list
-                })
-                csv = export_df.to_csv(index=False)
-                st.download_button("📥 Download CSV", data=csv, 
-                                  file_name=f"mpcfs_{component}_data_{datetime.now().strftime('%Y%m%d')}.csv",
-                                  mime="text/csv")
-        
-        with col3:
-            if st.button("☁️ Sync to Cloud (Supabase)", use_container_width=True):
-                st.success("✅ Data synced to cloud! (Supabase integration ready)")
-        
-        st.markdown("---")
-        
-        # Editable Table
-        st.markdown("### 📝 Edit Plan Data")
-        
-        edit_range = st.radio("Show weeks:", ["First 52 weeks", "Last 12 weeks", "Current +/- 10 weeks"], horizontal=True)
-        
-        if edit_range == "First 52 weeks":
-            start_idx, end_idx = 0, min(52, len(original_list))
-        elif edit_range == "Last 12 weeks":
-            start_idx = max(0, len(original_list) - 12)
-            end_idx = len(original_list)
-        else:
-            start_idx = max(0, current_week - 10)
-            end_idx = min(len(original_list), current_week + 11)
-        
-        # Create editable dataframe
-        edit_data = []
-        for i in range(start_idx, end_idx):
-            edit_data.append({
-                "Week": i + 1,
-                "Original (%)": original_list[i],
-                "Revised (%)": revised_list[i],
-                "Actual (%)": actual_list[i],
-                "Cost (₱M)": cost_list[i] / 1_000_000 if i < len(cost_list) else 0
-            })
-        
-        edit_df = pd.DataFrame(edit_data)
-        
-        edited_df = st.data_editor(edit_df, use_container_width=True, hide_index=True,
-                                   column_config={
-                                       "Week": st.column_config.NumberColumn("Week", disabled=True),
-                                       "Original (%)": st.column_config.NumberColumn("Original (%)", min_value=0, max_value=100, step=0.5),
-                                       "Revised (%)": st.column_config.NumberColumn("Revised (%)", min_value=0, max_value=100, step=0.5),
-                                       "Actual (%)": st.column_config.NumberColumn("Actual (%)", min_value=0, max_value=100, step=0.5),
-                                       "Cost (₱M)": st.column_config.NumberColumn("Cost (₱M)", min_value=0, step=0.1)
-                                   })
-        
-        if st.button("💾 Save All Changes", type="primary", use_container_width=True):
+    st.markdown("### 📋 Itemized Work Details")
+    st.caption("Update progress and cost for each work item - changes auto-calculate overall progress")
+    
+    # Category filter
+    categories = ["All", "Civil Works", "Structural", "Electrical", "Mechanical", "Equipment", "Other"]
+    selected_category = st.selectbox("Filter by Category", categories, key=f"{prefix}_category")
+    
+    # Display work items in editable dataframe
+    st.markdown("**Instructions:** Edit the 'Actual %' and 'Actual Cost (₱)' columns below. Changes auto-save when you click outside the cell.")
+    
+    # Prepare dataframe for editing
+    df_items = pd.DataFrame(work_items)
+    df_items['Variance (%)'] = df_items['actual'] - df_items['planned']
+    df_items['Status'] = df_items['Variance (%)'].apply(lambda x: '✅ Ahead' if x > 0.1 else ('🟡 On Track' if x >= -0.1 else '🔴 Behind'))
+    
+    # Select columns to show
+    display_df = df_items[['no', 'description', 'weight', 'planned', 'actual', 'cost', 'Variance (%)', 'Status']].copy()
+    display_df.columns = ['Item No.', 'Description', 'Weight (%)', 'Planned (%)', 'Actual (%)', 'Actual Cost (₱)', 'Variance (%)', 'Status']
+    
+    # Make the dataframe editable
+    edited_df = st.data_editor(
+        display_df,
+        use_container_width=True,
+        hide_index=True,
+        column_config={
+            "Item No.": st.column_config.TextColumn("Item No.", width="small"),
+            "Description": st.column_config.TextColumn("Description", width="large"),
+            "Weight (%)": st.column_config.NumberColumn("Weight (%)", format="%.3f", disabled=True),
+            "Planned (%)": st.column_config.NumberColumn("Planned (%)", format="%.3f", disabled=True),
+            "Actual (%)": st.column_config.NumberColumn("Actual (%)", min_value=0.0, max_value=100.0, step=0.5, format="%.2f"),
+            "Actual Cost (₱)": st.column_config.NumberColumn("Actual Cost (₱)", min_value=0, step=10000, format="₱%.2f"),
+            "Variance (%)": st.column_config.NumberColumn("Variance (%)", format="%+.2f", disabled=True),
+            "Status": st.column_config.TextColumn("Status", disabled=True),
+        }
+    )
+    
+    # Save button for all changes
+    col1, col2, col3 = st.columns([1, 1, 2])
+    with col1:
+        if st.button("💾 SAVE ALL CHANGES", type="primary", use_container_width=True):
+            # Update work items with edited values
             for idx, row in edited_df.iterrows():
-                i = start_idx + idx
-                original_list[i] = row["Original (%)"]
-                revised_list[i] = row["Revised (%)"]
-                actual_list[i] = row["Actual (%)"]
-                cost_list[i] = row["Cost (₱M)"] * 1_000_000
+                work_items[idx]['actual'] = row['Actual (%)']
+                work_items[idx]['cost'] = row['Actual Cost (₱)']
             
-            st.session_state[f'{prefix}original_plan'] = original_list
-            st.session_state[f'{prefix}revised_plan'] = revised_list
-            st.session_state[f'{prefix}actual'] = actual_list
-            st.session_state[f'{prefix}cost'] = cost_list
-            st.session_state[f'{prefix}last_updated'] = datetime.now().isoformat()
-            st.success("✅ All changes saved!")
+            st.session_state[f'{prefix}work_items'] = work_items
+            st.success("✅ All changes saved! Overall progress has been recalculated.")
             st.rerun()
     
-    # S-CURVE CHART
+    with col2:
+        if st.button("🔄 Reset to Original Plan", use_container_width=True):
+            for item in work_items:
+                item['actual'] = 0
+                item['cost'] = 0
+            st.session_state[f'{prefix}work_items'] = work_items
+            st.success("✅ Reset to zero. Ready for new data entry.")
+            st.rerun()
+    
+    with col3:
+        st.caption(f"📊 Weighted Overall Progress: {overall_progress:.2f}% | Total Cost: ₱{total_actual_cost:,.2f}")
+    
+    st.markdown("---")
+    
+    # ============================================================
+    # S-CURVE CHARTS (Auto-updated from work items)
+    # ============================================================
+    
     st.markdown("### 📈 S-Curve: Planned vs Actual Progress")
     
-    max_len = len(original_list)
-    
-    plot_df = pd.DataFrame({
-        "Week": weeks[:max_len],
-        "Original Plan (%)": original_list[:max_len],
-        "Revised Plan (%)": revised_list[:max_len],
-        "Actual Progress (%)": actual_list[:max_len]
-    })
+    # Generate weekly data (simplified for demo - will expand)
+    weeks = list(range(1, 53))
+    target_curve = [min(25.75 * w / 52, 25.75) for w in weeks]
+    actual_curve = [min(overall_progress * w / 52, overall_progress) for w in weeks]
     
     fig = go.Figure()
-    fig.add_trace(go.Scatter(x=plot_df["Week"], y=plot_df["Original Plan (%)"], mode='lines', name='Original Plan', line=dict(color='#3498db', width=2, dash='dash')))
-    fig.add_trace(go.Scatter(x=plot_df["Week"], y=plot_df["Revised Plan (%)"], mode='lines', name='Revised Plan', line=dict(color='#f39c12', width=2, dash='dot')))
-    fig.add_trace(go.Scatter(x=plot_df["Week"], y=plot_df["Actual Progress (%)"], mode='lines+markers', name='Actual Progress', line=dict(color='#2ecc71', width=3), marker=dict(size=4)))
-    fig.add_vline(x=current_week + 1, line_dash="dash", line_color="red", annotation_text=f"Current: Week {current_week + 1}", annotation_position="top right")
-    fig.update_layout(title="Project Progress S-Curve", xaxis_title="Week Number (Sept 2024 → May 2028)", yaxis_title="Cumulative Progress (%)", yaxis_range=[0, 105], height=500, hovermode='x unified')
+    fig.add_trace(go.Scatter(x=weeks, y=target_curve, mode='lines', name='Target Plan', line=dict(color='#3498db', width=2, dash='dash')))
+    fig.add_trace(go.Scatter(x=weeks, y=actual_curve, mode='lines+markers', name='Actual Progress', line=dict(color='#2ecc71', width=3), marker=dict(size=4)))
+    fig.update_layout(title="Project Progress S-Curve", xaxis_title="Week", yaxis_title="Cumulative Progress (%)", yaxis_range=[0, 100], height=400)
     st.plotly_chart(fig, use_container_width=True)
     
-    # COST S-CURVE CHART
-    st.markdown("### 💰 Cost S-Curve: Planned vs Actual Expenditure")
+    # ============================================================
+    # SUMMARY STATISTICS
+    # ============================================================
     
-    cost_df = pd.DataFrame({
-        "Week": weeks[:max_len],
-        "Original Plan (₱M)": [p * CONTRACT_AMOUNT / 100 / 1_000_000 for p in original_list[:max_len]],
-        "Revised Plan (₱M)": [p * CONTRACT_AMOUNT / 100 / 1_000_000 for p in revised_list[:max_len]],
-        "Actual Cost (₱M)": [cost_list[i] / 1_000_000 if i < len(cost_list) else 0 for i in range(max_len)]
-    })
+    st.markdown("### 📊 Progress Summary by Status")
     
-    fig2 = go.Figure()
-    fig2.add_trace(go.Scatter(x=cost_df["Week"], y=cost_df["Original Plan (₱M)"], mode='lines', name='Original Plan (₱M)', line=dict(color='#3498db', width=2, dash='dash')))
-    fig2.add_trace(go.Scatter(x=cost_df["Week"], y=cost_df["Revised Plan (₱M)"], mode='lines', name='Revised Plan (₱M)', line=dict(color='#f39c12', width=2, dash='dot')))
-    fig2.add_trace(go.Scatter(x=cost_df["Week"], y=cost_df["Actual Cost (₱M)"], mode='lines+markers', name='Actual Cost (₱M)', line=dict(color='#e74c3c', width=3), marker=dict(size=4)))
-    fig2.add_vline(x=current_week + 1, line_dash="dash", line_color="red")
-    fig2.update_layout(title="Project Cost S-Curve (in Million ₱)", xaxis_title="Week Number", yaxis_title="Cumulative Cost (₱ Million)", height=450, hovermode='x unified')
-    st.plotly_chart(fig2, use_container_width=True)
+    col1, col2, col3, col4 = st.columns(4)
     
-    # Quick Update Section
-    if not edit_mode:
-        st.markdown("---")
-        st.markdown("### ✏️ Quick Progress Update")
-        
-        role = st.selectbox("Your Role", ["Project Engineer", "Finance Officer", "Project Manager", "Viewer"], key=f"{prefix}_role")
-        
-        if role != "Viewer":
-            col1, col2 = st.columns(2)
-            with col1:
-                week_to_update = st.slider("Select Week", 1, min(80, len(actual_list)), current_week + 1)
-            with col2:
-                if role in ["Project Engineer", "Project Manager"]:
-                    new_progress = st.number_input("Physical Progress (%)", 0.0, 100.0, 
-                                                   value=float(actual_list[week_to_update-1]), step=0.5, key=f"{prefix}_progress")
-                    if st.button("✅ Update Progress", type="primary"):
-                        actual_list[week_to_update-1] = new_progress
-                        cost_list[week_to_update-1] = new_progress * CONTRACT_AMOUNT / 100
-                        st.session_state[f'{prefix}actual'] = actual_list
-                        st.session_state[f'{prefix}cost'] = cost_list
-                        st.session_state[f'{prefix}last_updated'] = datetime.now().isoformat()
-                        st.success(f"✅ Week {week_to_update} updated to {new_progress}%")
-                        st.rerun()
-                
-                if role in ["Finance Officer", "Project Manager"]:
-                    current_cost_val = cost_list[week_to_update-1] if week_to_update-1 < len(cost_list) else 0
-                    new_cost = st.number_input("Actual Cost (₱)", 0.0, float(CONTRACT_AMOUNT),
-                                               value=float(current_cost_val), step=100000.0, key=f"{prefix}_cost_input")
-                    if st.button("💰 Update Cost", type="primary"):
-                        new_progress_from_cost = (new_cost / CONTRACT_AMOUNT) * 100
-                        actual_list[week_to_update-1] = new_progress_from_cost
-                        cost_list[week_to_update-1] = new_cost
-                        st.session_state[f'{prefix}actual'] = actual_list
-                        st.session_state[f'{prefix}cost'] = cost_list
-                        st.session_state[f'{prefix}last_updated'] = datetime.now().isoformat()
-                        st.success(f"✅ Week {week_to_update} cost updated to ₱{new_cost:,.2f}")
-                        st.rerun()
+    ahead_items = len([i for i in work_items if i['actual'] - i['planned'] > 0.1])
+    on_track_items = len([i for i in work_items if -0.1 <= i['actual'] - i['planned'] <= 0.1])
+    behind_items = len([i for i in work_items if i['actual'] - i['planned'] < -0.1])
+    not_started = len([i for i in work_items if i['actual'] == 0])
     
-    # Variance Summary
+    with col1:
+        st.metric("✅ Ahead", ahead_items)
+    with col2:
+        st.metric("🟡 On Track", on_track_items)
+    with col3:
+        st.metric("🔴 Behind", behind_items)
+    with col4:
+        st.metric("⚪ Not Started", not_started)
+    
     st.markdown("---")
-    st.markdown("### 📋 Progress Variance Summary")
     
-    start_week_viz = max(0, current_week - 11)
-    variance_data = []
-    for i in range(start_week_viz, min(current_week + 1, len(actual_list))):
-        variance_data.append({
-            "Week": i + 1,
-            "Actual (%)": f"{actual_list[i]:.2f}",
-            "Original Plan (%)": f"{original_list[i]:.2f}",
-            "Revised Plan (%)": f"{revised_list[i]:.2f}",
-            "Δ vs Original": f"{actual_list[i] - original_list[i]:+.2f}%",
-            "Δ vs Revised": f"{actual_list[i] - revised_list[i]:+.2f}%"
-        })
+    # ============================================================
+    # EXPORT OPTIONS
+    # ============================================================
     
-    if variance_data:
-        st.dataframe(pd.DataFrame(variance_data), use_container_width=True, hide_index=True)
+    st.markdown("### 📎 Export Data")
     
-    st.caption(f"Last updated: {st.session_state[f'{prefix}last_updated'][:16] if st.session_state[f'{prefix}last_updated'] else 'Never'}")
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("📊 Export Work Items to CSV", use_container_width=True):
+            export_df = pd.DataFrame(work_items)
+            csv = export_df.to_csv(index=False)
+            st.download_button("📥 Download CSV", data=csv, 
+                              file_name=f"mpcfs_{component}_work_items_{datetime.now().strftime('%Y%m%d')}.csv",
+                              mime="text/csv")
+    
+    with col2:
+        if st.button("📄 Generate Progress Report", use_container_width=True):
+            st.markdown("---")
+            st.markdown("### 📋 MPCFS Progress Report")
+            st.markdown(f"**Generated:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+            st.markdown(f"**Overall Progress:** {overall_progress:.2f}%")
+            st.markdown(f"**Total Cost Utilized:** ₱{total_actual_cost:,.2f}")
+            st.markdown(f"**Active Work Items:** {len([i for i in work_items if i['actual'] > 0])}/{len(work_items)}")
+            st.info("Full report with all work items available in CSV export.")
+    
+    st.caption(f"Last updated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
 
 def show_cca_analytics():
     """Display CCA analytics and insights"""
