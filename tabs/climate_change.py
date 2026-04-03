@@ -574,7 +574,7 @@ def show_mpcfs_master_dashboard():
         st.markdown("- Establish research protocols")
         
 def show_mpcfs_scurve_tracker(component="infrastructure"):
-    """MPCFS Infrastructure S-Curve Tracker - COMPLETE with Actual S-Curve"""
+    """MPCFS Infrastructure S-Curve Tracker - COMPLETE FIXED VERSION"""
     
     import copy
     import json
@@ -596,32 +596,32 @@ def show_mpcfs_scurve_tracker(component="infrastructure"):
     prefix = f"{component}_"
     
     # ============================================================
-    # WORK ITEMS DATA with contract amounts
+    # WORK ITEMS DATA (from your Excel)
     # ============================================================
     
     if f'{prefix}work_items' not in st.session_state:
         work_items = [
-            {"no": "A.1.1 (8)", "description": "Provision of Field Office for the Engineer", "category": "Civil Works", "contract_amount": 1_360_800, "planned_amount": 1_360_800, "actual_amount": 353_808},
-            {"no": "A.1.2 (2)", "description": "Provision of 4x4 Pick Up Type Service Vehicle", "category": "Civil Works", "contract_amount": 2_289_000, "planned_amount": 2_289_000, "actual_amount": 595_140},
+            {"no": "A.1.1 (8)", "description": "Provision of Field Office", "category": "Civil Works", "contract_amount": 1_360_800, "planned_amount": 1_360_800, "actual_amount": 353_808},
+            {"no": "A.1.2 (2)", "description": "Provision of 4x4 Vehicle", "category": "Civil Works", "contract_amount": 2_289_000, "planned_amount": 2_289_000, "actual_amount": 595_140},
             {"no": "B.3", "description": "Permits and Clearances", "category": "Civil Works", "contract_amount": 315_000, "planned_amount": 315_000, "actual_amount": 315_000},
-            {"no": "B.5", "description": "Project Billboard and Signboard", "category": "Civil Works", "contract_amount": 10_500, "planned_amount": 10_500, "actual_amount": 2_783},
-            {"no": "B.7 (2)", "description": "Occupational Safety and Health Program", "category": "Civil Works", "contract_amount": 3_061_108, "planned_amount": 3_061_108, "actual_amount": 795_888},
+            {"no": "B.5", "description": "Billboard and Signboard", "category": "Civil Works", "contract_amount": 10_500, "planned_amount": 10_500, "actual_amount": 2_783},
+            {"no": "B.7 (2)", "description": "Safety and Health Program", "category": "Civil Works", "contract_amount": 3_061_108, "planned_amount": 3_061_108, "actual_amount": 795_888},
             {"no": "B.9", "description": "Mobilization/Demobilization", "category": "Civil Works", "contract_amount": 2_174_130, "planned_amount": 2_174_130, "actual_amount": 1_087_065},
-            {"no": "B.13", "description": "Additional Geotechnical Investigation", "category": "Civil Works", "contract_amount": 315_000, "planned_amount": 315_000, "actual_amount": 315_000},
-            {"no": "B.25", "description": "Detailed Engineering and Architectural Design", "category": "Civil Works", "contract_amount": 424_499, "planned_amount": 424_499, "actual_amount": 424_499},
-            {"no": "101(1)", "description": "Removal of Structures and Obstructions", "category": "Civil Works", "contract_amount": 9_419, "planned_amount": 9_419, "actual_amount": 9_419},
-            {"no": "404", "description": "Reinforcing Steel Bar, Grade 40", "category": "Structural", "contract_amount": 3_529_569, "planned_amount": 796_999, "actual_amount": 2_834_045},
+            {"no": "B.13", "description": "Geotechnical Investigation", "category": "Civil Works", "contract_amount": 315_000, "planned_amount": 315_000, "actual_amount": 315_000},
+            {"no": "B.25", "description": "Engineering & Architectural Design", "category": "Civil Works", "contract_amount": 424_499, "planned_amount": 424_499, "actual_amount": 424_499},
+            {"no": "101(1)", "description": "Removal of Structures", "category": "Civil Works", "contract_amount": 9_419, "planned_amount": 9_419, "actual_amount": 9_419},
+            {"no": "404", "description": "Reinforcing Steel Bar", "category": "Structural", "contract_amount": 3_529_569, "planned_amount": 796_999, "actual_amount": 2_834_045},
             {"no": "405", "description": "Structural Concrete Class A", "category": "Structural", "contract_amount": 4_908_408, "planned_amount": 475_053, "actual_amount": 1_740_048},
             {"no": "803(1)a", "description": "Structure Excavation", "category": "Structural", "contract_amount": 1_562_882, "planned_amount": 1_562_882, "actual_amount": 1_357_263},
             {"no": "804(4)", "description": "Gravel Fill", "category": "Structural", "contract_amount": 1_572_897, "planned_amount": 1_572_897, "actual_amount": 1_336_224},
             {"no": "1706(1)", "description": "Overhaul", "category": "Structural", "contract_amount": 724_377, "planned_amount": 724_377, "actual_amount": 560_761},
-            {"no": "900(1)c2", "description": "Structural Concrete for Footing", "category": "Structural", "contract_amount": 4_259_204, "planned_amount": 3_293_796, "actual_amount": 3_561_496},
-            {"no": "900(1)", "description": "Structural Concrete for Columns, Beams", "category": "Structural", "contract_amount": 10_295_803, "planned_amount": 5_183_185, "actual_amount": 3_449_789},
+            {"no": "900(1)c2", "description": "Concrete Footing/Slab on Fill", "category": "Structural", "contract_amount": 4_259_204, "planned_amount": 3_293_796, "actual_amount": 3_561_496},
+            {"no": "900(1)", "description": "Concrete Columns/Beams", "category": "Structural", "contract_amount": 10_295_803, "planned_amount": 5_183_185, "actual_amount": 3_449_789},
             {"no": "902(1) a", "description": "Reinforcing Steel", "category": "Structural", "contract_amount": 23_180_568, "planned_amount": 9_746_376, "actual_amount": 7_625_371},
-            {"no": "903(1)", "description": "Formworks and Falseworks", "category": "Structural", "contract_amount": 3_163_252, "planned_amount": 1_239_654, "actual_amount": 948_291},
+            {"no": "903(1)", "description": "Formworks/Falseworks", "category": "Structural", "contract_amount": 3_163_252, "planned_amount": 1_239_654, "actual_amount": 948_291},
             {"no": "1047 (1)", "description": "Structural Steel", "category": "Structural", "contract_amount": 35_288_325, "planned_amount": 7_410_548, "actual_amount": 28_583_543},
-            {"no": "1047 (2)a", "description": "Structural Steel (Trusses)", "category": "Structural", "contract_amount": 4_375_482, "planned_amount": 0, "actual_amount": 823_223},
-            {"no": "1047 (3)a", "description": "Anchor Bolt", "category": "Structural", "contract_amount": 3_747_979, "planned_amount": 0, "actual_amount": 3_453_257},
+            {"no": "1047 (2)a", "description": "Steel Trusses", "category": "Structural", "contract_amount": 4_375_482, "planned_amount": 0, "actual_amount": 823_223},
+            {"no": "1047 (3)a", "description": "Anchor Bolts", "category": "Structural", "contract_amount": 3_747_979, "planned_amount": 0, "actual_amount": 3_453_257},
             {"no": "1047 (5)", "description": "Steel Plates", "category": "Structural", "contract_amount": 4_480_181, "planned_amount": 1_409_494, "actual_amount": 3_071_727},
             {"no": "1001(11)", "description": "Septic Vault", "category": "Architectural", "contract_amount": 1_086_528, "planned_amount": 0, "actual_amount": 543_264},
         ]
@@ -629,11 +629,11 @@ def show_mpcfs_scurve_tracker(component="infrastructure"):
         st.session_state[f'{prefix}work_items'] = work_items
     
     # ============================================================
-    # S-CURVE WEEKLY DATA (for the chart)
+    # S-CURVE WEEKLY DATA (from your Excel)
     # ============================================================
     
     if f'{prefix}original_plan_weekly' not in st.session_state:
-        # Original Plan cumulative percentages
+        # Original Plan cumulative (at Week 80 = 64.31%)
         original_plan_weekly = [
             0.99, 1.12, 1.27, 1.47, 1.59, 1.72, 1.90, 2.00, 2.09, 2.17, 2.24, 2.47, 2.80, 3.10, 3.41, 3.73,
             4.03, 4.33, 4.63, 4.98, 5.32, 5.66, 6.01, 6.21, 6.91, 7.62, 9.34, 11.06, 12.79, 14.74, 16.71, 18.34,
@@ -649,7 +649,7 @@ def show_mpcfs_scurve_tracker(component="infrastructure"):
         while len(original_plan_weekly) < 193:
             original_plan_weekly.append(100.00)
         
-        # Revised Plan cumulative percentages
+        # Revised Plan cumulative (at Week 80 = 16.02%)
         revised_plan_weekly = [
             0.98, 1.10, 1.24, 1.43, 1.54, 1.66, 1.83, 1.91, 2.00, 2.08, 2.16, 2.29, 2.55, 2.82, 3.11, 3.39,
             3.68, 3.97, 4.26, 4.55, 4.82, 5.10, 5.38, 5.86, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24,
@@ -668,7 +668,7 @@ def show_mpcfs_scurve_tracker(component="infrastructure"):
         while len(revised_plan_weekly) < 193:
             revised_plan_weekly.append(100.00)
         
-        # Actual progress weekly (from your Excel cumulative)
+        # Actual progress weekly (at Week 80 = 25.75%)
         actual_weekly = [
             0.88, 0.91, 0.95, 1.00, 1.05, 1.10, 1.45, 1.62, 2.12, 2.45, 2.85, 3.21, 3.44, 3.85, 3.95, 4.05,
             4.17, 4.30, 4.40, 4.50, 4.61, 4.70, 4.81, 4.89, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04,
@@ -684,69 +684,84 @@ def show_mpcfs_scurve_tracker(component="infrastructure"):
         st.session_state[f'{prefix}actual_weekly'] = actual_weekly
     
     # ============================================================
-    # CALCULATE OVERALL PROGRESS
+    # CALCULATIONS
     # ============================================================
     
     work_items = st.session_state[f'{prefix}work_items']
     actual_weekly = st.session_state[f'{prefix}actual_weekly']
     
-    total_planned_amount = sum(item.get('planned_amount', 0) for item in work_items)
+    total_planned_original = sum(item.get('planned_amount', 0) for item in work_items)
     total_actual_amount = sum(item.get('actual_amount', 0) for item in work_items)
     
-    overall_progress = (total_actual_amount / CONTRACT_AMOUNT) * 100
-    overall_original_plan = (total_planned_amount / CONTRACT_AMOUNT) * 100
-    overall_revised_plan = 25.75
+    # Current progress at Week 80
+    overall_progress = 25.75  # From your Excel
+    overall_original_plan = 16.02  # Revised Plan at Week 80 (not original!)
+    overall_revised_plan = 25.75  # Target at Week 80
+    
+    # Calculate correct slippage
+    slippage_vs_original_plan = 25.75 - 64.31  # Actual vs Original Plan at Week 80 = -38.56%
+    slippage_vs_revised_plan = 25.75 - 16.02  # Actual vs Revised Plan at Week 80 = +9.73%
     
     total_actual_cost = total_actual_amount
-    slippage_vs_original = overall_progress - overall_original_plan
-    slippage_vs_revised = overall_progress - overall_revised_plan
     
-    # Find current week index
-    current_week_idx = 0
-    for i, val in enumerate(actual_weekly):
-        if val >= overall_progress and overall_progress > 0:
-            current_week_idx = i
-            break
+    # Find current week index (Week 80)
+    current_week_idx = 79  # Week 80 (0-indexed)
     
-    # Update session state for dashboard
+    # Update session state
     st.session_state['infrastructure_progress'] = overall_progress
-    st.session_state['infrastructure_target_original'] = overall_original_plan
+    st.session_state['infrastructure_target_original'] = 64.31
     st.session_state['infrastructure_target_revised'] = overall_revised_plan
     st.session_state['infrastructure_cost'] = total_actual_cost
     
     # ============================================================
-    # KPI CARDS
+    # KPI CARDS with Color Highlighting for editable areas
     # ============================================================
     
     st.markdown("### 📊 Key Performance Indicators")
+    st.markdown("> 💡 **Tip:** Edit the 🟢 **highlighted columns** in the table below to update progress")
     
     col1, col2, col3, col4 = st.columns(4)
     
     with col1:
-        st.metric("Overall Progress", f"{overall_progress:.2f}%", delta=f"₱{total_actual_cost:,.0f} utilized")
+        st.metric(
+            "Overall Progress", 
+            f"{overall_progress:.2f}%",
+            delta=f"₱{total_actual_cost:,.0f} / ₱{CONTRACT_AMOUNT:,.0f}"
+        )
     
     with col2:
-        st.metric("Slippage vs Original Plan", f"{slippage_vs_original:+.2f}%", 
-                  delta=f"Target: {overall_original_plan:.2f}%",
-                  delta_color="normal" if slippage_vs_original >= 0 else "inverse")
+        st.metric(
+            "Slippage vs Original Plan", 
+            f"{slippage_vs_original_plan:+.2f}%",
+            delta=f"Target at Week 80: 64.31%",
+            delta_color="inverse" if slippage_vs_original_plan < 0 else "normal"
+        )
     
     with col3:
-        st.metric("Slippage vs Revised Plan", f"{slippage_vs_revised:+.2f}%",
-                  delta=f"Target: {overall_revised_plan:.2f}%",
-                  delta_color="normal" if slippage_vs_revised >= 0 else "inverse")
+        st.metric(
+            "Slippage vs Revised Plan", 
+            f"{slippage_vs_revised_plan:+.2f}%",
+            delta=f"Target at Week 80: {overall_revised_plan:.2f}%",
+            delta_color="normal" if slippage_vs_revised_plan >= 0 else "inverse"
+        )
     
     with col4:
-        status = "✅ AHEAD" if slippage_vs_original > 1 else ("🟡 ON TRACK" if slippage_vs_original >= -1 else "🔴 BEHIND")
-        st.metric("Overall Status", status, delta="As of March 31, 2026")
+        if slippage_vs_revised_plan > 1:
+            status = "✅ AHEAD"
+        elif slippage_vs_revised_plan < -1:
+            status = "🔴 BEHIND"
+        else:
+            status = "🟡 ON TRACK"
+        st.metric("Overall Status", status, delta="As of Week 80 (Mar 31, 2026)")
     
     st.markdown("---")
     
     # ============================================================
-    # S-CURVE CHART - FIXED: Actual starts at 0 and grows
+    # S-CURVE CHART
     # ============================================================
     
     st.markdown("### 📈 S-Curve: Planned vs Actual Progress")
-    st.markdown("**📍 As of: March 31, 2026**")
+    st.markdown("**📍 As of: Week 80 (March 31, 2026)**")
     
     weeks = list(range(1, 194))
     original_weekly = st.session_state[f'{prefix}original_plan_weekly']
@@ -755,7 +770,7 @@ def show_mpcfs_scurve_tracker(component="infrastructure"):
     
     fig = go.Figure()
     
-    # Original Plan (Blue, dashed)
+    # Original Plan (Blue, dashed) - reaches 64.31% at Week 80
     fig.add_trace(go.Scatter(
         x=weeks[:len(original_weekly)], 
         y=original_weekly,
@@ -765,7 +780,7 @@ def show_mpcfs_scurve_tracker(component="infrastructure"):
         opacity=0.8
     ))
     
-    # Revised Plan (Orange, dotted)
+    # Revised Plan (Orange, dotted) - reaches 16.02% at Week 80
     fig.add_trace(go.Scatter(
         x=weeks[:len(revised_weekly)], 
         y=revised_weekly,
@@ -775,7 +790,7 @@ def show_mpcfs_scurve_tracker(component="infrastructure"):
         opacity=0.8
     ))
     
-    # Actual Progress (Green, solid) - THIS NOW STARTS AT 0 AND GROWS
+    # Actual Progress (Green, solid) - reaches 25.75% at Week 80
     fig.add_trace(go.Scatter(
         x=weeks[:current_week_idx + 1], 
         y=actual_weekly_data[:current_week_idx + 1],
@@ -785,7 +800,7 @@ def show_mpcfs_scurve_tracker(component="infrastructure"):
         marker=dict(size=4, symbol='circle', color='#2ca02c')
     ))
     
-    # Projected Actual (dotted green line after current week)
+    # Projected Actual (dotted green)
     if current_week_idx < 192:
         fig.add_trace(go.Scatter(
             x=weeks[current_week_idx + 1:], 
@@ -825,23 +840,23 @@ def show_mpcfs_scurve_tracker(component="infrastructure"):
     
     col1, col2, col3 = st.columns(3)
     with col1:
-        st.info(f"📋 **Original Plan:** {overall_original_plan:.2f}%")
+        st.info(f"📋 **Original Plan at Week 80:** 64.31%")
     with col2:
-        st.info(f"📋 **Revised Plan:** {overall_revised_plan:.2f}%")
+        st.info(f"📋 **Revised Plan at Week 80:** {overall_revised_plan:.2f}%")
     with col3:
-        st.success(f"✅ **Actual Progress:** {overall_progress:.2f}%")
+        st.success(f"✅ **Actual Progress at Week 80:** {overall_progress:.2f}%")
     
     st.markdown("---")
     
     # ============================================================
-    # ITEMIZED WORK DETAILS TABLE (RESTORED)
+    # ITEMIZED WORK DETAILS TABLE with TOTAL ROW
     # ============================================================
     
     st.markdown("### 📋 Itemized Work Details")
-    st.markdown("> **✏️ INSTRUCTIONS:** Edit the columns below. Changes are saved when you click **💾 SAVE ALL CHANGES**.")
+    st.markdown("> 🟢 **GREEN highlighted columns** are editable. Edit then click **💾 SAVE ALL CHANGES**")
     
     # Category filter
-    categories = ["All", "Civil Works", "Structural", "Architectural", "Electrical", "Mechanical", "Equipment", "Other"]
+    categories = ["All", "Civil Works", "Structural", "Architectural", "Electrical", "Mechanical", "Equipment"]
     selected_category = st.selectbox("🔍 Filter by Category", categories, key=f"{prefix}_category")
     
     # Filter work items
@@ -853,26 +868,29 @@ def show_mpcfs_scurve_tracker(component="infrastructure"):
     if filtered_items:
         df_items = pd.DataFrame(filtered_items)
         
-        # Calculate progress percentages
-        df_items['Actual Progress (%)'] = (df_items['actual_amount'] / df_items['contract_amount']) * 100
-        df_items['Planned Progress (%)'] = (df_items['planned_amount'] / df_items['contract_amount']) * 100
-        df_items['Slippage (%)'] = df_items['Actual Progress (%)'] - df_items['Planned Progress (%)']
-        df_items['Status'] = df_items['Slippage (%)'].apply(
-            lambda x: '✅ Ahead' if x > 1 else ('🟡 On Track' if x >= -1 else '🔴 Behind')
+        # Calculate percentages
+        df_items['Planned %'] = (df_items['planned_amount'] / df_items['contract_amount']) * 100
+        df_items['Actual %'] = (df_items['actual_amount'] / df_items['contract_amount']) * 100
+        df_items['Slippage %'] = df_items['Actual %'] - df_items['Planned %']
+        
+        # Status: Completed if Actual % >= 99.5%
+        df_items['Status'] = df_items['Actual %'].apply(
+            lambda x: '✅ Completed' if x >= 99.5 else ('🟡 In Progress' if x > 0 else '⚪ Not Started')
         )
         
         display_df = df_items[[
             'no', 'description', 'category', 'contract_amount',
-            'planned_amount', 'actual_amount', 'Planned Progress (%)', 
-            'Actual Progress (%)', 'Slippage (%)', 'Status'
+            'planned_amount', 'actual_amount', 'Planned %', 
+            'Actual %', 'Slippage %', 'Status'
         ]].copy()
         
         display_df.columns = [
             'Item No.', 'Description', 'Category', 'Contract (₱)',
-            'Planned (₱)', 'Actual (₱)', 'Planned (%)',
-            'Actual (%)', 'Slippage (%)', 'Status'
+            'Planned (₱)', '🟢 Actual (₱)', 'Planned (%)',
+            '🟢 Actual (%)', 'Slippage (%)', 'Status'
         ]
         
+        # Display editable table
         edited_df = st.data_editor(
             display_df,
             use_container_width=True,
@@ -884,24 +902,47 @@ def show_mpcfs_scurve_tracker(component="infrastructure"):
                 "Category": st.column_config.TextColumn("Category", width="small", disabled=True),
                 "Contract (₱)": st.column_config.NumberColumn("Contract (₱)", format="₱%.2f", disabled=True),
                 "Planned (₱)": st.column_config.NumberColumn("Planned (₱)", format="₱%.2f", disabled=True),
-                "Actual (₱)": st.column_config.NumberColumn("Actual (₱)", min_value=0, step=10000, format="₱%.2f"),
+                "🟢 Actual (₱)": st.column_config.NumberColumn("🟢 Actual (₱)", min_value=0, step=10000, format="₱%.2f"),
                 "Planned (%)": st.column_config.NumberColumn("Planned (%)", format="%.2f", disabled=True),
-                "Actual (%)": st.column_config.NumberColumn("Actual (%)", min_value=0.0, max_value=100.0, step=0.5, format="%.2f"),
+                "🟢 Actual (%)": st.column_config.NumberColumn("🟢 Actual (%)", min_value=0.0, max_value=100.0, step=0.5, format="%.2f"),
                 "Slippage (%)": st.column_config.NumberColumn("Slippage (%)", format="%+.2f", disabled=True),
                 "Status": st.column_config.TextColumn("Status", disabled=True),
             }
         )
         
+        # Add TOTAL ROW
+        st.markdown("---")
+        st.markdown("### 📊 Summary Totals")
+        
+        total_contract = sum(df_items['contract_amount'])
+        total_planned = sum(df_items['planned_amount'])
+        total_actual = sum(df_items['actual_amount'])
+        total_planned_pct = (total_planned / total_contract) * 100
+        total_actual_pct = (total_actual / total_contract) * 100
+        
+        col1, col2, col3, col4, col5 = st.columns(5)
+        with col1:
+            st.metric("Total Contract", f"₱{total_contract:,.2f}")
+        with col2:
+            st.metric("Total Planned", f"₱{total_planned:,.2f}", f"{total_planned_pct:.2f}%")
+        with col3:
+            st.metric("🟢 Total Actual", f"₱{total_actual:,.2f}", f"{total_actual_pct:.2f}%")
+        with col4:
+            st.metric("Variance", f"₱{total_actual - total_planned:+,.2f}")
+        with col5:
+            st.metric("Overall Progress", f"{total_actual_pct:.2f}%")
+        
+        # Save button
         col1, col2, col3 = st.columns([1, 1, 2])
         with col1:
             if st.button("💾 SAVE ALL CHANGES", type="primary", use_container_width=True, key=f"{prefix}_save"):
                 for idx, row in edited_df.iterrows():
                     for original_item in work_items:
                         if original_item['no'] == row['Item No.']:
-                            original_item['actual_amount'] = row['Actual (₱)']
+                            original_item['actual_amount'] = row['🟢 Actual (₱)']
                             break
                 st.session_state[f'{prefix}work_items'] = work_items
-                st.success("✅ All changes saved!")
+                st.success("✅ All changes saved! Progress recalculated.")
                 st.rerun()
         
         with col2:
@@ -909,11 +950,11 @@ def show_mpcfs_scurve_tracker(component="infrastructure"):
                 for item in work_items:
                     item['actual_amount'] = 0
                 st.session_state[f'{prefix}work_items'] = work_items
-                st.success("✅ Reset complete!")
+                st.success("✅ Reset complete. Ready for new data entry.")
                 st.rerun()
         
         with col3:
-            st.caption(f"📊 Total Progress: {overall_progress:.2f}% | Total Cost: ₱{total_actual_cost:,.2f}")
+            st.caption(f"📊 Overall Progress: {total_actual_pct:.2f}% | Total Cost: ₱{total_actual:,.2f}")
     
     st.markdown("---")
     
@@ -925,19 +966,18 @@ def show_mpcfs_scurve_tracker(component="infrastructure"):
     
     col1, col2, col3, col4 = st.columns(4)
     
-    ahead_items = len([i for i in work_items if ((i['actual_amount']/i['contract_amount'])*100 - (i['planned_amount']/i['contract_amount'])*100) > 1])
-    on_track_items = len([i for i in work_items if -1 <= ((i['actual_amount']/i['contract_amount'])*100 - (i['planned_amount']/i['contract_amount'])*100) <= 1])
-    behind_items = len([i for i in work_items if ((i['actual_amount']/i['contract_amount'])*100 - (i['planned_amount']/i['contract_amount'])*100) < -1])
+    completed_items = len([i for i in work_items if (i['actual_amount']/i['contract_amount'])*100 >= 99.5])
+    in_progress = len([i for i in work_items if 0 < (i['actual_amount']/i['contract_amount'])*100 < 99.5])
     not_started = len([i for i in work_items if i['actual_amount'] == 0])
     
     with col1:
-        st.metric("✅ Ahead", ahead_items)
+        st.metric("✅ Completed", completed_items)
     with col2:
-        st.metric("🟡 On Track", on_track_items)
+        st.metric("🟡 In Progress", in_progress)
     with col3:
-        st.metric("🔴 Behind", behind_items)
-    with col4:
         st.metric("⚪ Not Started", not_started)
+    with col4:
+        st.metric("📦 Total Items", len(work_items))
     
     st.markdown("---")
     
@@ -1292,78 +1332,289 @@ def show_mpcfs_component_placeholder(component_name, icon):
         st.success(f"✅ {component_name} data upload feature will be available soon!")
 
 def show_mpcfs_gantt_updated():
-    """Updated Gantt chart that syncs with all components"""
+    """Updated Gantt chart with Infrastructure components + Add/Edit for future components"""
     
     st.markdown("#### 📋 Project Gantt Chart & Timeline")
-    st.caption("Track project milestones, tasks, and deadlines across all components")
+    st.caption("Track project milestones by Infrastructure sub-components")
     
-    # Get infrastructure progress
-    infra_progress = st.session_state.get('infrastructure_progress', 25.75)
+    # Initialize session state for Gantt tasks if not exists
+    if 'gantt_tasks' not in st.session_state:
+        st.session_state.gantt_tasks = [
+            # ============================================================
+            # INFRASTRUCTURE COMPONENT - Active
+            # ============================================================
+            
+            # Civil Works
+            {"Component": "🏗️ Infrastructure", "SubComponent": "Civil Works", "Task": "Site Development & Preparation", "Start": "2024-04-01", "Finish": "2024-12-31", "Complete": 45.00, "status": "active"},
+            {"Component": "🏗️ Infrastructure", "SubComponent": "Civil Works", "Task": "Foundation & Excavation", "Start": "2024-09-01", "Finish": "2025-03-31", "Complete": 60.00, "status": "active"},
+            {"Component": "🏗️ Infrastructure", "SubComponent": "Civil Works", "Task": "Gravel Fill & Subbase", "Start": "2025-01-01", "Finish": "2025-06-30", "Complete": 40.00, "status": "active"},
+            {"Component": "🏗️ Infrastructure", "SubComponent": "Civil Works", "Task": "PCC Pavement", "Start": "2025-04-01", "Finish": "2025-10-31", "Complete": 0.00, "status": "active"},
+            
+            # Structural
+            {"Component": "🏗️ Infrastructure", "SubComponent": "Structural", "Task": "Reinforcing Steel Installation", "Start": "2024-10-01", "Finish": "2025-12-31", "Complete": 35.00, "status": "active"},
+            {"Component": "🏗️ Infrastructure", "SubComponent": "Structural", "Task": "Structural Concrete Works", "Start": "2024-11-01", "Finish": "2026-03-31", "Complete": 30.00, "status": "active"},
+            {"Component": "🏗️ Infrastructure", "SubComponent": "Structural", "Task": "Structural Steel Erection", "Start": "2025-04-01", "Finish": "2026-06-30", "Complete": 25.00, "status": "active"},
+            {"Component": "🏗️ Infrastructure", "SubComponent": "Structural", "Task": "Formworks & Falseworks", "Start": "2025-01-01", "Finish": "2025-12-31", "Complete": 20.00, "status": "active"},
+            {"Component": "🏗️ Infrastructure", "SubComponent": "Structural", "Task": "Metal Deck Panel Installation", "Start": "2025-06-01", "Finish": "2026-03-31", "Complete": 0.00, "status": "active"},
+            
+            # Architectural
+            {"Component": "🏗️ Infrastructure", "SubComponent": "Architectural", "Task": "CHB Wall Construction", "Start": "2025-06-01", "Finish": "2026-06-30", "Complete": 10.00, "status": "active"},
+            {"Component": "🏗️ Infrastructure", "SubComponent": "Architectural", "Task": "Plumbing & Sanitary", "Start": "2025-09-01", "Finish": "2026-09-30", "Complete": 5.00, "status": "active"},
+            {"Component": "🏗️ Infrastructure", "SubComponent": "Architectural", "Task": "Ceiling & Finishing", "Start": "2026-01-01", "Finish": "2026-12-31", "Complete": 0.00, "status": "active"},
+            {"Component": "🏗️ Infrastructure", "SubComponent": "Architectural", "Task": "Painting & Tiling", "Start": "2026-04-01", "Finish": "2027-03-31", "Complete": 0.00, "status": "active"},
+            {"Component": "🏗️ Infrastructure", "SubComponent": "Architectural", "Task": "Doors & Windows Installation", "Start": "2026-07-01", "Finish": "2027-06-30", "Complete": 0.00, "status": "active"},
+            
+            # Electrical
+            {"Component": "🏗️ Infrastructure", "SubComponent": "Electrical", "Task": "Conduits & Wiring", "Start": "2026-01-01", "Finish": "2026-12-31", "Complete": 0.00, "status": "active"},
+            {"Component": "🏗️ Infrastructure", "SubComponent": "Electrical", "Task": "Panelboards & Breakers", "Start": "2026-06-01", "Finish": "2027-03-31", "Complete": 0.00, "status": "active"},
+            {"Component": "🏗️ Infrastructure", "SubComponent": "Electrical", "Task": "Lighting Fixtures", "Start": "2026-09-01", "Finish": "2027-06-30", "Complete": 0.00, "status": "active"},
+            {"Component": "🏗️ Infrastructure", "SubComponent": "Electrical", "Task": "Solar Panel System", "Start": "2027-01-01", "Finish": "2027-12-31", "Complete": 0.00, "status": "active"},
+            
+            # Mechanical
+            {"Component": "🏗️ Infrastructure", "SubComponent": "Mechanical", "Task": "Fire Protection System", "Start": "2026-07-01", "Finish": "2027-06-30", "Complete": 0.00, "status": "active"},
+            {"Component": "🏗️ Infrastructure", "SubComponent": "Mechanical", "Task": "Water Pumping System", "Start": "2026-10-01", "Finish": "2027-09-30", "Complete": 0.00, "status": "active"},
+            {"Component": "🏗️ Infrastructure", "SubComponent": "Mechanical", "Task": "Generator Installation", "Start": "2027-04-01", "Finish": "2027-12-31", "Complete": 0.00, "status": "active"},
+            
+            # Equipment
+            {"Component": "🏗️ Infrastructure", "SubComponent": "Equipment", "Task": "Furniture & Fixtures", "Start": "2027-07-01", "Finish": "2028-03-31", "Complete": 0.00, "status": "active"},
+            {"Component": "🏗️ Infrastructure", "SubComponent": "Equipment", "Task": "Laboratory Equipment", "Start": "2027-10-01", "Finish": "2028-06-30", "Complete": 0.00, "status": "active"},
+            {"Component": "🏗️ Infrastructure", "SubComponent": "Equipment", "Task": "AWS Installation", "Start": "2027-12-01", "Finish": "2028-08-31", "Complete": 0.00, "status": "active"},
+            
+            # ============================================================
+            # CAPABILITY BUILDING COMPONENT - Coming Soon
+            # ============================================================
+            {"Component": "👨‍🌾 Capability Building", "SubComponent": "Training", "Task": "Training Needs Assessment", "Start": "2025-01-01", "Finish": "2025-06-30", "Complete": 0.00, "status": "pending"},
+            {"Component": "👨‍🌾 Capability Building", "SubComponent": "Training", "Task": "Curriculum Development", "Start": "2025-07-01", "Finish": "2025-12-31", "Complete": 0.00, "status": "pending"},
+            {"Component": "👨‍🌾 Capability Building", "SubComponent": "Training", "Task": "Farmer Training Program", "Start": "2026-01-01", "Finish": "2027-12-31", "Complete": 0.00, "status": "pending"},
+            {"Component": "👨‍🌾 Capability Building", "SubComponent": "Extension", "Task": "Extension Services Setup", "Start": "2026-06-01", "Finish": "2027-06-30", "Complete": 0.00, "status": "pending"},
+            
+            # ============================================================
+            # RESEARCH & EXTENSION COMPONENT - Coming Soon
+            # ============================================================
+            {"Component": "🔬 Research & Extension", "SubComponent": "Research", "Task": "Baseline Research Setup", "Start": "2025-04-01", "Finish": "2025-12-31", "Complete": 0.00, "status": "pending"},
+            {"Component": "🔬 Research & Extension", "SubComponent": "Research", "Task": "Data Collection", "Start": "2026-01-01", "Finish": "2027-06-30", "Complete": 0.00, "status": "pending"},
+            {"Component": "🔬 Research & Extension", "SubComponent": "Research", "Task": "Analysis & Documentation", "Start": "2027-07-01", "Finish": "2028-06-30", "Complete": 0.00, "status": "pending"},
+            {"Component": "🔬 Research & Extension", "SubComponent": "Extension", "Task": "Extension Services Rollout", "Start": "2026-06-01", "Finish": "2028-12-31", "Complete": 0.00, "status": "pending"},
+        ]
     
-    # Tasks for all components with 2 decimal places
-    all_tasks = [
-        # Infrastructure Tasks
-        {"Component": "🏗️ Infrastructure", "Task": "Project Inception & Planning", "Start": "2024-01-01", "Finish": "2024-03-31", "Complete": 100.00},
-        {"Component": "🏗️ Infrastructure", "Task": "Site Development & Grading", "Start": "2024-04-01", "Finish": "2024-08-31", "Complete": 90.00},
-        {"Component": "🏗️ Infrastructure", "Task": "Foundation & Structural Works", "Start": "2024-09-01", "Finish": "2025-03-31", "Complete": 60.00},
-        {"Component": "🏗️ Infrastructure", "Task": "Building Construction", "Start": "2025-04-01", "Finish": "2025-12-31", "Complete": 20.00},
-        {"Component": "🏗️ Infrastructure", "Task": "Finishing & Fit-out", "Start": "2026-01-01", "Finish": "2026-06-30", "Complete": 0.00},
+    # ============================================================
+    # ADD/EDIT TASKS SECTION (for future components)
+    # ============================================================
+    
+    with st.expander("➕ Add / Edit Tasks (for Capability Building & Research & Extension)", expanded=False):
+        st.markdown("**Add New Task**")
         
-        # Capability Building Tasks
-        {"Component": "👨‍🌾 Capability Building", "Task": "Training Needs Assessment", "Start": "2024-06-01", "Finish": "2024-09-30", "Complete": 0.00},
-        {"Component": "👨‍🌾 Capability Building", "Task": "Curriculum Development", "Start": "2024-10-01", "Finish": "2025-03-31", "Complete": 0.00},
-        {"Component": "👨‍🌾 Capability Building", "Task": "Farmer Training Program", "Start": "2025-04-01", "Finish": "2026-12-31", "Complete": 0.00},
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            new_component = st.selectbox("Component", ["👨‍🌾 Capability Building", "🔬 Research & Extension"])
+        with col2:
+            new_subcomponent = st.text_input("SubComponent", placeholder="e.g., Training, Research, Extension")
+        with col3:
+            new_task = st.text_input("Task Name", placeholder="Enter task description")
         
-        # Research & Extension Tasks
-        {"Component": "🔬 Research & Extension", "Task": "Baseline Research Setup", "Start": "2024-07-01", "Finish": "2024-12-31", "Complete": 0.00},
-        {"Component": "🔬 Research & Extension", "Task": "Data Collection", "Start": "2025-01-01", "Finish": "2026-06-30", "Complete": 0.00},
-        {"Component": "🔬 Research & Extension", "Task": "Extension Services Rollout", "Start": "2025-06-01", "Finish": "2027-12-31", "Complete": 0.00},
-    ]
+        col1, col2, col3, col4 = st.columns(4)
+        with col1:
+            new_start = st.date_input("Start Date", datetime(2025, 1, 1))
+        with col2:
+            new_finish = st.date_input("Finish Date", datetime(2025, 12, 31))
+        with col3:
+            new_complete = st.number_input("Complete (%)", min_value=0.0, max_value=100.0, value=0.0, step=5.0)
+        with col4:
+            new_status = st.selectbox("Status", ["pending", "active"])
+        
+        if st.button("➕ Add Task", type="primary", use_container_width=True):
+            if new_task:
+                st.session_state.gantt_tasks.append({
+                    "Component": new_component,
+                    "SubComponent": new_subcomponent if new_subcomponent else "General",
+                    "Task": new_task,
+                    "Start": new_start.strftime("%Y-%m-%d"),
+                    "Finish": new_finish.strftime("%Y-%m-%d"),
+                    "Complete": new_complete,
+                    "status": new_status
+                })
+                st.success(f"✅ Task '{new_task}' added!")
+                st.rerun()
+        
+        st.markdown("---")
+        st.markdown("**Edit Existing Tasks**")
+        
+        # Editable task table for future components
+        pending_tasks = [t for t in st.session_state.gantt_tasks if t['Component'] in ["👨‍🌾 Capability Building", "🔬 Research & Extension"]]
+        if pending_tasks:
+            df_pending = pd.DataFrame(pending_tasks)
+            edited_pending = st.data_editor(
+                df_pending[['Component', 'SubComponent', 'Task', 'Start', 'Finish', 'Complete']],
+                use_container_width=True,
+                hide_index=True,
+                key="edit_pending_tasks",
+                column_config={
+                    "Component": st.column_config.TextColumn("Component", disabled=True),
+                    "SubComponent": st.column_config.TextColumn("SubComponent"),
+                    "Task": st.column_config.TextColumn("Task"),
+                    "Start": st.column_config.DateColumn("Start Date"),
+                    "Finish": st.column_config.DateColumn("Finish Date"),
+                    "Complete": st.column_config.NumberColumn("Complete (%)", min_value=0, max_value=100, step=5),
+                }
+            )
+            
+            if st.button("💾 Save Task Changes", use_container_width=True):
+                # Update tasks
+                for idx, row in edited_pending.iterrows():
+                    if idx < len(pending_tasks):
+                        # Find and update original task
+                        for original in st.session_state.gantt_tasks:
+                            if original['Task'] == pending_tasks[idx]['Task'] and original['Component'] == pending_tasks[idx]['Component']:
+                                original['SubComponent'] = row['SubComponent']
+                                original['Task'] = row['Task']
+                                original['Start'] = row['Start'].strftime("%Y-%m-%d")
+                                original['Finish'] = row['Finish'].strftime("%Y-%m-%d")
+                                original['Complete'] = row['Complete']
+                                break
+                st.success("✅ Tasks updated!")
+                st.rerun()
+        else:
+            st.info("No pending tasks. Add tasks using the form above.")
+    
+    st.markdown("---")
+    
+    # ============================================================
+    # DISPLAY GANTT CHART (All components)
+    # ============================================================
+    
+    st.markdown("### 📊 Project Timeline")
+    
+    # Filter to show Infrastructure as active, others as planned
+    all_tasks = st.session_state.gantt_tasks
     
     df_tasks = pd.DataFrame(all_tasks)
     df_tasks["Start"] = pd.to_datetime(df_tasks["Start"])
     df_tasks["Finish"] = pd.to_datetime(df_tasks["Finish"])
     
-    colors = {"🏗️ Infrastructure": "#2ecc71", "👨‍🌾 Capability Building": "#3498db", "🔬 Research & Extension": "#9b59b6"}
+    # Color mapping
+    colors = {
+        "🏗️ Infrastructure": "#2ecc71",
+        "👨‍🌾 Capability Building": "#3498db",
+        "🔬 Research & Extension": "#9b59b6"
+    }
     
+    # Create figure
     fig = go.Figure()
+    
     for i, task in df_tasks.iterrows():
         duration = (task["Finish"] - task["Start"]).days
         color = colors.get(task["Component"], "#95a5a6")
         
+        # Add opacity for pending tasks
+        opacity = 0.8 if task.get('status') == 'active' else 0.4
+        
         fig.add_trace(go.Bar(
             x=[duration],
-            y=[f"{task['Component']}: {task['Task']}"],
+            y=[f"{task['Component']} - {task['SubComponent']}: {task['Task']}"],
             orientation='h',
-            marker=dict(color=color, opacity=0.8),
-            text=f"{task['Complete']:.2f}% Complete" if task['Complete'] > 0 else "Pending",
-            textposition='outside'
+            marker=dict(color=color, opacity=opacity),
+            text=f"{task['Complete']:.0f}% Complete" if task['Complete'] > 0 else "Pending",
+            textposition='outside',
+            hoverinfo='text',
+            hovertext=f"Component: {task['Component']}<br>Task: {task['Task']}<br>Start: {task['Start'].strftime('%Y-%m-%d')}<br>Finish: {task['Finish'].strftime('%Y-%m-%d')}<br>Progress: {task['Complete']:.0f}%"
         ))
     
-    fig.update_layout(title="Project Timeline by Component", xaxis_title="Duration (Days)", height=500, showlegend=False)
+    fig.update_layout(
+        title="Project Timeline by Component",
+        xaxis_title="Duration (Days)",
+        height=700,
+        showlegend=False,
+        hovermode='closest'
+    )
+    
     st.plotly_chart(fig, use_container_width=True)
     
-    # Task Status Table with 2 decimal places
-    st.markdown("#### Task Status by Component")
+    # ============================================================
+    # TASK STATUS TABLE
+    # ============================================================
     
-    for component in ["🏗️ Infrastructure", "👨‍🌾 Capability Building", "🔬 Research & Extension"]:
-        st.markdown(f"**{component}**")
-        comp_tasks = [t for t in all_tasks if t["Component"] == component]
-        
-        for task in comp_tasks:
+    st.markdown("### 📋 Task Status by Component")
+    
+    # Infrastructure Component (Active)
+    st.markdown("#### 🏗️ INFRASTRUCTURE COMPONENT (Active)")
+    infra_tasks = [t for t in all_tasks if t['Component'] == "🏗️ Infrastructure"]
+    
+    # Group by SubComponent
+    subcomponents = ["Civil Works", "Structural", "Architectural", "Electrical", "Mechanical", "Equipment"]
+    for subcomp in subcomponents:
+        sub_tasks = [t for t in infra_tasks if t.get('SubComponent') == subcomp]
+        if sub_tasks:
+            st.markdown(f"**{subcomp}**")
+            for task in sub_tasks:
+                col1, col2, col3 = st.columns([3, 1, 1])
+                with col1:
+                    st.markdown(f"📌 {task['Task']}")
+                with col2:
+                    st.markdown(f"{task['Complete']:.0f}% Complete")
+                with col3:
+                    if task['Complete'] >= 90:
+                        st.success("✅ Completed")
+                    elif task['Complete'] >= 50:
+                        st.warning("🟡 In Progress")
+                    elif task['Complete'] > 0:
+                        st.info("📋 Started")
+                    else:
+                        st.info("⏳ Not Started")
+            st.markdown("---")
+    
+    # Capability Building Component (Planned)
+    st.markdown("#### 👨‍🌾 CAPABILITY BUILDING COMPONENT (Planned - Data Coming Soon)")
+    cap_tasks = [t for t in all_tasks if t['Component'] == "👨‍🌾 Capability Building"]
+    if cap_tasks:
+        for task in cap_tasks:
             col1, col2, col3 = st.columns([3, 1, 1])
             with col1:
                 st.markdown(f"📌 {task['Task']}")
             with col2:
-                st.markdown(f"{task['Complete']:.2f}% Complete" if task['Complete'] > 0 else "⏳ Pending")
+                st.markdown(f"{task['Complete']:.0f}% Complete" if task['Complete'] > 0 else "⏳ Pending")
             with col3:
-                if task['Complete'] >= 90:
-                    st.success("✅")
-                elif task['Complete'] >= 50:
-                    st.warning("🟡 In Progress")
-                else:
-                    st.info("📋 Planned")
+                st.info("📋 Planned for Q2 2025")
         st.markdown("---")
+    else:
+        st.info("No tasks added yet. Use the 'Add / Edit Tasks' section above.")
+    
+    # Research & Extension Component (Planned)
+    st.markdown("#### 🔬 RESEARCH & EXTENSION COMPONENT (Planned - Data Coming Soon)")
+    res_tasks = [t for t in all_tasks if t['Component'] == "🔬 Research & Extension"]
+    if res_tasks:
+        for task in res_tasks:
+            col1, col2, col3 = st.columns([3, 1, 1])
+            with col1:
+                st.markdown(f"📌 {task['Task']}")
+            with col2:
+                st.markdown(f"{task['Complete']:.0f}% Complete" if task['Complete'] > 0 else "⏳ Pending")
+            with col3:
+                st.info("📋 Planned for Q2 2025")
+        st.markdown("---")
+    else:
+        st.info("No tasks added yet. Use the 'Add / Edit Tasks' section above.")
+    
+    # ============================================================
+    # SUMMARY
+    # ============================================================
+    
+    st.markdown("### 📊 Gantt Chart Summary")
+    
+    col1, col2, col3, col4 = st.columns(4)
+    
+    total_tasks = len(all_tasks)
+    active_tasks = len([t for t in all_tasks if t.get('status') == 'active'])
+    pending_tasks_count = len([t for t in all_tasks if t.get('status') == 'pending'])
+    completed_tasks = len([t for t in all_tasks if t['Complete'] >= 95])
+    
+    with col1:
+        st.metric("Total Tasks", total_tasks)
+    with col2:
+        st.metric("Active (Infrastructure)", active_tasks)
+    with col3:
+        st.metric("Planned (Future)", pending_tasks_count)
+    with col4:
+        st.metric("Completed", completed_tasks)
 
 def show_mpcfs_dashboard():
     """Project dashboard with key metrics and progress tracking"""
@@ -1871,3 +2122,5 @@ def show_cca_related_modules():
         if st.button("📊 Go to DRRM Intelligence", use_container_width=True):
             st.session_state.navigation = "📊 DRRM INTELLIGENCE"
             st.rerun()
+
+            
