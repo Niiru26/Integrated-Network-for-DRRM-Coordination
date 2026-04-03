@@ -910,7 +910,7 @@ def show_mpcfs_scurve_tracker(component="infrastructure"):
             }
         )
         
-        # Add TOTAL ROW
+                # Add TOTAL ROW - FIXED formatting
         st.markdown("---")
         st.markdown("### 📊 Summary Totals")
         
@@ -920,15 +920,16 @@ def show_mpcfs_scurve_tracker(component="infrastructure"):
         total_planned_pct = (total_planned / total_contract) * 100
         total_actual_pct = (total_actual / total_contract) * 100
         
+        # Format numbers in millions
         col1, col2, col3, col4, col5 = st.columns(5)
         with col1:
-            st.metric("Total Contract", f"₱{total_contract:,.2f}")
+            st.metric("Total Contract", f"₱{total_contract/1_000_000:.2f}M")
         with col2:
-            st.metric("Total Planned", f"₱{total_planned:,.2f}", f"{total_planned_pct:.2f}%")
+            st.metric("Total Planned", f"₱{total_planned/1_000_000:.2f}M", f"{total_planned_pct:.2f}%")
         with col3:
-            st.metric("🟢 Total Actual", f"₱{total_actual:,.2f}", f"{total_actual_pct:.2f}%")
+            st.metric("🟢 Total Actual", f"₱{total_actual/1_000_000:.2f}M", f"{total_actual_pct:.2f}%")
         with col4:
-            st.metric("Variance", f"₱{total_actual - total_planned:+,.2f}")
+            st.metric("Variance", f"₱{(total_actual - total_planned)/1_000_000:+.2f}M")
         with col5:
             st.metric("Overall Progress", f"{total_actual_pct:.2f}%")
         
@@ -1439,10 +1440,15 @@ def show_mpcfs_gantt_updated():
         st.markdown("---")
         st.markdown("**Edit Existing Tasks**")
         
-        # Editable task table for future components
+        # Editable task table for future components - FIXED date handling
         pending_tasks = [t for t in st.session_state.gantt_tasks if t['Component'] in ["👨‍🌾 Capability Building", "🔬 Research & Extension"]]
         if pending_tasks:
             df_pending = pd.DataFrame(pending_tasks)
+            
+            # Convert date strings to date objects for editing
+            df_pending['Start'] = pd.to_datetime(df_pending['Start']).dt.date
+            df_pending['Finish'] = pd.to_datetime(df_pending['Finish']).dt.date
+            
             edited_pending = st.data_editor(
                 df_pending[['Component', 'SubComponent', 'Task', 'Start', 'Finish', 'Complete']],
                 use_container_width=True,
@@ -1459,10 +1465,9 @@ def show_mpcfs_gantt_updated():
             )
             
             if st.button("💾 Save Task Changes", use_container_width=True):
-                # Update tasks
+                # Update tasks - convert dates back to string format
                 for idx, row in edited_pending.iterrows():
                     if idx < len(pending_tasks):
-                        # Find and update original task
                         for original in st.session_state.gantt_tasks:
                             if original['Task'] == pending_tasks[idx]['Task'] and original['Component'] == pending_tasks[idx]['Component']:
                                 original['SubComponent'] = row['SubComponent']
