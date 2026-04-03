@@ -1678,7 +1678,7 @@ def show_mpcfs_dashboard():
         st.markdown(achievement)
 
 def show_mpcfs_report_generator_updated():
-    """Generate PDF reports with issues tracking and S-Curve"""
+    """Generate PDF reports with issues tracking and S-Curve - FIXED"""
     
     st.markdown("#### 📄 Report Generator")
     st.caption("Generate PDF reports with progress data, issues log, and S-Curve")
@@ -1695,29 +1695,32 @@ def show_mpcfs_report_generator_updated():
         total_cost = next((x for x in reversed(total_cost) if x > 0), 64_000_000)
     
     # ============================================================
-    # ISSUES MANAGEMENT SECTION
+    # ISSUES MANAGEMENT SECTION - FIXED
     # ============================================================
     
     st.markdown("### ⚠️ Issues & Concerns Log")
     st.caption("Track project issues, attach photos, and link to work items")
     
-    # Add New Issue Form
+    # Add New Issue Form - FIXED: Clear form after save
     with st.expander("➕ Add New Issue", expanded=False):
-        with st.form("add_issue_form"):
+        with st.form(key="add_issue_form", clear_on_submit=True):
             col1, col2 = st.columns(2)
             with col1:
-                issue_title = st.text_input("Issue Title", placeholder="e.g., Weather delay at foundation site")
-                priority = st.selectbox("Priority", ["🔴 High", "🟡 Medium", "🟢 Low"])
-                work_item_link = st.selectbox("Linked Work Item", 
-                    ["None"] + [f"{item['no']} - {item['description'][:50]}" for item in st.session_state.get('infrastructure_work_items', [])],
-                    key="issue_work_item")
+                issue_title = st.text_input("Issue Title", placeholder="e.g., Weather delay at foundation site", key="issue_title_input")
+                priority = st.selectbox("Priority", ["🔴 High", "🟡 Medium", "🟢 Low"], key="issue_priority")
+                
+                # Get work items for linking
+                work_items = st.session_state.get('infrastructure_work_items', [])
+                work_item_options = ["None"] + [f"{item.get('no', '')} - {item.get('description', '')[:50]}" for item in work_items]
+                work_item_link = st.selectbox("Linked Work Item", work_item_options, key="issue_work_item")
+                
             with col2:
-                reported_by = st.selectbox("Reported By", ["Project Engineer", "Finance Officer", "Project Manager", "Other"])
-                issue_date = st.date_input("Date Reported", datetime.now().date())
-                status = st.selectbox("Status", ["Open", "In Progress", "Resolved", "Closed"])
+                reported_by = st.selectbox("Reported By", ["Project Engineer", "Finance Officer", "Project Manager", "Other"], key="issue_reported_by")
+                issue_date = st.date_input("Date Reported", datetime.now().date(), key="issue_date")
+                status = st.selectbox("Status", ["Open", "In Progress", "Resolved", "Closed"], key="issue_status")
             
-            issue_description = st.text_area("Description", placeholder="Detailed description of the issue...")
-            action_taken = st.text_area("Action Taken / Resolution", placeholder="What has been done to address this?")
+            issue_description = st.text_area("Description", placeholder="Detailed description of the issue...", key="issue_description")
+            action_taken = st.text_area("Action Taken / Resolution", placeholder="What has been done to address this?", key="issue_action")
             
             # Photo upload
             issue_photo = st.file_uploader("Attach Photo", type=['jpg', 'jpeg', 'png', 'gif'], key="issue_photo")
@@ -1730,7 +1733,7 @@ def show_mpcfs_report_generator_updated():
                     "title": issue_title,
                     "description": issue_description,
                     "priority": priority,
-                    "work_item": work_item_link,
+                    "work_item": work_item_link if work_item_link != "None" else None,
                     "reported_by": reported_by,
                     "date": issue_date.isoformat(),
                     "status": status,
@@ -1747,7 +1750,7 @@ def show_mpcfs_report_generator_updated():
                 
                 st.session_state.mpcfs_issues.append(new_issue)
                 st.success(f"✅ Issue '{issue_title}' added!")
-                st.rerun()
+                # Form clears automatically due to clear_on_submit=True
     
     # Display Issues Table
     if st.session_state.mpcfs_issues:
@@ -1771,53 +1774,47 @@ def show_mpcfs_report_generator_updated():
         if not show_resolved:
             filtered_issues = [i for i in filtered_issues if i['status'] not in ["Resolved", "Closed"]]
         
-        # Display as cards
-        for issue in filtered_issues:
-            with st.container():
-                col1, col2, col3, col4 = st.columns([3, 1, 1, 1])
-                with col1:
-                    st.markdown(f"**{issue['title']}**")
-                    st.caption(f"{issue['description'][:100]}..." if len(issue['description']) > 100 else issue['description'])
-                with col2:
-                    st.markdown(f"**Priority:** {issue['priority']}")
-                    st.markdown(f"**Status:** {issue['status']}")
-                with col3:
-                    st.markdown(f"**Reported:** {issue['reported_by']}")
-                    st.markdown(f"**Date:** {issue['date'][:10]}")
-                with col4:
-                    if issue.get('photo'):
-                        st.markdown("📷 Photo attached")
-                    if st.button(f"Update", key=f"update_{issue['id']}"):
-                        st.session_state.selected_issue = issue
-                        st.rerun()
-                st.markdown("---")
-        
-        # Update Issue Status (if selected)
-        if 'selected_issue' in st.session_state:
-            issue = st.session_state.selected_issue
-            st.markdown(f"#### Update Issue: {issue['title']}")
-            col1, col2 = st.columns(2)
-            with col1:
-                new_status = st.selectbox("New Status", ["Open", "In Progress", "Resolved", "Closed"], index=["Open", "In Progress", "Resolved", "Closed"].index(issue['status']))
-            with col2:
-                new_action = st.text_area("Update Action Taken", value=issue.get('action_taken', ''))
+        # Display as table
+        if filtered_issues:
+            df_issues = pd.DataFrame(filtered_issues)
+            display_cols = ['title', 'priority', 'status', 'reported_by', 'date', 'work_item']
+            available_cols = [c for c in display_cols if c in df_issues.columns]
+            st.dataframe(df_issues[available_cols], use_container_width=True, hide_index=True)
             
-            if st.button("Save Update"):
-                for i, iss in enumerate(st.session_state.mpcfs_issues):
-                    if iss['id'] == issue['id']:
-                        st.session_state.mpcfs_issues[i]['status'] = new_status
-                        st.session_state.mpcfs_issues[i]['action_taken'] = new_action
-                        break
-                del st.session_state.selected_issue
-                st.success("✅ Issue updated!")
-                st.rerun()
+            # Update issue status section
+            st.markdown("---")
+            st.markdown("#### Update Issue Status")
+            
+            issue_to_update = st.selectbox("Select Issue to Update", [f"{i['title']} (ID: {i['id']})" for i in filtered_issues])
+            if issue_to_update:
+                selected_id = int(issue_to_update.split("ID: ")[1].rstrip(")"))
+                selected_issue = next((i for i in st.session_state.mpcfs_issues if i['id'] == selected_id), None)
+                
+                if selected_issue:
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        new_status = st.selectbox("New Status", ["Open", "In Progress", "Resolved", "Closed"], 
+                                                  index=["Open", "In Progress", "Resolved", "Closed"].index(selected_issue['status']))
+                    with col2:
+                        new_action = st.text_area("Update Action Taken", value=selected_issue.get('action_taken', ''))
+                    
+                    if st.button("Update Issue Status"):
+                        for i in st.session_state.mpcfs_issues:
+                            if i['id'] == selected_id:
+                                i['status'] = new_status
+                                i['action_taken'] = new_action
+                                break
+                        st.success("✅ Issue updated!")
+                        st.rerun()
+        else:
+            st.info("No issues match the selected filters.")
     else:
         st.info("No issues logged yet. Click 'Add New Issue' to get started.")
     
     st.markdown("---")
     
     # ============================================================
-    # REPORT GENERATION
+    # REPORT GENERATION - FIXED with S-Curve image
     # ============================================================
     
     st.markdown("### 📄 Generate PDF Report")
@@ -1849,9 +1846,38 @@ def show_mpcfs_report_generator_updated():
     # Generate Report Button
     if st.button("📄 Generate Report Preview", type="primary", use_container_width=True):
         
-        # Create HTML content for preview and PDF
         open_issues = [i for i in st.session_state.mpcfs_issues if i['status'] not in ["Resolved", "Closed"]]
         
+        # Create S-Curve chart as base64 image if requested
+        chart_base64 = ""
+        if include_chart:
+            try:
+                # Create a simple S-Curve figure
+                weeks = list(range(1, 53))
+                target_curve = [min(25.75 * w / 52, 25.75) for w in weeks]
+                actual_curve = [min(infra_progress * w / 52, infra_progress) for w in weeks]
+                
+                fig, ax = plt.subplots(figsize=(8, 4))
+                ax.plot(weeks, target_curve, 'b--', label='Target Plan', linewidth=2)
+                ax.plot(weeks, actual_curve, 'g-', label='Actual Progress', linewidth=2)
+                ax.axvline(x=40, color='r', linestyle='--', alpha=0.5)
+                ax.set_xlabel('Week')
+                ax.set_ylabel('Progress (%)')
+                ax.set_title('Project Progress S-Curve')
+                ax.legend()
+                ax.grid(True, alpha=0.3)
+                ax.set_ylim(0, 100)
+                
+                # Save to bytes
+                buf = io.BytesIO()
+                plt.savefig(buf, format='png', dpi=100, bbox_inches='tight')
+                buf.seek(0)
+                chart_base64 = base64.b64encode(buf.getvalue()).decode()
+                plt.close()
+            except:
+                chart_base64 = ""
+        
+        # Create HTML report content
         report_html = f"""
         <!DOCTYPE html>
         <html>
@@ -1940,16 +1966,19 @@ def show_mpcfs_report_generator_updated():
                     border-left: 4px solid #e74c3c;
                     padding-left: 10px;
                     margin-bottom: 10px;
+                    background-color: #fef9f9;
                 }}
                 .issue-medium {{
                     border-left: 4px solid #f39c12;
                     padding-left: 10px;
                     margin-bottom: 10px;
+                    background-color: #fffaf5;
                 }}
                 .issue-low {{
                     border-left: 4px solid #27ae60;
                     padding-left: 10px;
                     margin-bottom: 10px;
+                    background-color: #f5fff5;
                 }}
                 .footer {{
                     text-align: center;
@@ -1962,6 +1991,12 @@ def show_mpcfs_report_generator_updated():
                 .chart-container {{
                     text-align: center;
                     margin: 20px 0;
+                }}
+                .chart-image {{
+                    max-width: 100%;
+                    height: auto;
+                    border: 1px solid #ddd;
+                    border-radius: 8px;
                 }}
             </style>
         </head>
@@ -2004,18 +2039,15 @@ def show_mpcfs_report_generator_updated():
             </div>
         """
         
-        if include_chart:
-            report_html += """
+        if include_chart and chart_base64:
+            report_html += f"""
             <div class="section">
                 <div class="section-title">📈 S-Curve Chart</div>
                 <div class="chart-container">
-                    <p><em>S-Curve chart will be embedded here showing Original Plan, Revised Plan, and Actual Progress</em></p>
-                    <p><strong>Original Plan:</strong> Blue dashed line<br>
-                    <strong>Revised Plan:</strong> Orange dotted line<br>
-                    <strong>Actual Progress:</strong> Green solid line (Current: {:.2f}%)</p>
+                    <img src="data:image/png;base64,{chart_base64}" class="chart-image">
                 </div>
             </div>
-            """.format(infra_progress)
+            """
         
         if include_issues and open_issues:
             report_html += """
@@ -2058,12 +2090,11 @@ def show_mpcfs_report_generator_updated():
         st.markdown("### 📋 Report Preview")
         st.components.v1.html(report_html, height=600, scrolling=True)
         
-        # Download as PDF (via HTML to PDF conversion)
+        # Download options
         st.markdown("### 📥 Download Report")
         
         col1, col2 = st.columns(2)
         with col1:
-            # Download as HTML (then user can print to PDF)
             st.download_button(
                 label="📄 Download as HTML (Print to PDF)",
                 data=report_html,
