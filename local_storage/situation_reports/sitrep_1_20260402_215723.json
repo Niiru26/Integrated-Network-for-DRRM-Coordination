@@ -1,0 +1,192 @@
+{
+  "sitrep_number": 1,
+  "incident_name": "",
+  "report_date": "2026-04-02",
+  "report_time": "21:57",
+  "pagasa_bulletin": "",
+  "weather_data": {
+    "Barlig": {
+      "cloud": "Clear",
+      "wind": "Calm",
+      "alert": "White"
+    },
+    "Bauko": {
+      "cloud": "Clear",
+      "wind": "Calm",
+      "alert": "White"
+    },
+    "Besao": {
+      "cloud": "Clear",
+      "wind": "Calm",
+      "alert": "White"
+    },
+    "Bontoc": {
+      "cloud": "Clear",
+      "wind": "Calm",
+      "alert": "White"
+    },
+    "Natonin": {
+      "cloud": "Clear",
+      "wind": "Calm",
+      "alert": "White"
+    },
+    "Paracelis": {
+      "cloud": "Clear",
+      "wind": "Calm",
+      "alert": "White"
+    },
+    "Sabangan": {
+      "cloud": "Clear",
+      "wind": "Calm",
+      "alert": "White"
+    },
+    "Sadanga": {
+      "cloud": "Clear",
+      "wind": "Calm",
+      "alert": "White"
+    },
+    "Sagada": {
+      "cloud": "Clear",
+      "wind": "Calm",
+      "alert": "White"
+    },
+    "Tadian": {
+      "cloud": "Clear",
+      "wind": "Calm",
+      "alert": "White"
+    }
+  },
+  "overall_alert": "White",
+  "issuances": [],
+  "risk_data": {
+    "Chupac (Barlig)": {
+      "landslide": "",
+      "flood": ""
+    },
+    "Gawana (Barlig)": {
+      "landslide": "",
+      "flood": ""
+    },
+    "Bagnen Oriente (Bauko)": {
+      "landslide": "",
+      "flood": ""
+    },
+    "Poblacion (Bontoc)": {
+      "landslide": "",
+      "flood": ""
+    }
+  },
+  "probability": "",
+  "impact": "",
+  "incidents_data": {
+    "Barlig": {
+      "incidents": "",
+      "casualties": ""
+    },
+    "Bauko": {
+      "incidents": "",
+      "casualties": ""
+    },
+    "Besao": {
+      "incidents": "",
+      "casualties": ""
+    },
+    "Bontoc": {
+      "incidents": "",
+      "casualties": ""
+    },
+    "Natonin": {
+      "incidents": "",
+      "casualties": ""
+    },
+    "Paracelis": {
+      "incidents": "",
+      "casualties": ""
+    },
+    "Sabangan": {
+      "incidents": "",
+      "casualties": ""
+    },
+    "Sadanga": {
+      "incidents": "",
+      "casualties": ""
+    },
+    "Sagada": {
+      "incidents": "",
+      "casualties": ""
+    },
+    "Tadian": {
+      "incidents": "",
+      "casualties": ""
+    }
+  },
+  "national_roads_status": "",
+  "provincial_roads_status": "",
+  "power_comm_data": {
+    "Barlig": {
+      "power": "Normal",
+      "comm": "Normal"
+    },
+    "Bauko": {
+      "power": "Normal",
+      "comm": "Normal"
+    },
+    "Besao": {
+      "power": "Normal",
+      "comm": "Normal"
+    },
+    "Bontoc": {
+      "power": "Normal",
+      "comm": "Normal"
+    },
+    "Natonin": {
+      "power": "Normal",
+      "comm": "Normal"
+    },
+    "Paracelis": {
+      "power": "Normal",
+      "comm": "Normal"
+    },
+    "Sabangan": {
+      "power": "Normal",
+      "comm": "Normal"
+    },
+    "Sadanga": {
+      "power": "Normal",
+      "comm": "Normal"
+    },
+    "Sagada": {
+      "power": "Normal",
+      "comm": "Normal"
+    },
+    "Tadian": {
+      "power": "Normal",
+      "comm": "Normal"
+    }
+  },
+  "displaced": {
+    "families_ec": 0,
+    "persons_ec": 0,
+    "families_out": 0,
+    "persons_out": 0
+  },
+  "damages": {
+    "totally_damaged": 0,
+    "partially_damaged": 0,
+    "affected_families": 0,
+    "affected_persons": 0
+  },
+  "resources": {
+    "food_packs": 0,
+    "hygiene_kits": 0,
+    "family_kits": 0
+  },
+  "response_actions": "",
+  "needs": {
+    "priority1": "",
+    "priority2": "",
+    "priority3": ""
+  },
+  "photos": [],
+  "created_at": "2026-04-02T21:57:23.357600"
+}
