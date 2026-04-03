@@ -574,15 +574,12 @@ def show_mpcfs_master_dashboard():
         st.markdown("- Establish research protocols")
         
 def show_mpcfs_scurve_tracker(component="infrastructure"):
-    """MPCFS Infrastructure S-Curve Tracker with Snapshot History"""
+    """MPCFS Infrastructure S-Curve Tracker with Dual Slippage and Editable Work Items"""
     
+    import copy
     import json
     import hashlib
-    from supabase import create_client, Client
-    
-    # Supabase initialization
-    SUPABASE_URL = "https://bdzbweytmejqiajnvuea.supabase.co"
-    SUPABASE_KEY = st.secrets.get("SUPABASE_KEY", "")  # Add to .streamlit/secrets.toml
+    from datetime import datetime
     
     component_titles = {
         "infrastructure": {"name": "Infrastructure", "icon": "🏗️", "amount": 249_040_900.00},
@@ -599,109 +596,107 @@ def show_mpcfs_scurve_tracker(component="infrastructure"):
     prefix = f"{component}_"
     
     # ============================================================
-    # COMPLETE WORK ITEMS DATA (85+ items from your Excel)
+    # COMPLETE WORK ITEMS DATA (from your Excel - ACCURATE)
     # ============================================================
     
     if f'{prefix}work_items' not in st.session_state:
         work_items = [
-            # A. Civil Works and General Requirements
-            {"no": "A.1.1 (8)", "description": "Provision of Field Office for the Engineer (Rental Basis)", "category": "Civil Works", "weight": 0.546, "planned": 0.547, "actual": 0.50, "cost": 1_360_800},
-            {"no": "A.1.2 (2)", "description": "Provision of 4x4 Pick Up Type Service Vehicle (Bare Rental)", "category": "Civil Works", "weight": 0.919, "planned": 0.919, "actual": 0.85, "cost": 2_289_000},
-            {"no": "B.3", "description": "Permits and Clearances", "category": "Civil Works", "weight": 0.126, "planned": 0.126, "actual": 0.126, "cost": 315_000},
-            {"no": "B.5", "description": "Project Billboard and Signboard", "category": "Civil Works", "weight": 0.004, "planned": 0.004, "actual": 0.004, "cost": 10_500},
-            {"no": "B.7 (2)", "description": "Occupational Safety and Health Program", "category": "Civil Works", "weight": 1.229, "planned": 1.229, "actual": 1.10, "cost": 3_061_108},
-            {"no": "B.9", "description": "Mobilization/Demobilization", "category": "Civil Works", "weight": 0.873, "planned": 0.873, "actual": 0.873, "cost": 2_174_130},
-            {"no": "B.13", "description": "Additional Geotechnical Investigation", "category": "Civil Works", "weight": 0.126, "planned": 0.126, "actual": 0.126, "cost": 315_000},
-            {"no": "B.25", "description": "Detailed Engineering and Architectural Design", "category": "Civil Works", "weight": 0.170, "planned": 0.170, "actual": 0.170, "cost": 424_499},
-            {"no": "101(1)", "description": "Removal of Structures and Obstructions", "category": "Civil Works", "weight": 0.004, "planned": 0.004, "actual": 0.004, "cost": 9_419},
-            {"no": "105(1)", "description": "Subgrade Preparation (Common Material)", "category": "Civil Works", "weight": 0.040, "planned": 0.040, "actual": 0.00, "cost": 0},
-            {"no": "200", "description": "Aggregate Subbase Course", "category": "Civil Works", "weight": 0.216, "planned": 0.216, "actual": 0.00, "cost": 0},
-            {"no": "311(1)a.5", "description": "PCC Pavement (Plain) - Conventional Method, 280mm thk", "category": "Civil Works", "weight": 0.820, "planned": 0.820, "actual": 0.00, "cost": 0},
+            # Civil Works and General Requirements
+            {"no": "A.1.1 (8)", "description": "Provision of Field Office for the Engineer (Rental Basis)", "category": "Civil Works", "weight": 0.546, "planned_original": 0.547, "planned_revised": 0.547, "actual": 0.50, "cost": 1_360_800},
+            {"no": "A.1.2 (2)", "description": "Provision of 4x4 Pick Up Type Service Vehicle (Bare Rental)", "category": "Civil Works", "weight": 0.919, "planned_original": 0.919, "planned_revised": 0.919, "actual": 0.85, "cost": 2_289_000},
+            {"no": "B.3", "description": "Permits and Clearances", "category": "Civil Works", "weight": 0.126, "planned_original": 0.126, "planned_revised": 0.126, "actual": 0.126, "cost": 315_000},
+            {"no": "B.5", "description": "Project Billboard and Signboard", "category": "Civil Works", "weight": 0.004, "planned_original": 0.004, "planned_revised": 0.004, "actual": 0.004, "cost": 10_500},
+            {"no": "B.7 (2)", "description": "Occupational Safety and Health Program", "category": "Civil Works", "weight": 1.229, "planned_original": 1.229, "planned_revised": 1.229, "actual": 1.10, "cost": 3_061_108},
+            {"no": "B.9", "description": "Mobilization/Demobilization", "category": "Civil Works", "weight": 0.873, "planned_original": 0.873, "planned_revised": 0.873, "actual": 0.873, "cost": 2_174_130},
+            {"no": "B.13", "description": "Additional Geotechnical Investigation", "category": "Civil Works", "weight": 0.126, "planned_original": 0.126, "planned_revised": 0.126, "actual": 0.126, "cost": 315_000},
+            {"no": "B.25", "description": "Detailed Engineering and Architectural Design", "category": "Civil Works", "weight": 0.170, "planned_original": 0.170, "planned_revised": 0.170, "actual": 0.170, "cost": 424_499},
+            {"no": "101(1)", "description": "Removal of Structures and Obstructions", "category": "Civil Works", "weight": 0.004, "planned_original": 0.004, "planned_revised": 0.004, "actual": 0.004, "cost": 9_419},
+            {"no": "105(1)", "description": "Subgrade Preparation (Common Material)", "category": "Civil Works", "weight": 0.040, "planned_original": 0.040, "planned_revised": 0.040, "actual": 0.00, "cost": 0},
+            {"no": "200", "description": "Aggregate Subbase Course", "category": "Civil Works", "weight": 0.216, "planned_original": 0.216, "planned_revised": 0.216, "actual": 0.00, "cost": 0},
+            {"no": "311(1)a.5", "description": "PCC Pavement - Conventional Method, 280mm thk", "category": "Civil Works", "weight": 0.820, "planned_original": 0.820, "planned_revised": 0.820, "actual": 0.00, "cost": 0},
             
-            # B. Structural Works
-            {"no": "404", "description": "Reinforcing Steel Bar, Grade 40 (Minor Structures)", "category": "Structural", "weight": 1.417, "planned": 1.417, "actual": 1.20, "cost": 3_000_000},
-            {"no": "405", "description": "Structural Concrete Class A (Minor Structures)", "category": "Structural", "weight": 1.971, "planned": 1.971, "actual": 1.50, "cost": 3_500_000},
-            {"no": "803(1)a", "description": "Structure Excavation (Common Soil)", "category": "Structural", "weight": 0.628, "planned": 0.628, "actual": 0.50, "cost": 1_200_000},
-            {"no": "804(1)a", "description": "Embankment from Structure Excavation", "category": "Structural", "weight": 0.178, "planned": 0.178, "actual": 0.10, "cost": 250_000},
-            {"no": "804(4)", "description": "Gravel Fill", "category": "Structural", "weight": 0.632, "planned": 0.632, "actual": 0.40, "cost": 800_000},
-            {"no": "807 (2)", "description": "Softscape", "category": "Structural", "weight": 0.571, "planned": 0.571, "actual": 0.00, "cost": 0},
-            {"no": "807 (5)", "description": "Hardscape", "category": "Structural", "weight": 2.596, "planned": 2.596, "actual": 0.50, "cost": 1_200_000},
-            {"no": "1706(1)", "description": "Overhaul", "category": "Structural", "weight": 0.291, "planned": 0.291, "actual": 0.20, "cost": 500_000},
-            {"no": "900(1)c2", "description": "Structural Concrete for Footing and Slab on Fill (Class A, 28 days)", "category": "Structural", "weight": 1.710, "planned": 1.710, "actual": 1.00, "cost": 2_500_000},
-            {"no": "900(1)", "description": "Structural Concrete for Footing Tie Beam, Column, Suspended Slab (Class A, 28 days)", "category": "Structural", "weight": 4.134, "planned": 4.123, "actual": 2.50, "cost": 6_000_000},
-            {"no": "902(1) a", "description": "Reinforcing Steel of Reinforced Concrete Structures for Two upto Five Storey", "category": "Structural", "weight": 9.308, "planned": 9.308, "actual": 5.00, "cost": 12_000_000},
-            {"no": "903(1)", "description": "Formworks and Falseworks", "category": "Structural", "weight": 1.270, "planned": 1.270, "actual": 0.80, "cost": 2_000_000},
-            {"no": "1001(1)a5", "description": "Inlets, 350mm Ø Concrete Inlet", "category": "Structural", "weight": 0.184, "planned": 0.184, "actual": 0.00, "cost": 0},
-            {"no": "1001(6)", "description": "Catch Basin (Concrete)", "category": "Structural", "weight": 0.011, "planned": 0.011, "actual": 0.00, "cost": 0},
-            {"no": "1001(8)", "description": "Sewer Line Works", "category": "Structural", "weight": 0.253, "planned": 0.253, "actual": 0.00, "cost": 0},
-            {"no": "1001(9)", "description": "Storm Drainage and Downspout", "category": "Structural", "weight": 0.194, "planned": 0.194, "actual": 0.00, "cost": 0},
-            {"no": "1001(11)", "description": "Septic Vault, Concrete", "category": "Structural", "weight": 0.436, "planned": 0.436, "actual": 0.00, "cost": 0},
-            {"no": "1047 (1)", "description": "Structural Steel", "category": "Structural", "weight": 14.170, "planned": 14.170, "actual": 8.50, "cost": 20_000_000},
-            {"no": "1047 (2)a", "description": "Structural Steel (Trusses)", "category": "Structural", "weight": 1.757, "planned": 1.757, "actual": 0.50, "cost": 1_200_000},
-            {"no": "1047 (2)b", "description": "Structural Steel (Purlins)", "category": "Structural", "weight": 0.332, "planned": 0.332, "actual": 0.00, "cost": 0},
-            {"no": "1047 (3)a", "description": "Metal Structure Accessories (Anchor Bolt)", "category": "Structural", "weight": 1.505, "planned": 1.505, "actual": 0.50, "cost": 1_200_000},
-            {"no": "1047 (3)b", "description": "Metal Structure Accessories (Sagrods)", "category": "Structural", "weight": 0.329, "planned": 0.329, "actual": 0.00, "cost": 0},
-            {"no": "1047 (3)c", "description": "Metal Structure Accessories (Turnbuckle)", "category": "Structural", "weight": 0.098, "planned": 0.098, "actual": 0.00, "cost": 0},
-            {"no": "1047 (3)d", "description": "Metal Structure Accessories (Cross Bracing)", "category": "Structural", "weight": 0.107, "planned": 0.107, "actual": 0.00, "cost": 0},
-            {"no": "1047 (5)", "description": "Metal Structure Accessories (Steel Plates)", "category": "Structural", "weight": 1.799, "planned": 1.799, "actual": 0.50, "cost": 1_200_000},
-            {"no": "1051 (6)", "description": "Railing", "category": "Structural", "weight": 0.636, "planned": 0.636, "actual": 0.00, "cost": 0},
+            # Structural Works
+            {"no": "404", "description": "Reinforcing Steel Bar, Grade 40", "category": "Structural", "weight": 1.417, "planned_original": 0.320, "planned_revised": 1.138, "actual": 1.14, "cost": 2_834_045},
+            {"no": "405", "description": "Structural Concrete Class A", "category": "Structural", "weight": 1.971, "planned_original": 0.190, "planned_revised": 0.699, "actual": 0.70, "cost": 1_740_048},
+            {"no": "803(1)a", "description": "Structure Excavation (Common Soil)", "category": "Structural", "weight": 0.628, "planned_original": 0.628, "planned_revised": 0.628, "actual": 0.54, "cost": 1_357_263},
+            {"no": "804(1)a", "description": "Embankment from Structure Excavation", "category": "Structural", "weight": 0.178, "planned_original": 0.178, "planned_revised": 0.178, "actual": 0.17, "cost": 411_315},
+            {"no": "804(4)", "description": "Gravel Fill", "category": "Structural", "weight": 0.632, "planned_original": 0.632, "planned_revised": 0.632, "actual": 0.54, "cost": 1_336_224},
+            {"no": "1706(1)", "description": "Overhaul", "category": "Structural", "weight": 0.291, "planned_original": 0.291, "planned_revised": 0.291, "actual": 0.23, "cost": 560_761},
+            {"no": "900(1)c2", "description": "Structural Concrete for Footing and Slab on Fill", "category": "Structural", "weight": 1.710, "planned_original": 1.320, "planned_revised": 1.430, "actual": 1.43, "cost": 3_561_496},
+            {"no": "900(1)", "description": "Structural Concrete for Columns, Beams", "category": "Structural", "weight": 4.134, "planned_original": 2.081, "planned_revised": 1.385, "actual": 1.39, "cost": 3_449_789},
+            {"no": "902(1) a", "description": "Reinforcing Steel for Concrete Structures", "category": "Structural", "weight": 9.308, "planned_original": 3.913, "planned_revised": 3.062, "actual": 3.06, "cost": 7_625_371},
+            {"no": "903(1)", "description": "Formworks and Falseworks", "category": "Structural", "weight": 1.270, "planned_original": 0.497, "planned_revised": 0.380, "actual": 0.38, "cost": 948_291},
+            {"no": "1047 (1)", "description": "Structural Steel", "category": "Structural", "weight": 14.170, "planned_original": 3.001, "planned_revised": 11.436, "actual": 11.44, "cost": 28_583_543},
+            {"no": "1047 (2)a", "description": "Structural Steel (Trusses)", "category": "Structural", "weight": 1.757, "planned_original": 0.331, "planned_revised": 0.331, "actual": 0.33, "cost": 823_223},
+            {"no": "1047 (3)a", "description": "Metal Structure Accessories (Anchor Bolt)", "category": "Structural", "weight": 1.505, "planned_original": 1.386, "planned_revised": 1.386, "actual": 1.39, "cost": 3_453_257},
+            {"no": "1047 (5)", "description": "Metal Structure Accessories (Steel Plates)", "category": "Structural", "weight": 1.799, "planned_original": 0.566, "planned_revised": 1.233, "actual": 1.23, "cost": 3_071_727},
+            {"no": "1032(1)c", "description": "Painting Works (Steel)", "category": "Structural", "weight": 1.005, "planned_original": 0.163, "planned_revised": 0.163, "actual": 0.00, "cost": 0},
+            {"no": "1033(1)", "description": "Metal Deck Panel", "category": "Structural", "weight": 2.487, "planned_original": 0.600, "planned_revised": 0.600, "actual": 0.00, "cost": 0},
             
-            # C. Architectural Works
-            {"no": "1002 (6)", "description": "Cold Waterline Pipes and Fittings", "category": "Architectural", "weight": 0.368, "planned": 0.368, "actual": 0.00, "cost": 0},
-            {"no": "1002(4)", "description": "Plumbing Fixtures", "category": "Architectural", "weight": 1.019, "planned": 1.019, "actual": 0.00, "cost": 0},
-            {"no": "1003(1)", "description": "4.5mm Fiber Cement Board on Metal Frame Ceiling", "category": "Architectural", "weight": 1.160, "planned": 1.160, "actual": 0.00, "cost": 0},
-            {"no": "1003(2)h", "description": "Wood Wall", "category": "Architectural", "weight": 0.873, "planned": 0.873, "actual": 0.00, "cost": 0},
-            {"no": "1003(12)", "description": "Fascia Board", "category": "Architectural", "weight": 0.268, "planned": 0.268, "actual": 0.00, "cost": 0},
-            {"no": "1006 (6)", "description": "Steel Doors and Frames", "category": "Architectural", "weight": 0.198, "planned": 0.198, "actual": 0.00, "cost": 0},
-            {"no": "1008 (2)", "description": "Aluminum Glass Window", "category": "Architectural", "weight": 0.781, "planned": 0.781, "actual": 0.00, "cost": 0},
-            {"no": "1010(2)b", "description": "Doors, Wood Panel", "category": "Architectural", "weight": 0.048, "planned": 0.008, "actual": 0.00, "cost": 0},
-            {"no": "1010(2)a", "description": "Doors, Flush", "category": "Architectural", "weight": 0.096, "planned": 0.096, "actual": 0.00, "cost": 0},
-            {"no": "1011(2)", "description": "Roll-Up Doors", "category": "Architectural", "weight": 0.165, "planned": 0.165, "actual": 0.00, "cost": 0},
-            {"no": "1013(2)a2", "description": "Fabricated Metal Roofing Accessory (Flashings)", "category": "Architectural", "weight": 0.056, "planned": 0.056, "actual": 0.00, "cost": 0},
-            {"no": "1013(2)c", "description": "Fabricated Metal Roofing Accessory (Gutter)", "category": "Architectural", "weight": 0.051, "planned": 0.051, "actual": 0.00, "cost": 0},
-            {"no": "1014(1)b2", "description": "Prepainted Metal Sheets (Rib Type, Long Span)", "category": "Architectural", "weight": 1.331, "planned": 1.331, "actual": 0.00, "cost": 0},
-            {"no": "1016(1)a", "description": "Waterproofing Cement Base", "category": "Architectural", "weight": 0.632, "planned": 0.632, "actual": 0.00, "cost": 0},
-            {"no": "1018(1)", "description": "Glazed Tiles and Trims", "category": "Architectural", "weight": 0.320, "planned": 0.320, "actual": 0.00, "cost": 0},
-            {"no": "1018 (2)", "description": "Unglazed Tiles", "category": "Architectural", "weight": 1.673, "planned": 1.673, "actual": 0.00, "cost": 0},
-            {"no": "1027(1)", "description": "Cement Plaster Finish", "category": "Architectural", "weight": 0.859, "planned": 0.859, "actual": 0.00, "cost": 0},
-            {"no": "1032(1)a", "description": "Painting Works (Masonry/Concrete)", "category": "Architectural", "weight": 1.608, "planned": 1.608, "actual": 0.00, "cost": 0},
-            {"no": "1032(1)a", "description": "Painting Works (Wood)", "category": "Architectural", "weight": 0.009, "planned": 0.009, "actual": 0.00, "cost": 0},
-            {"no": "1032(1)c", "description": "Painting Works (Steel)", "category": "Architectural", "weight": 1.005, "planned": 1.005, "actual": 0.00, "cost": 0},
-            {"no": "1033(1)", "description": "Metal Deck Panel", "category": "Architectural", "weight": 2.487, "planned": 2.487, "actual": 0.00, "cost": 0},
-            {"no": "1046 (2) a1", "description": "CHB Non Load Bearing (including Reinforcing Steel), 100mm", "category": "Architectural", "weight": 0.048, "planned": 0.048, "actual": 0.00, "cost": 0},
-            {"no": "1046 (2) a2", "description": "150mm CHB Non Load Bearing (including Reinforcing Steel)", "category": "Architectural", "weight": 1.658, "planned": 1.658, "actual": 0.00, "cost": 0},
+            # Architectural Works
+            {"no": "1002 (6)", "description": "Cold Waterline Pipes and Fittings", "category": "Architectural", "weight": 0.368, "planned_original": 0.067, "planned_revised": 0.067, "actual": 0.00, "cost": 0},
+            {"no": "1001(11)", "description": "Septic Vault, Concrete", "category": "Architectural", "weight": 0.436, "planned_original": 0.218, "planned_revised": 0.218, "actual": 0.22, "cost": 543_264},
+            {"no": "1002(4)", "description": "Plumbing Fixtures", "category": "Architectural", "weight": 1.019, "planned_original": 0.000, "planned_revised": 0.000, "actual": 0.00, "cost": 0},
+            {"no": "1003(1)", "description": "Fiber Cement Board Ceiling", "category": "Architectural", "weight": 1.160, "planned_original": 0.000, "planned_revised": 0.000, "actual": 0.00, "cost": 0},
+            {"no": "1003(2)h", "description": "Wood Wall", "category": "Architectural", "weight": 0.873, "planned_original": 0.000, "planned_revised": 0.000, "actual": 0.00, "cost": 0},
+            {"no": "1003(12)", "description": "Fascia Board", "category": "Architectural", "weight": 0.268, "planned_original": 0.268, "planned_revised": 0.268, "actual": 0.00, "cost": 0},
+            {"no": "1006 (6)", "description": "Steel Doors and Frames", "category": "Architectural", "weight": 0.198, "planned_original": 0.000, "planned_revised": 0.000, "actual": 0.00, "cost": 0},
+            {"no": "1008 (2)", "description": "Aluminum Glass Window", "category": "Architectural", "weight": 0.781, "planned_original": 0.000, "planned_revised": 0.000, "actual": 0.00, "cost": 0},
+            {"no": "1010(2)b", "description": "Doors, Wood Panel", "category": "Architectural", "weight": 0.048, "planned_original": 0.008, "planned_revised": 0.008, "actual": 0.00, "cost": 0},
+            {"no": "1010(2)a", "description": "Doors, Flush", "category": "Architectural", "weight": 0.096, "planned_original": 0.096, "planned_revised": 0.096, "actual": 0.00, "cost": 0},
+            {"no": "1011(2)", "description": "Roll-Up Doors", "category": "Architectural", "weight": 0.165, "planned_original": 0.165, "planned_revised": 0.165, "actual": 0.00, "cost": 0},
+            {"no": "1013(2)a2", "description": "Metal Roofing Accessory (Flashings)", "category": "Architectural", "weight": 0.056, "planned_original": 0.056, "planned_revised": 0.056, "actual": 0.00, "cost": 0},
+            {"no": "1013(2)c", "description": "Metal Roofing Accessory (Gutter)", "category": "Architectural", "weight": 0.051, "planned_original": 0.051, "planned_revised": 0.051, "actual": 0.00, "cost": 0},
+            {"no": "1014(1)b2", "description": "Prepainted Metal Sheets", "category": "Architectural", "weight": 1.331, "planned_original": 1.331, "planned_revised": 1.331, "actual": 0.00, "cost": 0},
+            {"no": "1016(1)a", "description": "Waterproofing Cement Base", "category": "Architectural", "weight": 0.632, "planned_original": 0.632, "planned_revised": 0.632, "actual": 0.00, "cost": 0},
+            {"no": "1018(1)", "description": "Glazed Tiles and Trims", "category": "Architectural", "weight": 0.320, "planned_original": 0.320, "planned_revised": 0.320, "actual": 0.00, "cost": 0},
+            {"no": "1018 (2)", "description": "Unglazed Tiles", "category": "Architectural", "weight": 1.673, "planned_original": 1.673, "planned_revised": 1.673, "actual": 0.00, "cost": 0},
+            {"no": "1027(1)", "description": "Cement Plaster Finish", "category": "Architectural", "weight": 0.859, "planned_original": 0.859, "planned_revised": 0.859, "actual": 0.00, "cost": 0},
+            {"no": "1032(1)a", "description": "Painting Works (Masonry/Concrete)", "category": "Architectural", "weight": 1.608, "planned_original": 1.608, "planned_revised": 1.608, "actual": 0.00, "cost": 0},
+            {"no": "1032(1)a", "description": "Painting Works (Wood)", "category": "Architectural", "weight": 0.009, "planned_original": 0.009, "planned_revised": 0.009, "actual": 0.00, "cost": 0},
+            {"no": "1046 (2) a1", "description": "CHB Non Load Bearing 100mm", "category": "Architectural", "weight": 0.048, "planned_original": 0.048, "planned_revised": 0.048, "actual": 0.00, "cost": 0},
+            {"no": "1046 (2) a2", "description": "CHB Non Load Bearing 150mm", "category": "Architectural", "weight": 1.658, "planned_original": 1.658, "planned_revised": 1.658, "actual": 0.00, "cost": 0},
             
-            # D. Electrical Works
-            {"no": "1100(10)", "description": "Conduits, Boxes & Fittings (Conduit Works / Conduit Rough-in)", "category": "Electrical", "weight": 0.409, "planned": 0.409, "actual": 0.00, "cost": 0},
-            {"no": "1101(33)", "description": "Wires and Wiring Devices", "category": "Electrical", "weight": 0.720, "planned": 0.720, "actual": 0.00, "cost": 0},
-            {"no": "1102 (1)", "description": "Panelboard with Main & Branch Breakers", "category": "Electrical", "weight": 0.266, "planned": 0.266, "actual": 0.00, "cost": 0},
-            {"no": "1103(1)", "description": "Lighting Fixtures and Lamps", "category": "Electrical", "weight": 1.279, "planned": 1.279, "actual": 0.00, "cost": 0},
-            {"no": "1102(8)", "description": "Generator (Stand by and Continuous), Synchronizing Panel for Generator, High Voltage Switch Gear", "category": "Electrical", "weight": 2.401, "planned": 2.401, "actual": 0.00, "cost": 0},
-            {"no": "1102(18)", "description": "Solar Panel with inverter, battery and other devices", "category": "Electrical", "weight": 8.876, "planned": 8.876, "actual": 0.00, "cost": 0},
+            # Electrical Works
+            {"no": "1100(10)", "description": "Conduits, Boxes & Fittings", "category": "Electrical", "weight": 0.409, "planned_original": 0.409, "planned_revised": 0.409, "actual": 0.00, "cost": 0},
+            {"no": "1101(33)", "description": "Wires and Wiring Devices", "category": "Electrical", "weight": 0.720, "planned_original": 0.720, "planned_revised": 0.720, "actual": 0.00, "cost": 0},
+            {"no": "1102 (1)", "description": "Panelboard with Breakers", "category": "Electrical", "weight": 0.266, "planned_original": 0.266, "planned_revised": 0.266, "actual": 0.00, "cost": 0},
+            {"no": "1103(1)", "description": "Lighting Fixtures and Lamps", "category": "Electrical", "weight": 1.279, "planned_original": 1.279, "planned_revised": 1.279, "actual": 0.00, "cost": 0},
+            {"no": "1102(8)", "description": "Generator Set", "category": "Electrical", "weight": 2.401, "planned_original": 2.401, "planned_revised": 2.401, "actual": 0.00, "cost": 0},
+            {"no": "1102(18)", "description": "Solar Panel System", "category": "Electrical", "weight": 8.876, "planned_original": 8.876, "planned_revised": 8.876, "actual": 0.00, "cost": 0},
             
-            # E. Mechanical / Fire Protection
-            {"no": "1202 (1)", "description": "Automatic Fire Sprinkler System (AFSS)", "category": "Mechanical", "weight": 2.725, "planned": 2.725, "actual": 0.00, "cost": 0},
-            {"no": "1208(1)", "description": "Fire Alarm System", "category": "Mechanical", "weight": 0.088, "planned": 0.088, "actual": 0.00, "cost": 0},
-            {"no": "1201(1)", "description": "Water Pumping System", "category": "Mechanical", "weight": 0.940, "planned": 0.940, "actual": 0.00, "cost": 0},
-            {"no": "1726", "description": "Electro Mechanical for Pumping Station", "category": "Mechanical", "weight": 0.675, "planned": 0.675, "actual": 0.00, "cost": 0},
+            # Mechanical Works
+            {"no": "1202 (1)", "description": "Automatic Fire Sprinkler System", "category": "Mechanical", "weight": 2.725, "planned_original": 2.725, "planned_revised": 2.725, "actual": 0.00, "cost": 0},
+            {"no": "1208(1)", "description": "Fire Alarm System", "category": "Mechanical", "weight": 0.088, "planned_original": 0.088, "planned_revised": 0.088, "actual": 0.00, "cost": 0},
+            {"no": "1201(1)", "description": "Water Pumping System", "category": "Mechanical", "weight": 0.940, "planned_original": 0.940, "planned_revised": 0.940, "actual": 0.00, "cost": 0},
+            {"no": "1726", "description": "Electro Mechanical for Pumping Station", "category": "Mechanical", "weight": 0.675, "planned_original": 0.675, "planned_revised": 0.675, "actual": 0.00, "cost": 0},
             
-            # F. Equipment / Special Items
-            {"no": "SPL-1", "description": "Furnitures", "category": "Equipment", "weight": 0.801, "planned": 0.801, "actual": 0.00, "cost": 0},
-            {"no": "SPL-2", "description": "Retractable Seat", "category": "Equipment", "weight": 0.905, "planned": 0.905, "actual": 0.00, "cost": 0},
-            {"no": "SPL-3", "description": "Appliances and Equipment", "category": "Equipment", "weight": 2.440, "planned": 2.440, "actual": 0.00, "cost": 0},
-            {"no": "SPL-4", "description": "Automated Weather Stations (AWS)", "category": "Equipment", "weight": 5.869, "planned": 5.869, "actual": 0.00, "cost": 0},
-            {"no": "SPL-5", "description": "Laboratory, Food Processing and Fish Multiplier Equipment", "category": "Equipment", "weight": 3.300, "planned": 3.299, "actual": 0.00, "cost": 0},
+            # Equipment / Special Items
+            {"no": "SPL-1", "description": "Furnitures", "category": "Equipment", "weight": 0.801, "planned_original": 0.801, "planned_revised": 0.801, "actual": 0.00, "cost": 0},
+            {"no": "SPL-2", "description": "Retractable Seat", "category": "Equipment", "weight": 0.905, "planned_original": 0.905, "planned_revised": 0.905, "actual": 0.00, "cost": 0},
+            {"no": "SPL-3", "description": "Appliances and Equipment", "category": "Equipment", "weight": 2.440, "planned_original": 2.440, "planned_revised": 2.440, "actual": 0.00, "cost": 0},
+            {"no": "SPL-4", "description": "Automated Weather Stations (AWS)", "category": "Equipment", "weight": 5.869, "planned_original": 5.869, "planned_revised": 5.869, "actual": 0.00, "cost": 0},
+            {"no": "SPL-5", "description": "Laboratory & Food Processing Equipment", "category": "Equipment", "weight": 3.300, "planned_original": 3.300, "planned_revised": 3.300, "actual": 0.00, "cost": 0},
+            
+            # Other Items
+            {"no": "807 (2)", "description": "Softscape", "category": "Other", "weight": 0.571, "planned_original": 0.571, "planned_revised": 0.571, "actual": 0.00, "cost": 0},
+            {"no": "807 (5)", "description": "Hardscape", "category": "Other", "weight": 2.596, "planned_original": 2.596, "planned_revised": 2.596, "actual": 0.00, "cost": 0},
+            {"no": "1051 (6)", "description": "Railing", "category": "Other", "weight": 0.636, "planned_original": 0.636, "planned_revised": 0.636, "actual": 0.00, "cost": 0},
+            {"no": "1047 (2)b", "description": "Structural Steel (Purlins)", "category": "Other", "weight": 0.332, "planned_original": 0.332, "planned_revised": 0.332, "actual": 0.00, "cost": 0},
+            {"no": "1047 (3)b", "description": "Metal Structure Accessories (Sagrods)", "category": "Other", "weight": 0.329, "planned_original": 0.329, "planned_revised": 0.329, "actual": 0.00, "cost": 0},
+            {"no": "1047 (3)c", "description": "Metal Structure Accessories (Turnbuckle)", "category": "Other", "weight": 0.098, "planned_original": 0.098, "planned_revised": 0.098, "actual": 0.00, "cost": 0},
+            {"no": "1047 (3)d", "description": "Metal Structure Accessories (Cross Bracing)", "category": "Other", "weight": 0.107, "planned_original": 0.107, "planned_revised": 0.107, "actual": 0.00, "cost": 0},
         ]
         
         st.session_state[f'{prefix}work_items'] = work_items
     
     # ============================================================
-    # ORIGINAL AND REVISED PLAN DATA (from your Excel)
+    # S-CURVE DATA (Weekly Cumulative from your Excel)
     # ============================================================
     
-    if f'{prefix}original_plan' not in st.session_state:
-        # Original Plan cumulative percentages from your Excel
-        original_plan = [
+    if f'{prefix}original_plan_weekly' not in st.session_state:
+        # Original Plan cumulative percentages (193 weeks)
+        original_plan_weekly = [
             0.99, 1.12, 1.27, 1.47, 1.59, 1.72, 1.90, 2.00, 2.09, 2.17, 2.24, 2.47, 2.80, 3.10, 3.41, 3.73,
             4.03, 4.33, 4.63, 4.98, 5.32, 5.66, 6.01, 6.21, 6.91, 7.62, 9.34, 11.06, 12.79, 14.74, 16.71, 18.34,
             19.97, 21.70, 23.70, 25.71, 27.64, 29.54, 31.39, 33.18, 34.90, 36.54, 38.17, 39.81, 41.39, 42.93,
@@ -713,10 +708,11 @@ def show_mpcfs_scurve_tracker(component="infrastructure"):
             80.26, 80.63, 81.00, 81.37, 81.82, 82.27, 82.80, 83.23, 83.65, 84.08, 84.74, 85.63, 86.52, 87.48,
             88.66, 90.23, 91.80, 93.79, 95.79, 97.61, 99.16, 99.34, 99.96, 100.00
         ]
-        while len(original_plan) < 193:
-            original_plan.append(100.00)
+        while len(original_plan_weekly) < 193:
+            original_plan_weekly.append(100.00)
         
-        revised_plan = [
+        # Revised Plan cumulative percentages
+        revised_plan_weekly = [
             0.98, 1.10, 1.24, 1.43, 1.54, 1.66, 1.83, 1.91, 2.00, 2.08, 2.16, 2.29, 2.55, 2.82, 3.11, 3.39,
             3.68, 3.97, 4.26, 4.55, 4.82, 5.10, 5.38, 5.86, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24,
             6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24,
@@ -731,224 +727,227 @@ def show_mpcfs_scurve_tracker(component="infrastructure"):
             80.70, 81.53, 82.37, 83.24, 83.96, 84.53, 85.11, 85.69, 85.94, 86.35, 86.84, 87.32, 87.66, 87.98,
             88.19, 88.64, 89.09, 89.54, 90.05, 90.79, 91.86, 92.98, 94.49, 96.00, 97.42, 98.58, 99.03, 99.47, 99.50, 100.00
         ]
-        while len(revised_plan) < 193:
-            revised_plan.append(100.00)
+        while len(revised_plan_weekly) < 193:
+            revised_plan_weekly.append(100.00)
         
-        actual = [
-            0.88, 0.91, 0.95, 1.00, 1.05, 1.10, 1.45, 1.62, 2.12, 2.45, 2.85, 3.21, 3.44, 3.85, 3.95, 4.05,
-            4.17, 4.30, 4.40, 4.50, 4.61, 4.70, 4.81, 4.89, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04,
-            5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04,
-            5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 7.33,
-            9.88, 11.61, 13.40, 15.45, 17.73, 20.02, 22.30, 24.59, 24.67, 24.75, 24.83, 24.92, 25.14, 25.34, 25.55, 25.75
-        ]
-        while len(actual) < 193:
-            actual.append(actual[-1] if actual else 25.75)
-        
-        st.session_state[f'{prefix}original_plan'] = original_plan
-        st.session_state[f'{prefix}revised_plan'] = revised_plan
-        st.session_state[f'{prefix}actual'] = actual
+        st.session_state[f'{prefix}original_plan_weekly'] = original_plan_weekly
+        st.session_state[f'{prefix}revised_plan_weekly'] = revised_plan_weekly
     
-    # Get current data
+    # ============================================================
+    # CALCULATE OVERALL PROGRESS
+    # ============================================================
+    
     work_items = st.session_state[f'{prefix}work_items']
-    original_plan = st.session_state[f'{prefix}original_plan']
-    revised_plan = st.session_state[f'{prefix}revised_plan']
-    actual_array = st.session_state[f'{prefix}actual']
     
-    # ============================================================
-    # CORRECT PROGRESS CALCULATION (FIXED)
-    # ============================================================
-    
+    # Calculate from work items
     total_weight = sum(item['weight'] for item in work_items)
     
-    # CORRECT FORMULA: Each item's contribution = (weight * actual) / 100
-    # Then sum all contributions for overall progress
-    weighted_actual_sum = 0
-    for item in work_items:
-        # item['actual'] is already a percentage (e.g., 8.50 for Structural Steel)
-        # item['weight'] is the weight percentage (e.g., 14.17)
-        # Contribution = (14.17 * 8.50) / 100 = 1.20%
-        contribution = (item['weight'] * item['actual']) / 100
-        weighted_actual_sum += contribution
+    # Weighted actual progress
+    weighted_actual = sum((item['weight'] * item['actual']) / 100 for item in work_items)
+    overall_progress = weighted_actual  # This should be 25.75%
     
-    overall_progress = weighted_actual_sum  # This should be ~25.75%
+    # Weighted original plan progress
+    weighted_original = sum((item['weight'] * item['planned_original']) / 100 for item in work_items)
+    overall_original_plan = weighted_original  # This should be 16.02%
+    
+    # Weighted revised plan progress
+    weighted_revised = sum((item['weight'] * item['planned_revised']) / 100 for item in work_items)
+    overall_revised_plan = weighted_revised  # This should be 25.75%
+    
     total_actual_cost = sum(item['cost'] for item in work_items)
     
-    # Verify total weight is close to 100%
-    if abs(total_weight - 100) > 1:
-        st.warning(f"⚠️ Total weight is {total_weight:.2f}% (should be 100%). Some items may be missing.")
+    # Calculate slippage
+    slippage_vs_original = overall_progress - overall_original_plan
+    slippage_vs_revised = overall_progress - overall_revised_plan
     
     # Update session state for dashboard
     st.session_state['infrastructure_progress'] = overall_progress
-    st.session_state['infrastructure_target'] = 25.75
+    st.session_state['infrastructure_target_original'] = overall_original_plan
+    st.session_state['infrastructure_target_revised'] = overall_revised_plan
     st.session_state['infrastructure_cost'] = total_actual_cost
     st.session_state['infrastructure_work_items'] = work_items
     
-    # KPI Cards
-    col1, col2, col3, col4, col5 = st.columns(5)
+    # ============================================================
+    # KPI CARDS - Dual Slippage
+    # ============================================================
+    
+    st.markdown("### 📊 Key Performance Indicators")
+    
+    col1, col2, col3, col4 = st.columns(4)
+    
     with col1:
-        st.metric("Overall Progress", f"{overall_progress:.2f}%", delta=f"{overall_progress - 25.75:.2f}% vs Target")
+        st.metric(
+            "Overall Progress", 
+            f"{overall_progress:.2f}%",
+            delta=f"₱{total_actual_cost:,.0f} utilized"
+        )
+    
     with col2:
-        variance = overall_progress - 25.75
-        st.metric("Physical Variance", f"{variance:+.2f}%", 
-                  delta="Ahead" if variance >= 0 else "Behind",
-                  delta_color="normal" if variance >= 0 else "inverse")
+        slippage_color = "normal" if slippage_vs_original >= 0 else "inverse"
+        st.metric(
+            "Slippage vs Original Plan", 
+            f"{slippage_vs_original:+.2f}%",
+            delta=f"Target: {overall_original_plan:.2f}%",
+            delta_color=slippage_color
+        )
+    
     with col3:
-        st.metric("Cost Utilized", f"₱{total_actual_cost:,.2f}", delta=f"{(total_actual_cost/CONTRACT_AMOUNT)*100:.1f}% of Total")
+        slippage_color2 = "normal" if slippage_vs_revised >= 0 else "inverse"
+        st.metric(
+            "Slippage vs Revised Plan", 
+            f"{slippage_vs_revised:+.2f}%",
+            delta=f"Target: {overall_revised_plan:.2f}%",
+            delta_color=slippage_color2
+        )
+    
     with col4:
-        planned_cost = 25.75 * CONTRACT_AMOUNT / 100
-        cost_var = total_actual_cost - planned_cost
-        st.metric("Cost Variance", f"₱{cost_var:+,.2f}",
-                  delta="Under" if cost_var <= 0 else "Over",
-                  delta_color="normal" if cost_var <= 0 else "inverse")
-    with col5:
-        schedule_status = "✅ ON TRACK" if variance >= -2 else "⚠️ BEHIND"
-        st.metric("Schedule Status", schedule_status)
+        status = "✅ AHEAD" if slippage_vs_original > 0 else ("🟡 ON TRACK" if slippage_vs_original == 0 else "🔴 BEHIND")
+        st.metric("Overall Status", status, delta=f"As of March 31, 2026")
     
     st.markdown("---")
     
     # ============================================================
-    # SNAPSHOT HISTORY SECTION
+    # S-CURVE CHART (Clean, Readable, Professional)
     # ============================================================
     
-    st.markdown("### 📸 Progress Snapshots (Unlimited History)")
-    st.caption("Save snapshots to track progress over time. Each snapshot stores all work item data.")
+    st.markdown("### 📈 S-Curve: Planned vs Actual Progress")
+    st.markdown("**📍 As of: March 31, 2026**")
     
-    # Initialize snapshots in session state
-    if f'{prefix}snapshots' not in st.session_state:
-        st.session_state[f'{prefix}snapshots'] = []
+    weeks = list(range(1, 194))
+    original_weekly = st.session_state[f'{prefix}original_plan_weekly']
+    revised_weekly = st.session_state[f'{prefix}revised_plan_weekly']
     
-    # Function to generate unique hash for duplicate detection
-    def generate_data_hash(work_items_data):
-        data_str = json.dumps(work_items_data, sort_keys=True)
-        return hashlib.md5(data_str.encode()).hexdigest()
+    # Find current week index based on actual progress
+    current_week_idx = 0
+    for i, val in enumerate(revised_weekly):
+        if val >= overall_progress and overall_progress > 0:
+            current_week_idx = i
+            break
     
-    # Save Snapshot button
-    col1, col2, col3 = st.columns([2, 1, 1])
+    # Create projected actual (stops at current, then dotted)
+    actual_projected = []
+    for i in range(193):
+        if i <= current_week_idx:
+            actual_projected.append(overall_progress)
+        else:
+            actual_projected.append(None)  # Dotted line will handle this
+    
+    fig = go.Figure()
+    
+    # Original Plan (Blue, dashed, thinner)
+    fig.add_trace(go.Scatter(
+        x=weeks[:len(original_weekly)], 
+        y=original_weekly,
+        mode='lines', 
+        name='Original Plan',
+        line=dict(color='#1f77b4', width=2, dash='dash'),
+        opacity=0.8
+    ))
+    
+    # Revised Plan (Orange, dotted, thinner)
+    fig.add_trace(go.Scatter(
+        x=weeks[:len(revised_weekly)], 
+        y=revised_weekly,
+        mode='lines', 
+        name='Revised Plan',
+        line=dict(color='#ff7f0e', width=2, dash='dot'),
+        opacity=0.8
+    ))
+    
+    # Actual Progress (Green, solid, thicker) - stops at current
+    fig.add_trace(go.Scatter(
+        x=weeks[:current_week_idx + 1], 
+        y=[overall_progress] * (current_week_idx + 1),
+        mode='lines+markers', 
+        name='Actual Progress',
+        line=dict(color='#2ca02c', width=3),
+        marker=dict(size=6, symbol='circle', color='#2ca02c')
+    ))
+    
+    # Projected Actual (Green, dotted, thinner)
+    if current_week_idx < 192:
+        fig.add_trace(go.Scatter(
+            x=weeks[current_week_idx + 1:], 
+            y=[overall_progress] * (192 - current_week_idx),
+            mode='lines', 
+            name='Projected (if no change)',
+            line=dict(color='#2ca02c', width=2, dash='dot'),
+            opacity=0.6
+        ))
+    
+    # Current week vertical line
+    fig.add_vline(
+        x=current_week_idx + 1, 
+        line_dash="dash", 
+        line_color="#7f7f7f", 
+        line_width=1.5,
+        annotation_text=f"Week {current_week_idx + 1}",
+        annotation_position="top right"
+    )
+    
+    fig.update_layout(
+        title=dict(
+            text="Project Progress S-Curve (September 2024 - May 2028)",
+            font=dict(size=14, color="#2c3e50")
+        ),
+        xaxis=dict(
+            title="Week Number",
+            title_font=dict(size=12),
+            tickfont=dict(size=10),
+            gridcolor="#e0e0e0",
+            showgrid=True
+        ),
+        yaxis=dict(
+            title="Cumulative Progress (%)",
+            title_font=dict(size=12),
+            tickfont=dict(size=10),
+            range=[0, 105],
+            gridcolor="#e0e0e0",
+            showgrid=True
+        ),
+        height=450,
+        hovermode='x unified',
+        legend=dict(
+            x=0.02, 
+            y=0.98, 
+            bgcolor='rgba(255,255,255,0.9)',
+            bordercolor="#d0d0d0",
+            borderwidth=1,
+            font=dict(size=11)
+        ),
+        plot_bgcolor='white',
+        paper_bgcolor='white'
+    )
+    
+    st.plotly_chart(fig, use_container_width=True)
+    
+    # ============================================================
+    # TARGET SUMMARY
+    # ============================================================
+    
+    col1, col2, col3 = st.columns(3)
     with col1:
-        snapshot_notes = st.text_input("Snapshot Notes (optional)", placeholder="e.g., After foundation inspection", key=f"{prefix}_snapshot_notes")
-    
+        st.info(f"📋 **Original Plan Target:** {overall_original_plan:.2f}%")
     with col2:
-        if st.button("💾 Save Current Snapshot", type="primary", use_container_width=True, key=f"{prefix}_save_snapshot"):
-            current_hash = generate_data_hash(work_items)
-            
-            # Check for duplicate
-            is_duplicate = False
-            for snap in st.session_state[f'{prefix}snapshots']:
-                if snap.get('data_hash') == current_hash:
-                    is_duplicate = True
-                    break
-            
-            if is_duplicate:
-                st.warning("⚠️ Data is identical to the last snapshot. No duplicate saved.")
-            else:
-                snapshot = {
-                    "id": len(st.session_state[f'{prefix}snapshots']) + 1,
-                    "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                    "progress": overall_progress,
-                    "total_cost": total_actual_cost,
-                    "work_items": copy.deepcopy(work_items),
-                    "notes": snapshot_notes if snapshot_notes else "",
-                    "data_hash": current_hash
-                }
-                st.session_state[f'{prefix}snapshots'].insert(0, snapshot)  # Newest first
-                st.success(f"✅ Snapshot #{snapshot['id']} saved! Progress: {overall_progress:.2f}%")
-                st.rerun()
-    
+        st.info(f"📋 **Revised Plan Target:** {overall_revised_plan:.2f}%")
     with col3:
-        if st.button("📤 Sync to Supabase", use_container_width=True, key=f"{prefix}_sync"):
-            if SUPABASE_KEY:
-                try:
-                    supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
-                    for snap in st.session_state[f'{prefix}snapshots']:
-                        # Check if already exists
-                        existing = supabase.table("mpcfs_snapshots").select("id").eq("data_hash", snap['data_hash']).execute()
-                        if not existing.data:
-                            supabase.table("mpcfs_snapshots").insert({
-                                "component": component,
-                                "progress": snap['progress'],
-                                "total_cost": snap['total_cost'],
-                                "work_items_json": json.dumps(snap['work_items']),
-                                "notes": snap['notes'],
-                                "created_by": st.session_state.get('user_role', 'Unknown'),
-                                "file_hash": snap['data_hash']
-                            }).execute()
-                    st.success("✅ Snapshots synced to Supabase!")
-                except Exception as e:
-                    st.error(f"Sync failed: {e}")
-            else:
-                st.info("Supabase key not configured. Add to .streamlit/secrets.toml")
-    
-    # Display snapshots
-    if st.session_state[f'{prefix}snapshots']:
-        st.markdown("#### 📋 Snapshot History")
-        
-        # Prepare snapshot display
-        snapshots_data = []
-        for snap in st.session_state[f'{prefix}snapshots']:
-            snapshots_data.append({
-                "ID": snap['id'],
-                "Date & Time": snap['timestamp'],
-                "Progress": f"{snap['progress']:.2f}%",
-                "Cost": f"₱{snap['total_cost']:,.0f}",
-                "Notes": snap['notes'][:50] + "..." if len(snap['notes']) > 50 else snap['notes'],
-                "Actions": f"load_{snap['id']}"
-            })
-        
-        df_snapshots = pd.DataFrame(snapshots_data)
-        
-        # Display as columns with action buttons
-        for snap in st.session_state[f'{prefix}snapshots'][:20]:  # Show last 20
-            col1, col2, col3, col4, col5 = st.columns([1, 2, 1, 1, 1])
-            with col1:
-                st.markdown(f"**#{snap['id']}**")
-            with col2:
-                st.markdown(f"{snap['timestamp']}")
-            with col3:
-                st.markdown(f"**{snap['progress']:.2f}%**")
-            with col4:
-                if st.button(f"📂 Load", key=f"load_snap_{snap['id']}"):
-                    # Restore this snapshot
-                    st.session_state[f'{prefix}work_items'] = snap['work_items']
-                    st.success(f"✅ Loaded snapshot #{snap['id']} from {snap['timestamp']}")
-                    st.rerun()
-            with col5:
-                if st.button(f"🗑️", key=f"del_snap_{snap['id']}"):
-                    st.session_state[f'{prefix}snapshots'] = [s for s in st.session_state[f'{prefix}snapshots'] if s['id'] != snap['id']]
-                    st.rerun()
-            st.caption(f"📝 {snap['notes']}" if snap['notes'] else "")
-            st.markdown("---")
-        
-        # Export all snapshots
-        if st.button("📊 Export All Snapshots to CSV", use_container_width=True):
-            export_data = []
-            for snap in st.session_state[f'{prefix}snapshots']:
-                export_data.append({
-                    "Snapshot ID": snap['id'],
-                    "Timestamp": snap['timestamp'],
-                    "Progress (%)": snap['progress'],
-                    "Total Cost (₱)": snap['total_cost'],
-                    "Notes": snap['notes']
-                })
-            export_df = pd.DataFrame(export_data)
-            csv = export_df.to_csv(index=False)
-            st.download_button("📥 Download CSV", data=csv, 
-                              file_name=f"mpcfs_{component}_snapshots_{datetime.now().strftime('%Y%m%d')}.csv",
-                              mime="text/csv")
-    else:
-        st.info("No snapshots yet. Click 'Save Current Snapshot' to start tracking progress history.")
+        st.success(f"✅ **Actual Progress:** {overall_progress:.2f}%")
     
     st.markdown("---")
     
     # ============================================================
-    # ITEMIZED WORK DETAILS TABLE (EDITABLE)
+    # ITEMIZED WORK DETAILS TABLE (Editable with Highlighting)
     # ============================================================
     
     st.markdown("### 📋 Itemized Work Details")
-    st.caption("Edit Actual (%) and Actual Cost (₱) below. Click 'SAVE CHANGES' to update.")
+    st.markdown("""
+    > **✏️ INSTRUCTIONS:** Edit the columns below marked with 🟢 **green highlight**. 
+    > Changes are saved when you click **💾 SAVE ALL CHANGES**.
+    """)
     
     # Category filter
     categories = ["All", "Civil Works", "Structural", "Architectural", "Electrical", "Mechanical", "Equipment", "Other"]
-    selected_category = st.selectbox("Filter by Category", categories, key=f"{prefix}_category")
+    selected_category = st.selectbox("🔍 Filter by Category", categories, key=f"{prefix}_category")
     
     # Filter work items
     if selected_category != "All":
@@ -956,19 +955,33 @@ def show_mpcfs_scurve_tracker(component="infrastructure"):
     else:
         filtered_items = work_items
     
-    # Prepare dataframe for editing
-    df_items = pd.DataFrame(filtered_items)
-    
-    if not df_items.empty:
-        # Calculate variance and status
-        df_items['Variance (%)'] = df_items['actual'] - df_items['planned']
-        df_items['Status'] = df_items['Variance (%)'].apply(lambda x: '✅ Ahead' if x > 0.1 else ('🟡 On Track' if x >= -0.1 else '🔴 Behind'))
+    if filtered_items:
+        # Prepare dataframe
+        df_items = pd.DataFrame(filtered_items)
         
-        # Select columns to show
-        display_df = df_items[['no', 'description', 'category', 'weight', 'planned', 'actual', 'cost', 'Variance (%)', 'Status']].copy()
-        display_df.columns = ['Item No.', 'Description', 'Category', 'Weight (%)', 'Planned (%)', 'Actual (%)', 'Actual Cost (₱)', 'Variance (%)', 'Status']
+        # Calculate slippage columns
+        df_items['Slippage vs Original (%)'] = df_items['actual'] - df_items['planned_original']
+        df_items['Slippage vs Revised (%)'] = df_items['actual'] - df_items['planned_revised']
         
-        # Make the dataframe editable
+        # Status indicator
+        df_items['Status'] = df_items['Slippage vs Original (%)'].apply(
+            lambda x: '✅ Ahead' if x > 0.1 else ('🟡 On Track' if x >= -0.1 else '🔴 Behind')
+        )
+        
+        # Select columns for display
+        display_df = df_items[[
+            'no', 'description', 'category', 'weight', 
+            'planned_original', 'planned_revised', 'actual', 'cost',
+            'Slippage vs Original (%)', 'Slippage vs Revised (%)', 'Status'
+        ]].copy()
+        
+        display_df.columns = [
+            'Item No.', 'Description', 'Category', 'Weight (%)',
+            'Original Plan (%)', 'Revised Plan (%)', '🟢 Actual (%)', '🟢 Actual Cost (₱)',
+            'Slippage vs Original (%)', 'Slippage vs Revised (%)', 'Status'
+        ]
+        
+        # Display editable table with highlighting for editable columns
         edited_df = st.data_editor(
             display_df,
             use_container_width=True,
@@ -979,10 +992,20 @@ def show_mpcfs_scurve_tracker(component="infrastructure"):
                 "Description": st.column_config.TextColumn("Description", width="large", disabled=True),
                 "Category": st.column_config.TextColumn("Category", width="small", disabled=True),
                 "Weight (%)": st.column_config.NumberColumn("Weight (%)", format="%.3f", disabled=True),
-                "Planned (%)": st.column_config.NumberColumn("Planned (%)", format="%.3f", disabled=True),
-                "Actual (%)": st.column_config.NumberColumn("Actual (%)", min_value=0.0, max_value=100.0, step=0.5, format="%.2f"),
-                "Actual Cost (₱)": st.column_config.NumberColumn("Actual Cost (₱)", min_value=0, step=10000, format="₱%.2f"),
-                "Variance (%)": st.column_config.NumberColumn("Variance (%)", format="%+.2f", disabled=True),
+                "Original Plan (%)": st.column_config.NumberColumn("Original Plan (%)", format="%.3f", disabled=True),
+                "Revised Plan (%)": st.column_config.NumberColumn("Revised Plan (%)", format="%.3f", disabled=True),
+                "🟢 Actual (%)": st.column_config.NumberColumn(
+                    "🟢 Actual (%)", 
+                    min_value=0.0, max_value=100.0, step=0.5, format="%.2f",
+                    help="✏️ EDITABLE - Enter actual physical progress"
+                ),
+                "🟢 Actual Cost (₱)": st.column_config.NumberColumn(
+                    "🟢 Actual Cost (₱)", 
+                    min_value=0, step=10000, format="₱%.2f",
+                    help="✏️ EDITABLE - Enter actual cost incurred"
+                ),
+                "Slippage vs Original (%)": st.column_config.NumberColumn("Slippage vs Original (%)", format="%+.2f", disabled=True),
+                "Slippage vs Revised (%)": st.column_config.NumberColumn("Slippage vs Revised (%)", format="%+.2f", disabled=True),
                 "Status": st.column_config.TextColumn("Status", disabled=True),
             }
         )
@@ -990,74 +1013,35 @@ def show_mpcfs_scurve_tracker(component="infrastructure"):
         # Save button
         col1, col2, col3 = st.columns([1, 1, 2])
         with col1:
-            if st.button("💾 SAVE CHANGES", type="primary", use_container_width=True, key=f"{prefix}_save"):
-                # Update the original work_items list
+            if st.button("💾 SAVE ALL CHANGES", type="primary", use_container_width=True, key=f"{prefix}_save"):
+                # Update work items
                 for idx, row in edited_df.iterrows():
                     for original_item in work_items:
                         if original_item['no'] == row['Item No.']:
-                            original_item['actual'] = row['Actual (%)']
-                            original_item['cost'] = row['Actual Cost (₱)']
+                            original_item['actual'] = row['🟢 Actual (%)']
+                            original_item['cost'] = row['🟢 Actual Cost (₱)']
                             break
                 
                 st.session_state[f'{prefix}work_items'] = work_items
-                
-                # Recalculate overall progress
-                new_weighted_sum = 0
-                for item in work_items:
-                    new_weighted_sum += (item['weight'] * item['actual']) / 100
-                new_overall = new_weighted_sum
-                
-                st.success(f"✅ Changes saved! Overall progress: {new_overall:.2f}%")
+                st.success("✅ All changes saved! Progress recalculated.")
                 st.rerun()
         
         with col2:
-            if st.button("🔄 Reset to Zero", use_container_width=True, key=f"{prefix}_reset"):
+            if st.button("🔄 Reset All to Zero", use_container_width=True, key=f"{prefix}_reset"):
                 for item in work_items:
                     item['actual'] = 0
                     item['cost'] = 0
                 st.session_state[f'{prefix}work_items'] = work_items
-                st.success("✅ Reset to zero. Ready for new data entry.")
+                st.success("✅ Reset complete. Ready for new data entry.")
                 st.rerun()
         
         with col3:
             st.caption(f"📊 Overall Progress: {overall_progress:.2f}% | Total Cost: ₱{total_actual_cost:,.2f}")
+    
     else:
         st.warning("No work items found for selected category.")
     
     st.markdown("---")
-    
-    # ============================================================
-    # S-CURVE CHART (3 Lines: Original, Revised, Actual)
-    # ============================================================
-    
-    st.markdown("### 📈 S-Curve: Planned vs Actual Progress")
-    st.markdown("**📍 As of: March 31, 2026**")
-    
-    weeks = list(range(1, 194))
-    
-    # Find current week index
-    current_week_idx = 0
-    for i, val in enumerate(actual_array):
-        if val >= overall_progress and overall_progress > 0:
-            current_week_idx = i
-            break
-    
-    max_len = 193
-    orig_plan = original_plan[:max_len] if len(original_plan) >= max_len else original_plan + [0] * (max_len - len(original_plan))
-    rev_plan = revised_plan[:max_len] if len(revised_plan) >= max_len else revised_plan + [0] * (max_len - len(revised_plan))
-    actual_data = actual_array[:max_len] if len(actual_array) >= max_len else actual_array + [0] * (max_len - len(actual_array))
-    
-    fig = go.Figure()
-    
-    fig.add_trace(go.Scatter(x=weeks[:len(orig_plan)], y=orig_plan, mode='lines', name='Original Plan', line=dict(color='#3498db', width=2, dash='dash')))
-    fig.add_trace(go.Scatter(x=weeks[:len(rev_plan)], y=rev_plan, mode='lines', name='Revised Plan', line=dict(color='#f39c12', width=2, dash='dot')))
-    fig.add_trace(go.Scatter(x=weeks[:len(actual_data)], y=actual_data, mode='lines+markers', name='Actual Progress', line=dict(color='#2ecc71', width=3), marker=dict(size=4)))
-    
-    fig.add_vline(x=current_week_idx + 1 if current_week_idx > 0 else 80, line_dash="dash", line_color="red", line_width=2,
-                  annotation_text=f"Current: Week {current_week_idx + 1 if current_week_idx > 0 else 80} (Mar 31, 2026)", annotation_position="top right")
-    
-    fig.update_layout(title="Project Progress S-Curve (Sept 2024 - May 2028)", xaxis_title="Week Number", yaxis_title="Cumulative Progress (%)", yaxis_range=[0, 105], height=500, hovermode='x unified')
-    st.plotly_chart(fig, use_container_width=True)
     
     # ============================================================
     # SUMMARY STATISTICS
@@ -1067,17 +1051,17 @@ def show_mpcfs_scurve_tracker(component="infrastructure"):
     
     col1, col2, col3, col4 = st.columns(4)
     
-    ahead_items = len([i for i in work_items if i['actual'] - i['planned'] > 0.1])
-    on_track_items = len([i for i in work_items if -0.1 <= i['actual'] - i['planned'] <= 0.1])
-    behind_items = len([i for i in work_items if i['actual'] - i['planned'] < -0.1])
+    ahead_items = len([i for i in work_items if i['actual'] - i['planned_original'] > 0.1])
+    on_track_items = len([i for i in work_items if -0.1 <= i['actual'] - i['planned_original'] <= 0.1])
+    behind_items = len([i for i in work_items if i['actual'] - i['planned_original'] < -0.1])
     not_started = len([i for i in work_items if i['actual'] == 0])
     
     with col1:
-        st.metric("✅ Ahead", ahead_items)
+        st.metric("✅ Ahead (vs Original)", ahead_items)
     with col2:
         st.metric("🟡 On Track", on_track_items)
     with col3:
-        st.metric("🔴 Behind", behind_items)
+        st.metric("🔴 Behind (vs Original)", behind_items)
     with col4:
         st.metric("⚪ Not Started", not_started)
     
@@ -1094,9 +1078,12 @@ def show_mpcfs_scurve_tracker(component="infrastructure"):
         if st.button("📊 Export Work Items to CSV", use_container_width=True):
             export_df = pd.DataFrame(work_items)
             csv = export_df.to_csv(index=False)
-            st.download_button("📥 Download CSV", data=csv, 
-                              file_name=f"mpcfs_{component}_work_items_{datetime.now().strftime('%Y%m%d')}.csv",
-                              mime="text/csv")
+            st.download_button(
+                "📥 Download CSV", 
+                data=csv, 
+                file_name=f"mpcfs_{component}_work_items_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+                mime="text/csv"
+            )
     
     with col2:
         st.caption(f"Last updated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
