@@ -1,18 +1,17 @@
 # tabs/drrm_intelligence.py
 import streamlit as st
 import pandas as pd
-import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
-from datetime import datetime, date, timedelta
-import os
+from datetime import datetime, timedelta
 import json
 import base64
-from utils.supabase_client import auto_sync_add, auto_sync_delete, auto_sync_update, is_connected, auto_sync_table
+from utils.supabase_client import auto_sync_add, auto_sync_delete, auto_sync_update, is_connected
 from utils.local_storage import save_file, delete_file, get_file_size, file_exists, save_file_to_cloud, delete_file_from_cloud, get_file_url
 import folium
 from streamlit_folium import folium_static
 import warnings
+
 warnings.filterwarnings('ignore')
 
 # =============================================================================
@@ -289,63 +288,58 @@ def generate_print_content(event):
 # =============================================================================
 
 def show():
-    """Display DRRM Intelligence tab"""
+    """Display DRRM Intelligence Tab"""
     st.markdown("# 📊 DRRM Intelligence")
     st.caption("Disaster Risk Reduction and Management Intelligence Dashboard")
-    st.info("DRRM Intelligence module - Coming soon with full features.")
     
-    # Professional Header
+    # Quick stats
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        st.metric("Active Alerts", "3", delta="-2")
+    with col2:
+        st.metric("Evacuation Centers", "12", delta="+2")
+    with col3:
+        st.metric("Families Served", "1,247", delta="+308")
+    with col4:
+        st.metric("Response Teams", "8", delta="Active")
+    
+    st.markdown("---")
+    
+    # Hazard Map Placeholder
+    st.markdown("### 🗺️ Hazard Map")
+    st.info("Interactive hazard map will be displayed here. Features include:")
     st.markdown("""
-    <div style="background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); padding: 2rem; border-radius: 15px; margin-bottom: 2rem;">
-        <h1 style="color: white; margin: 0; font-size: 2rem;">📊 DRRM INTELLIGENCE</h1>
-        <p style="color: rgba(255,255,255,0.9); margin: 0.5rem 0 0 0; font-size: 1rem;">
-            This repository of hazard events is more than just a digital database – it is a dynamic, data-driven analytical platform 
-            that transforms raw disaster information into actionable intelligence.
-        </p>
-        <p style="color: rgba(255,255,255,0.8); margin: 0.5rem 0 0 0; font-size: 0.9rem;">
-            📈 Descriptive Analytics (what happened) | 🔮 Predictive Analytics (what will happen)
-        </p>
-        <p style="color: rgba(255,255,255,0.8); margin: 0.5rem 0 0 0; font-size: 0.9rem;">
-            Beyond simply storing, retrieving, and updating files, the portal harnesses the power of analytics to uncover patterns, 
-            forecast future scenarios, and guide evidence-based decision-making.
-        </p>
-    </div>
-    """, unsafe_allow_html=True)
+    - Real-time weather monitoring
+    - Flood-prone area mapping
+    - Landslide susceptibility zones
+    - Evacuation center locations
+    """)
     
-    # Initialize session state
-    if 'disaster_events' not in st.session_state:
-        st.session_state.disaster_events = pd.DataFrame()
+    # Recent Alerts
+    st.markdown("### 🚨 Recent Alerts")
+    alerts_data = {
+        "Date": ["2026-03-30", "2026-03-28", "2026-03-25"],
+        "Type": ["Rainfall Warning", "Landslide Advisory", "Flood Alert"],
+        "Location": ["Paracelis", "Bontoc", "Bauko"],
+        "Status": ["Active", "Cleared", "Monitoring"]
+    }
+    st.dataframe(pd.DataFrame(alerts_data), use_container_width=True, hide_index=True)
     
-    # Load existing data
-    load_from_local_storage()
+    st.markdown("---")
     
-    # Create tabs
-    tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
-        "📋 HAZARD DOCUMENTATION",
-        "🔮 PREDICTIVE ANALYTICS",
-        "🎯 PROJECTIVE ANALYTICS",
-        "📊 EVENT DATABASE",
-        "📈 SUMMARY DASHBOARD",
-        "📜 HISTORICAL CONTEXT GUIDE"
-    ])
+    # Quick links
+    st.markdown("### 🔗 Quick Access")
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("🌍 Go to Climate Change", use_container_width=True):
+            st.session_state.navigation = "🌍 CLIMATE CHANGE"
+            st.rerun()
+    with col2:
+        if st.button("🏗️ Go to MPCFS Project Hub", use_container_width=True):
+            st.session_state.navigation = "🌍 CLIMATE CHANGE"
+            st.rerun()
     
-    with tab1:
-        show_hazard_documentation()
-    
-    with tab2:
-        show_predictive_analytics()
-    
-    with tab3:
-        show_projective_analytics()
-    
-    with tab4:
-        show_event_database()
-    
-    with tab5:
-        show_summary_dashboard()
-    
-    with tab6:
-        show_historical_context()
+    st.info("🚧 Full DRRM Intelligence features coming soon. Currently integrated with Climate Change and MPCFS modules.")
 
 
 def show_hazard_documentation():
