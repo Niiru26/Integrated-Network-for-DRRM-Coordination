@@ -6,6 +6,9 @@ import plotly.express as px
 import plotly.graph_objects as go
 import os
 import json
+import io
+import base64
+from datetime import datetime, date, timedelta
 from utils.supabase_client import auto_sync_add, auto_sync_delete, auto_sync_update, is_connected
 from utils.local_storage import save_file, delete_file, get_file_size, file_exists
 
@@ -777,21 +780,78 @@ def show_mpcfs_scurve_tracker(component="infrastructure"):
     
     st.markdown("---")
     
-    # ============================================================
-    # S-CURVE CHARTS (Auto-updated from work items)
+        # ============================================================
+    # S-CURVE CHART (3 Lines: Original, Revised, Actual)
     # ============================================================
     
     st.markdown("### 📈 S-Curve: Planned vs Actual Progress")
+    st.markdown("**📍 As of: March 31, 2026**")
     
-    # Generate weekly data (simplified for demo - will expand)
-    weeks = list(range(1, 53))
-    target_curve = [min(25.75 * w / 52, 25.75) for w in weeks]
-    actual_curve = [min(overall_progress * w / 52, overall_progress) for w in weeks]
+    # Get the original and revised plan data from session state
+    original_plan = st.session_state.get(f'{prefix}original_plan', [0] * 193)
+    revised_plan = st.session_state.get(f'{prefix}revised_plan', [0] * 193)
+    actual_progress = st.session_state.get(f'{prefix}actual', [0] * 193)
+    
+    # Create weeks (1-193)
+    weeks = list(range(1, 194))
+    
+    # Find current week index (where actual progress reaches current overall progress)
+    current_week_idx = 0
+    for i, val in enumerate(actual_progress):
+        if val >= overall_progress and overall_progress > 0:
+            current_week_idx = i
+            break
     
     fig = go.Figure()
-    fig.add_trace(go.Scatter(x=weeks, y=target_curve, mode='lines', name='Target Plan', line=dict(color='#3498db', width=2, dash='dash')))
-    fig.add_trace(go.Scatter(x=weeks, y=actual_curve, mode='lines+markers', name='Actual Progress', line=dict(color='#2ecc71', width=3), marker=dict(size=4)))
-    fig.update_layout(title="Project Progress S-Curve", xaxis_title="Week", yaxis_title="Cumulative Progress (%)", yaxis_range=[0, 100], height=400)
+    
+    # Original Plan (Blue, dashed)
+    fig.add_trace(go.Scatter(
+        x=weeks[:len(original_plan)], 
+        y=original_plan[:len(weeks)],
+        mode='lines', 
+        name='Original Plan',
+        line=dict(color='#3498db', width=2, dash='dash')
+    ))
+    
+    # Revised Plan (Orange, dotted)
+    fig.add_trace(go.Scatter(
+        x=weeks[:len(revised_plan)], 
+        y=revised_plan[:len(weeks)],
+        mode='lines', 
+        name='Revised Plan',
+        line=dict(color='#f39c12', width=2, dash='dot')
+    ))
+    
+    # Actual Progress (Green, solid)
+    fig.add_trace(go.Scatter(
+        x=weeks[:len(actual_progress)], 
+        y=actual_progress[:len(weeks)],
+        mode='lines+markers', 
+        name='Actual Progress',
+        line=dict(color='#2ecc71', width=3),
+        marker=dict(size=4)
+    ))
+    
+    # Add vertical line at current week
+    fig.add_vline(
+        x=current_week_idx + 1, 
+        line_dash="dash", 
+        line_color="red", 
+        line_width=2,
+        annotation_text=f"Current: Week {current_week_idx + 1} (Mar 31, 2026)", 
+        annotation_position="top right"
+    )
+    
+    fig.update_layout(
+        title="Project Progress S-Curve (Sept 2024 - May 2028)",
+        xaxis_title="Week Number",
+        yaxis_title="Cumulative Progress (%)",
+        yaxis_range=[0, 105],
+        height=500,
+        hovermode='x unified',
+        legend=dict(x=0.01, y=0.99, bgcolor='rgba(255,255,255,0.8)')
+    )
+    
     st.plotly_chart(fig, use_container_width=True)
     
     # ============================================================
@@ -1305,26 +1365,150 @@ def show_mpcfs_dashboard():
         st.markdown(achievement)
 
 def show_mpcfs_report_generator_updated():
-    """Generate detailed, downloadable, printable reports"""
+    """Generate PDF reports with issues tracking and S-Curve"""
     
     st.markdown("#### 📄 Report Generator")
-    st.caption("Generate detailed reports with cover letter for submission")
+    st.caption("Generate PDF reports with progress data, issues log, and S-Curve")
     
-    # Get real data
+    # Initialize issues log if not exists
+    if 'mpcfs_issues' not in st.session_state:
+        st.session_state.mpcfs_issues = []
+    
+    # Get current progress data
     infra_progress = st.session_state.get('infrastructure_progress', 25.75)
-    infra_target = st.session_state.get('infrastructure_target', 25.75)
-    
-    # Handle cost properly
-    infra_cost_raw = st.session_state.get('infrastructure_cost', 64_000_000)
-    if isinstance(infra_cost_raw, list):
-        infra_cost = next((x for x in reversed(infra_cost_raw) if x > 0), 64_000_000)
-    else:
-        infra_cost = infra_cost_raw
-    
-    physical_variance = infra_progress - infra_target
     total_budget = 249_040_900.00
+    total_cost = st.session_state.get('infrastructure_cost', 64_000_000)
+    if isinstance(total_cost, list):
+        total_cost = next((x for x in reversed(total_cost) if x > 0), 64_000_000)
     
-    # Report options
+    # ============================================================
+    # ISSUES MANAGEMENT SECTION
+    # ============================================================
+    
+    st.markdown("### ⚠️ Issues & Concerns Log")
+    st.caption("Track project issues, attach photos, and link to work items")
+    
+    # Add New Issue Form
+    with st.expander("➕ Add New Issue", expanded=False):
+        with st.form("add_issue_form"):
+            col1, col2 = st.columns(2)
+            with col1:
+                issue_title = st.text_input("Issue Title", placeholder="e.g., Weather delay at foundation site")
+                priority = st.selectbox("Priority", ["🔴 High", "🟡 Medium", "🟢 Low"])
+                work_item_link = st.selectbox("Linked Work Item", 
+                    ["None"] + [f"{item['no']} - {item['description'][:50]}" for item in st.session_state.get('infrastructure_work_items', [])],
+                    key="issue_work_item")
+            with col2:
+                reported_by = st.selectbox("Reported By", ["Project Engineer", "Finance Officer", "Project Manager", "Other"])
+                issue_date = st.date_input("Date Reported", datetime.now().date())
+                status = st.selectbox("Status", ["Open", "In Progress", "Resolved", "Closed"])
+            
+            issue_description = st.text_area("Description", placeholder="Detailed description of the issue...")
+            action_taken = st.text_area("Action Taken / Resolution", placeholder="What has been done to address this?")
+            
+            # Photo upload
+            issue_photo = st.file_uploader("Attach Photo", type=['jpg', 'jpeg', 'png', 'gif'], key="issue_photo")
+            
+            submitted = st.form_submit_button("💾 Save Issue", use_container_width=True)
+            
+            if submitted and issue_title:
+                new_issue = {
+                    "id": int(datetime.now().timestamp() * 1000),
+                    "title": issue_title,
+                    "description": issue_description,
+                    "priority": priority,
+                    "work_item": work_item_link,
+                    "reported_by": reported_by,
+                    "date": issue_date.isoformat(),
+                    "status": status,
+                    "action_taken": action_taken,
+                    "photo": issue_photo.name if issue_photo else None,
+                    "created_at": datetime.now().isoformat()
+                }
+                
+                # Save photo if uploaded
+                if issue_photo:
+                    os.makedirs("mpcfs_issues", exist_ok=True)
+                    with open(f"mpcfs_issues/{issue_photo.name}", "wb") as f:
+                        f.write(issue_photo.getbuffer())
+                
+                st.session_state.mpcfs_issues.append(new_issue)
+                st.success(f"✅ Issue '{issue_title}' added!")
+                st.rerun()
+    
+    # Display Issues Table
+    if st.session_state.mpcfs_issues:
+        st.markdown("#### 📋 Current Issues Log")
+        
+        # Filter options
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            status_filter = st.selectbox("Filter by Status", ["All", "Open", "In Progress", "Resolved", "Closed"])
+        with col2:
+            priority_filter = st.selectbox("Filter by Priority", ["All", "🔴 High", "🟡 Medium", "🟢 Low"])
+        with col3:
+            show_resolved = st.checkbox("Show Resolved Issues", value=True)
+        
+        # Filter issues
+        filtered_issues = st.session_state.mpcfs_issues
+        if status_filter != "All":
+            filtered_issues = [i for i in filtered_issues if i['status'] == status_filter]
+        if priority_filter != "All":
+            filtered_issues = [i for i in filtered_issues if i['priority'] == priority_filter]
+        if not show_resolved:
+            filtered_issues = [i for i in filtered_issues if i['status'] not in ["Resolved", "Closed"]]
+        
+        # Display as cards
+        for issue in filtered_issues:
+            with st.container():
+                col1, col2, col3, col4 = st.columns([3, 1, 1, 1])
+                with col1:
+                    st.markdown(f"**{issue['title']}**")
+                    st.caption(f"{issue['description'][:100]}..." if len(issue['description']) > 100 else issue['description'])
+                with col2:
+                    st.markdown(f"**Priority:** {issue['priority']}")
+                    st.markdown(f"**Status:** {issue['status']}")
+                with col3:
+                    st.markdown(f"**Reported:** {issue['reported_by']}")
+                    st.markdown(f"**Date:** {issue['date'][:10]}")
+                with col4:
+                    if issue.get('photo'):
+                        st.markdown("📷 Photo attached")
+                    if st.button(f"Update", key=f"update_{issue['id']}"):
+                        st.session_state.selected_issue = issue
+                        st.rerun()
+                st.markdown("---")
+        
+        # Update Issue Status (if selected)
+        if 'selected_issue' in st.session_state:
+            issue = st.session_state.selected_issue
+            st.markdown(f"#### Update Issue: {issue['title']}")
+            col1, col2 = st.columns(2)
+            with col1:
+                new_status = st.selectbox("New Status", ["Open", "In Progress", "Resolved", "Closed"], index=["Open", "In Progress", "Resolved", "Closed"].index(issue['status']))
+            with col2:
+                new_action = st.text_area("Update Action Taken", value=issue.get('action_taken', ''))
+            
+            if st.button("Save Update"):
+                for i, iss in enumerate(st.session_state.mpcfs_issues):
+                    if iss['id'] == issue['id']:
+                        st.session_state.mpcfs_issues[i]['status'] = new_status
+                        st.session_state.mpcfs_issues[i]['action_taken'] = new_action
+                        break
+                del st.session_state.selected_issue
+                st.success("✅ Issue updated!")
+                st.rerun()
+    else:
+        st.info("No issues logged yet. Click 'Add New Issue' to get started.")
+    
+    st.markdown("---")
+    
+    # ============================================================
+    # REPORT GENERATION
+    # ============================================================
+    
+    st.markdown("### 📄 Generate PDF Report")
+    
     col1, col2 = st.columns(2)
     with col1:
         report_type = st.selectbox("Select Report Type", [
@@ -1342,17 +1526,19 @@ def show_mpcfs_report_generator_updated():
             "April - June 2025", 
             "July - September 2025",
             "October - December 2025",
-            "Annual Report 2025"
+            "Annual Report 2025",
+            "January - March 2026 (Current)"
         ])
     
-    # Additional options
-    include_charts = st.checkbox("Include Charts in Report", value=True)
-    include_detailed_table = st.checkbox("Include Detailed Variance Table", value=True)
+    include_issues = st.checkbox("Include Open Issues in Report", value=True)
+    include_chart = st.checkbox("Include S-Curve Chart", value=True)
     
     # Generate Report Button
-    if st.button("📄 Generate Report", type="primary", use_container_width=True):
+    if st.button("📄 Generate Report Preview", type="primary", use_container_width=True):
         
-        # Create HTML report content
+        # Create HTML content for preview and PDF
+        open_issues = [i for i in st.session_state.mpcfs_issues if i['status'] not in ["Resolved", "Closed"]]
+        
         report_html = f"""
         <!DOCTYPE html>
         <html>
@@ -1364,6 +1550,7 @@ def show_mpcfs_report_generator_updated():
                     font-family: 'Segoe UI', Arial, sans-serif;
                     margin: 40px;
                     color: #333;
+                    line-height: 1.6;
                 }}
                 .header {{
                     text-align: center;
@@ -1372,13 +1559,20 @@ def show_mpcfs_report_generator_updated():
                     margin-bottom: 30px;
                 }}
                 .title {{
-                    font-size: 24px;
+                    font-size: 28px;
                     font-weight: bold;
                     color: #2c3e50;
                 }}
                 .subtitle {{
                     font-size: 14px;
                     color: #7f8c8d;
+                    margin-top: 5px;
+                }}
+                .as-of {{
+                    font-size: 12px;
+                    color: #e74c3c;
+                    margin-top: 10px;
+                    font-weight: bold;
                 }}
                 .section {{
                     margin-bottom: 30px;
@@ -1415,25 +1609,34 @@ def show_mpcfs_report_generator_updated():
                     color: #7f8c8d;
                     margin-top: 5px;
                 }}
-                .variance-positive {{
-                    color: #27ae60;
-                }}
-                .variance-negative {{
-                    color: #e74c3c;
-                }}
-                table {{
+                .table {{
                     width: 100%;
                     border-collapse: collapse;
                     margin-bottom: 20px;
                 }}
-                th, td {{
+                .table th, .table td {{
                     border: 1px solid #ddd;
                     padding: 10px;
                     text-align: left;
                 }}
-                th {{
+                .table th {{
                     background-color: #2ecc71;
                     color: white;
+                }}
+                .issue-high {{
+                    border-left: 4px solid #e74c3c;
+                    padding-left: 10px;
+                    margin-bottom: 10px;
+                }}
+                .issue-medium {{
+                    border-left: 4px solid #f39c12;
+                    padding-left: 10px;
+                    margin-bottom: 10px;
+                }}
+                .issue-low {{
+                    border-left: 4px solid #27ae60;
+                    padding-left: 10px;
+                    margin-bottom: 10px;
                 }}
                 .footer {{
                     text-align: center;
@@ -1443,13 +1646,9 @@ def show_mpcfs_report_generator_updated():
                     font-size: 10px;
                     color: #7f8c8d;
                 }}
-                @media print {{
-                    body {{
-                        margin: 20px;
-                    }}
-                    .no-print {{
-                        display: none;
-                    }}
+                .chart-container {{
+                    text-align: center;
+                    margin: 20px 0;
                 }}
             </style>
         </head>
@@ -1458,6 +1657,7 @@ def show_mpcfs_report_generator_updated():
                 <div class="title">MOUNTAIN PROVINCE CLIMATE FIELD SCHOOL (MPCFS)</div>
                 <div class="subtitle">{report_type} | {report_period}</div>
                 <div class="subtitle">Bacarri, Paracelis, Mountain Province</div>
+                <div class="as-of">📍 As of: March 31, 2026</div>
                 <div class="subtitle">Generated: {datetime.now().strftime('%B %d, %Y at %I:%M %p')}</div>
             </div>
             
@@ -1469,96 +1669,66 @@ def show_mpcfs_report_generator_updated():
                         <div class="kpi-label">Infrastructure Progress</div>
                     </div>
                     <div class="kpi-card">
-                        <div class="kpi-value">{infra_target:.2f}%</div>
-                        <div class="kpi-label">Target Progress</div>
+                        <div class="kpi-value">₱{total_cost:,.2f}</div>
+                        <div class="kpi-label">Cost Utilized</div>
                     </div>
                     <div class="kpi-card">
-                        <div class="kpi-value {'variance-positive' if physical_variance >= 0 else 'variance-negative'}">{physical_variance:+.2f}%</div>
-                        <div class="kpi-label">Schedule Variance</div>
+                        <div class="kpi-value">{len(open_issues)}</div>
+                        <div class="kpi-label">Open Issues</div>
                     </div>
                 </div>
             </div>
             
             <div class="section">
                 <div class="section-title">💰 Financial Summary</div>
-                <table>
+                <table class="table">
                     <tr><th>Item</th><th>Amount (₱)</th></tr>
                     <tr><td>Total Contract Amount</td><td>{total_budget:,.2f}</td></tr>
-                    <tr><td>Actual Cost Utilized</td><td>{infra_cost:,.2f}</td></tr>
-                    <tr><td>Remaining Budget</td><td>{total_budget - infra_cost:,.2f}</td></tr>
-                    <tr><td>Financial Utilization Rate</td><td>{(infra_cost/total_budget)*100:.1f}%</td></tr>
+                    <tr><td>Actual Cost Utilized</td><td>{total_cost:,.2f}</td></tr>
+                    <tr><td>Remaining Budget</td><td>{total_budget - total_cost:,.2f}</td></tr>
+                    <tr><td>Financial Utilization Rate</td><td>{(total_cost/total_budget)*100:.1f}%</td></tr>
                 </table>
             </div>
         """
         
-        if include_charts:
+        if include_chart:
             report_html += """
             <div class="section">
-                <div class="section-title">📈 Progress Chart</div>
-                <p><em>Charts will be embedded here in the full version</em></p>
+                <div class="section-title">📈 S-Curve Chart</div>
+                <div class="chart-container">
+                    <p><em>S-Curve chart will be embedded here showing Original Plan, Revised Plan, and Actual Progress</em></p>
+                    <p><strong>Original Plan:</strong> Blue dashed line<br>
+                    <strong>Revised Plan:</strong> Orange dotted line<br>
+                    <strong>Actual Progress:</strong> Green solid line (Current: {:.2f}%)</p>
+                </div>
             </div>
-            """
+            """.format(infra_progress)
         
-        if include_detailed_table:
+        if include_issues and open_issues:
             report_html += """
             <div class="section">
-                <div class="section-title">📋 Detailed Progress Summary</div>
-                <table>
-                    <tr>
-                        <th>Component</th>
-                        <th>Progress (%)</th>
-                        <th>Target (%)</th>
-                        <th>Variance (%)</th>
-                        <th>Status</th>
-                    </tr>
-                    <tr>
-                        <td>Infrastructure</td>
-                        <td>{:.2f}%</td>
-                        <td>{:.2f}%</td>
-                        <td class="{}">{:+.2f}%</td>
-                        <td>{}</td>
-                    </tr>
-                    <tr>
-                        <td>Capability Building</td>
-                        <td colspan="4" style="text-align:center;">⏳ Data Pending Upload</td>
-                    </tr>
-                    <tr>
-                        <td>Research & Extension</td>
-                        <td colspan="4" style="text-align:center;">⏳ Data Pending Upload</td>
-                    </tr>
-                </table>
-            </div>
-            """.format(
-                infra_progress, infra_target,
-                'variance-positive' if physical_variance >= 0 else 'variance-negative',
-                physical_variance,
-                "✅ On Track" if physical_variance >= -2 else "⚠️ Behind Schedule"
-            )
+                <div class="section-title">⚠️ Open Issues & Concerns</div>
+            """
+            for issue in open_issues:
+                priority_class = "issue-high" if "High" in issue['priority'] else ("issue-medium" if "Medium" in issue['priority'] else "issue-low")
+                report_html += f"""
+                <div class="{priority_class}">
+                    <strong>{issue['title']}</strong><br>
+                    <strong>Priority:</strong> {issue['priority']} | <strong>Status:</strong> {issue['status']}<br>
+                    <strong>Reported:</strong> {issue['reported_by']} on {issue['date'][:10]}<br>
+                    <strong>Description:</strong> {issue['description']}<br>
+                    <strong>Action Taken:</strong> {issue.get('action_taken', 'None yet')}
+                </div>
+                """
+            report_html += "</div>"
         
         report_html += f"""
             <div class="section">
                 <div class="section-title">🎯 Key Accomplishments</div>
                 <ul>
-                    <li>Infrastructure component at {infra_progress:.2f}% completion</li>
-                    <li>Site development and foundation works in progress</li>
-                    <li>Project management systems established</li>
-                </ul>
-            </div>
-            
-            <div class="section">
-                <div class="section-title">⚠️ Issues and Concerns</div>
-                <ul>
-                    <li>Schedule variance: {physical_variance:+.2f}%</li>
-                    <li>Weather-related delays affecting construction</li>
-                </ul>
-            </div>
-            
-            <div class="section">
-                <div class="section-title">📅 Next Steps</div>
-                <ul>
-                    <li>Complete remaining infrastructure works</li>
-                    <li>Activate Capability Building component</li>
-                    <li>Establish research protocols</li>
+                    <li>Infrastructure component at {infra_progress:.2f}% completion as of March 31, 2026</li>
+                    <li>Foundation and structural works progressing</li>
+                    <li>Project management systems fully operational</li>
                 </ul>
             </div>
             
@@ -1573,16 +1743,16 @@ def show_mpcfs_report_generator_updated():
         # Display preview
         st.markdown("---")
         st.markdown("### 📋 Report Preview")
-        
-        # Show HTML preview
         st.components.v1.html(report_html, height=600, scrolling=True)
         
-        # Download buttons
-        col1, col2, col3 = st.columns(3)
+        # Download as PDF (via HTML to PDF conversion)
+        st.markdown("### 📥 Download Report")
         
+        col1, col2 = st.columns(2)
         with col1:
+            # Download as HTML (then user can print to PDF)
             st.download_button(
-                label="📥 Download as HTML",
+                label="📄 Download as HTML (Print to PDF)",
                 data=report_html,
                 file_name=f"MPCFS_{report_type.replace(' ', '_')}_{datetime.now().strftime('%Y%m%d')}.html",
                 mime="text/html",
@@ -1590,39 +1760,9 @@ def show_mpcfs_report_generator_updated():
             )
         
         with col2:
-            # Convert to PDF ready (instruction)
-            st.info("💡 Tip: Use browser's 'Print' (Ctrl+P) then 'Save as PDF' for PDF format")
+            st.info("💡 **How to save as PDF:**\n1. Click 'Download as HTML'\n2. Open the HTML file in browser\n3. Press Ctrl+P (or Cmd+P on Mac)\n4. Select 'Save as PDF'\n5. Click Save")
         
-        with col3:
-            st.success(f"✅ Report generated successfully!")
-    
-    # Help section
-    with st.expander("ℹ️ How to Use Reports"):
-        st.markdown("""
-        ### 📄 Report Features:
-        
-        1. **Download as HTML** - Click the download button to save the report
-        
-        2. **Save as PDF**:
-           - After generating the report, click the download button
-           - Open the HTML file in any browser
-           - Press `Ctrl+P` (Windows) or `Cmd+P` (Mac)
-           - Select "Save as PDF" as printer
-           - Click Save
-        
-        3. **Print Directly**:
-           - Generate the report
-           - Click download and open in browser
-           - Press `Ctrl+P` and send to printer
-        
-        ### 📊 Report Types:
-        - **Progress Report** - Overall project status
-        - **Financial Report** - Budget utilization
-        - **Accomplishment Report** - Completed activities
-        - **Liquidation Report** - Financial accountability
-        - **M&E Report** - Monitoring and evaluation
-        - **Consolidated Report** - All components combined
-        """)
+        st.success(f"✅ Report generated successfully with {len(open_issues)} open issues included!")
 
 def show_cca_related_modules():
     """Show connections to other modules"""
