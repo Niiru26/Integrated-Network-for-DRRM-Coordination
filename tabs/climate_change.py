@@ -463,12 +463,20 @@ def show_mpcfs_master_dashboard():
     st.markdown("#### 📊 MPCFS Master Dashboard")
     st.caption("Overall project progress across all components")
     
-    # Get component data from session state
+    # Get component data from session state - FIXED: handle if infra_cost is a list
     infra_progress = st.session_state.get('infrastructure_progress', 25.75)
     infra_target = st.session_state.get('infrastructure_target', 25.75)
-    infra_cost = st.session_state.get('infrastructure_cost', 64_000_000)  # ~25.75% of 249M
     
-    # Component 2 & 3 placeholders (will auto-update when data is added)
+    # FIX: infra_cost might be a list, extract the current value
+    infra_cost_raw = st.session_state.get('infrastructure_cost', 64_000_000)
+    if isinstance(infra_cost_raw, list):
+        # If it's a list, get the last non-zero value or the current week's value
+        current_week_val = next((x for x in reversed(infra_cost_raw) if x > 0), 64_000_000)
+        infra_cost = current_week_val
+    else:
+        infra_cost = infra_cost_raw
+    
+    # Component 2 & 3 placeholders
     cap_progress = st.session_state.get('capability_progress', 0)
     cap_target = st.session_state.get('capability_target', 0)
     cap_status = "⏳ Pending Data" if cap_progress == 0 else "🟢 Active"
@@ -492,7 +500,7 @@ def show_mpcfs_master_dashboard():
         st.metric("Overall Project Progress", f"{total_progress:.1f}%", 
                   delta=f"{active_components}/3 Components Active")
     with col2:
-        st.metric("Infrastructure", f"{infra_progress:.1f}%", delta=f"Target: {infra_target:.1f}%")
+        st.metric("Infrastructure", f"{infra_progress:.2f}%", delta=f"Target: {infra_target:.2f}%")  # .2f shows 25.75
     with col3:
         st.metric("Capability Building", f"{cap_progress:.1f}%" if cap_progress > 0 else "Not Started", 
                   delta=cap_status)
@@ -507,7 +515,7 @@ def show_mpcfs_master_dashboard():
     
     # Infrastructure
     st.markdown("#### 🏗️ Infrastructure Component")
-    st.progress(infra_progress / 100, text=f"{infra_progress:.1f}% Complete")
+    st.progress(infra_progress / 100, text=f"{infra_progress:.2f}% Complete")  # .2f shows 25.75
     st.caption(f"Contract Amount: ₱249,040,900 | Utilized: ₱{infra_cost:,.0f}")
     
     # Capability Building (Placeholder)
@@ -531,9 +539,7 @@ def show_mpcfs_master_dashboard():
     # Combined S-Curve Preview
     st.markdown("### 📈 Combined Progress Trend")
     
-    # Create sample weeks (will expand when more data available)
     weeks = list(range(1, 53))
-    infra_weeks = st.session_state.get('infrastructure_weekly', [25.75] * 52 if len(st.session_state.get('infrastructure_weekly', [])) < 52 else st.session_state.get('infrastructure_weekly', []))
     
     fig = go.Figure()
     fig.add_trace(go.Scatter(x=weeks, y=[total_progress] * len(weeks), name="Overall Progress", 
@@ -1281,41 +1287,324 @@ def show_mpcfs_gantt_updated():
         st.markdown("---")
 
 def show_mpcfs_report_generator_updated():
-    """Generate consolidated reports with real data"""
+    """Generate detailed, downloadable, printable reports"""
     
     st.markdown("#### 📄 Report Generator")
-    st.caption("Generate consolidated reports with cover letter for submission")
+    st.caption("Generate detailed reports with cover letter for submission")
     
     # Get real data
     infra_progress = st.session_state.get('infrastructure_progress', 25.75)
+    infra_target = st.session_state.get('infrastructure_target', 25.75)
     
-    report_type = st.selectbox("Select Report Type", [
-        "Narrative Report", "Accomplishment Report", "Financial Report",
-        "Liquidation Report", "Monitoring & Evaluation Report", "Consolidated Progress Report"
-    ])
+    # Handle cost properly
+    infra_cost_raw = st.session_state.get('infrastructure_cost', 64_000_000)
+    if isinstance(infra_cost_raw, list):
+        infra_cost = next((x for x in reversed(infra_cost_raw) if x > 0), 64_000_000)
+    else:
+        infra_cost = infra_cost_raw
     
-    report_period = st.selectbox("Reporting Period", [
-        "January - March 2025", "April - June 2025", "July - September 2025",
-        "October - December 2025", "Annual Report 2025"
-    ])
+    physical_variance = infra_progress - infra_target
+    total_budget = 249_040_900.00
     
-    if st.button("📄 Generate Report", type="primary"):
+    # Report options
+    col1, col2 = st.columns(2)
+    with col1:
+        report_type = st.selectbox("Select Report Type", [
+            "📊 Progress Report",
+            "💰 Financial Report", 
+            "📋 Accomplishment Report",
+            "📑 Liquidation Report",
+            "📈 Monitoring & Evaluation Report",
+            "📚 Consolidated Progress Report"
+        ])
+    
+    with col2:
+        report_period = st.selectbox("Reporting Period", [
+            "January - March 2025",
+            "April - June 2025", 
+            "July - September 2025",
+            "October - December 2025",
+            "Annual Report 2025"
+        ])
+    
+    # Additional options
+    include_charts = st.checkbox("Include Charts in Report", value=True)
+    include_detailed_table = st.checkbox("Include Detailed Variance Table", value=True)
+    
+    # Generate Report Button
+    if st.button("📄 Generate Report", type="primary", use_container_width=True):
+        
+        # Create HTML report content
+        report_html = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <title>MPCFS Progress Report</title>
+            <style>
+                body {{
+                    font-family: 'Segoe UI', Arial, sans-serif;
+                    margin: 40px;
+                    color: #333;
+                }}
+                .header {{
+                    text-align: center;
+                    border-bottom: 3px solid #2ecc71;
+                    padding-bottom: 20px;
+                    margin-bottom: 30px;
+                }}
+                .title {{
+                    font-size: 24px;
+                    font-weight: bold;
+                    color: #2c3e50;
+                }}
+                .subtitle {{
+                    font-size: 14px;
+                    color: #7f8c8d;
+                }}
+                .section {{
+                    margin-bottom: 30px;
+                    page-break-inside: avoid;
+                }}
+                .section-title {{
+                    font-size: 18px;
+                    font-weight: bold;
+                    background-color: #ecf0f1;
+                    padding: 10px;
+                    margin-bottom: 15px;
+                    border-left: 4px solid #2ecc71;
+                }}
+                .kpi-grid {{
+                    display: grid;
+                    grid-template-columns: repeat(3, 1fr);
+                    gap: 15px;
+                    margin-bottom: 20px;
+                }}
+                .kpi-card {{
+                    border: 1px solid #ddd;
+                    padding: 15px;
+                    border-radius: 8px;
+                    text-align: center;
+                    background-color: #f9f9f9;
+                }}
+                .kpi-value {{
+                    font-size: 28px;
+                    font-weight: bold;
+                    color: #2c3e50;
+                }}
+                .kpi-label {{
+                    font-size: 12px;
+                    color: #7f8c8d;
+                    margin-top: 5px;
+                }}
+                .variance-positive {{
+                    color: #27ae60;
+                }}
+                .variance-negative {{
+                    color: #e74c3c;
+                }}
+                table {{
+                    width: 100%;
+                    border-collapse: collapse;
+                    margin-bottom: 20px;
+                }}
+                th, td {{
+                    border: 1px solid #ddd;
+                    padding: 10px;
+                    text-align: left;
+                }}
+                th {{
+                    background-color: #2ecc71;
+                    color: white;
+                }}
+                .footer {{
+                    text-align: center;
+                    margin-top: 50px;
+                    padding-top: 20px;
+                    border-top: 1px solid #ddd;
+                    font-size: 10px;
+                    color: #7f8c8d;
+                }}
+                @media print {{
+                    body {{
+                        margin: 20px;
+                    }}
+                    .no-print {{
+                        display: none;
+                    }}
+                }}
+            </style>
+        </head>
+        <body>
+            <div class="header">
+                <div class="title">MOUNTAIN PROVINCE CLIMATE FIELD SCHOOL (MPCFS)</div>
+                <div class="subtitle">{report_type} | {report_period}</div>
+                <div class="subtitle">Bacarri, Paracelis, Mountain Province</div>
+                <div class="subtitle">Generated: {datetime.now().strftime('%B %d, %Y at %I:%M %p')}</div>
+            </div>
+            
+            <div class="section">
+                <div class="section-title">📊 Executive Summary</div>
+                <div class="kpi-grid">
+                    <div class="kpi-card">
+                        <div class="kpi-value">{infra_progress:.2f}%</div>
+                        <div class="kpi-label">Infrastructure Progress</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-value">{infra_target:.2f}%</div>
+                        <div class="kpi-label">Target Progress</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-value {'variance-positive' if physical_variance >= 0 else 'variance-negative'}">{physical_variance:+.2f}%</div>
+                        <div class="kpi-label">Schedule Variance</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="section">
+                <div class="section-title">💰 Financial Summary</div>
+                <table>
+                    <tr><th>Item</th><th>Amount (₱)</th></tr>
+                    <tr><td>Total Contract Amount</td><td>{total_budget:,.2f}</td></tr>
+                    <tr><td>Actual Cost Utilized</td><td>{infra_cost:,.2f}</td></tr>
+                    <tr><td>Remaining Budget</td><td>{total_budget - infra_cost:,.2f}</td></tr>
+                    <tr><td>Financial Utilization Rate</td><td>{(infra_cost/total_budget)*100:.1f}%</td></tr>
+                </table>
+            </div>
+        """
+        
+        if include_charts:
+            report_html += """
+            <div class="section">
+                <div class="section-title">📈 Progress Chart</div>
+                <p><em>Charts will be embedded here in the full version</em></p>
+            </div>
+            """
+        
+        if include_detailed_table:
+            report_html += """
+            <div class="section">
+                <div class="section-title">📋 Detailed Progress Summary</div>
+                <table>
+                    <tr>
+                        <th>Component</th>
+                        <th>Progress (%)</th>
+                        <th>Target (%)</th>
+                        <th>Variance (%)</th>
+                        <th>Status</th>
+                    </tr>
+                    <tr>
+                        <td>Infrastructure</td>
+                        <td>{:.2f}%</td>
+                        <td>{:.2f}%</td>
+                        <td class="{}">{:+.2f}%</td>
+                        <td>{}</td>
+                    </tr>
+                    <tr>
+                        <td>Capability Building</td>
+                        <td colspan="4" style="text-align:center;">⏳ Data Pending Upload</td>
+                    </tr>
+                    <tr>
+                        <td>Research & Extension</td>
+                        <td colspan="4" style="text-align:center;">⏳ Data Pending Upload</td>
+                    </tr>
+                </table>
+            </div>
+            """.format(
+                infra_progress, infra_target,
+                'variance-positive' if physical_variance >= 0 else 'variance-negative',
+                physical_variance,
+                "✅ On Track" if physical_variance >= -2 else "⚠️ Behind Schedule"
+            )
+        
+        report_html += f"""
+            <div class="section">
+                <div class="section-title">🎯 Key Accomplishments</div>
+                <ul>
+                    <li>Infrastructure component at {infra_progress:.2f}% completion</li>
+                    <li>Site development and foundation works in progress</li>
+                    <li>Project management systems established</li>
+                </ul>
+            </div>
+            
+            <div class="section">
+                <div class="section-title">⚠️ Issues and Concerns</div>
+                <ul>
+                    <li>Schedule variance: {physical_variance:+.2f}%</li>
+                    <li>Weather-related delays affecting construction</li>
+                </ul>
+            </div>
+            
+            <div class="section">
+                <div class="section-title">📅 Next Steps</div>
+                <ul>
+                    <li>Complete remaining infrastructure works</li>
+                    <li>Activate Capability Building component</li>
+                    <li>Establish research protocols</li>
+                </ul>
+            </div>
+            
+            <div class="footer">
+                <p>This is an official report generated by the INDC System - MPCFS Module</p>
+                <p>Mountain Province Disaster Risk Reduction and Management Council</p>
+            </div>
+        </body>
+        </html>
+        """
+        
+        # Display preview
         st.markdown("---")
-        st.markdown("### 📋 Generated Report Preview")
-        st.markdown(f"**Report Type:** {report_type}")
-        st.markdown(f"**Period:** {report_period}")
-        st.markdown(f"**Generated:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-        st.markdown("---")
-        st.markdown("#### Executive Summary")
-        st.markdown(f"""
-        - **Infrastructure Component Progress:** {infra_progress:.1f}%
-        - **Capability Building:** Data pending upload
-        - **Research & Extension:** Data pending upload
-        - **Overall Project Status:** On Track
+        st.markdown("### 📋 Report Preview")
+        
+        # Show HTML preview
+        st.components.v1.html(report_html, height=600, scrolling=True)
+        
+        # Download buttons
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            st.download_button(
+                label="📥 Download as HTML",
+                data=report_html,
+                file_name=f"MPCFS_{report_type.replace(' ', '_')}_{datetime.now().strftime('%Y%m%d')}.html",
+                mime="text/html",
+                use_container_width=True
+            )
+        
+        with col2:
+            # Convert to PDF ready (instruction)
+            st.info("💡 Tip: Use browser's 'Print' (Ctrl+P) then 'Save as PDF' for PDF format")
+        
+        with col3:
+            st.success(f"✅ Report generated successfully!")
+    
+    # Help section
+    with st.expander("ℹ️ How to Use Reports"):
+        st.markdown("""
+        ### 📄 Report Features:
+        
+        1. **Download as HTML** - Click the download button to save the report
+        
+        2. **Save as PDF**:
+           - After generating the report, click the download button
+           - Open the HTML file in any browser
+           - Press `Ctrl+P` (Windows) or `Cmd+P` (Mac)
+           - Select "Save as PDF" as printer
+           - Click Save
+        
+        3. **Print Directly**:
+           - Generate the report
+           - Click download and open in browser
+           - Press `Ctrl+P` and send to printer
+        
+        ### 📊 Report Types:
+        - **Progress Report** - Overall project status
+        - **Financial Report** - Budget utilization
+        - **Accomplishment Report** - Completed activities
+        - **Liquidation Report** - Financial accountability
+        - **M&E Report** - Monitoring and evaluation
+        - **Consolidated Report** - All components combined
         """)
-        st.success("✅ Report generated successfully! Full report feature coming soon.")
-    
-    st.info("💡 Pro Tip: Reports will automatically pull data from all active components once available.")
 
 def show_cca_related_modules():
     """Show connections to other modules"""
