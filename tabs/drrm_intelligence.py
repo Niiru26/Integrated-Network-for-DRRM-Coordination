@@ -289,7 +289,10 @@ def generate_print_content(event):
 # =============================================================================
 
 def show():
-    """Display DRRM Intelligence Tab with UNDRR Classification"""
+    """Display DRRM Intelligence tab"""
+    st.markdown("# 📊 DRRM Intelligence")
+    st.caption("Disaster Risk Reduction and Management Intelligence Dashboard")
+    st.info("DRRM Intelligence module - Coming soon with full features.")
     
     # Professional Header
     st.markdown("""

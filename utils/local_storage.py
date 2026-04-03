@@ -1,8 +1,22 @@
 # utils/local_storage.py
 import streamlit as st
 import os
+import json
 from datetime import datetime
 from supabase import create_client
+
+def save_file(file_path, content):
+    # implementation...
+    
+def delete_file(file_path):
+    # implementation...
+    
+def get_file_size(file_path):
+    # implementation...
+    
+def file_exists(file_path):
+    # implementation...
+
 
 def get_supabase_client():
     """Get Supabase client from session state"""
