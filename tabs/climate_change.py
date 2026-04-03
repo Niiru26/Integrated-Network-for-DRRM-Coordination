@@ -574,7 +574,7 @@ def show_mpcfs_master_dashboard():
         st.markdown("- Establish research protocols")
         
 def show_mpcfs_scurve_tracker(component="infrastructure"):
-    """MPCFS Infrastructure S-Curve Tracker - CORRECTED CALCULATIONS"""
+    """MPCFS Infrastructure S-Curve Tracker - COMPLETE with Actual S-Curve"""
     
     import copy
     import json
@@ -596,13 +596,12 @@ def show_mpcfs_scurve_tracker(component="infrastructure"):
     prefix = f"{component}_"
     
     # ============================================================
-    # WORK ITEMS DATA with CORRECT contract amounts from Excel
+    # WORK ITEMS DATA with contract amounts
     # ============================================================
     
     if f'{prefix}work_items' not in st.session_state:
         work_items = [
-            # From ACTUAL & PLANNED sheet - with correct amounts
-            {"no": "A.1.1 (8)", "description": "Provision of Field Office for the Engineer (Rental Basis)", "category": "Civil Works", "contract_amount": 1_360_800, "planned_amount": 1_360_800, "actual_amount": 353_808},
+            {"no": "A.1.1 (8)", "description": "Provision of Field Office for the Engineer", "category": "Civil Works", "contract_amount": 1_360_800, "planned_amount": 1_360_800, "actual_amount": 353_808},
             {"no": "A.1.2 (2)", "description": "Provision of 4x4 Pick Up Type Service Vehicle", "category": "Civil Works", "contract_amount": 2_289_000, "planned_amount": 2_289_000, "actual_amount": 595_140},
             {"no": "B.3", "description": "Permits and Clearances", "category": "Civil Works", "contract_amount": 315_000, "planned_amount": 315_000, "actual_amount": 315_000},
             {"no": "B.5", "description": "Project Billboard and Signboard", "category": "Civil Works", "contract_amount": 10_500, "planned_amount": 10_500, "actual_amount": 2_783},
@@ -611,37 +610,30 @@ def show_mpcfs_scurve_tracker(component="infrastructure"):
             {"no": "B.13", "description": "Additional Geotechnical Investigation", "category": "Civil Works", "contract_amount": 315_000, "planned_amount": 315_000, "actual_amount": 315_000},
             {"no": "B.25", "description": "Detailed Engineering and Architectural Design", "category": "Civil Works", "contract_amount": 424_499, "planned_amount": 424_499, "actual_amount": 424_499},
             {"no": "101(1)", "description": "Removal of Structures and Obstructions", "category": "Civil Works", "contract_amount": 9_419, "planned_amount": 9_419, "actual_amount": 9_419},
-            {"no": "105(1)", "description": "Subgrade Preparation (Common Material)", "category": "Civil Works", "contract_amount": 100_708, "planned_amount": 100_708, "actual_amount": 0},
-            {"no": "200", "description": "Aggregate Subbase Course", "category": "Civil Works", "contract_amount": 537_793, "planned_amount": 537_793, "actual_amount": 0},
-            {"no": "311(1)a.5", "description": "PCC Pavement - Conventional Method", "category": "Civil Works", "contract_amount": 2_042_941, "planned_amount": 2_042_941, "actual_amount": 0},
             {"no": "404", "description": "Reinforcing Steel Bar, Grade 40", "category": "Structural", "contract_amount": 3_529_569, "planned_amount": 796_999, "actual_amount": 2_834_045},
             {"no": "405", "description": "Structural Concrete Class A", "category": "Structural", "contract_amount": 4_908_408, "planned_amount": 475_053, "actual_amount": 1_740_048},
-            {"no": "803(1)a", "description": "Structure Excavation (Common Soil)", "category": "Structural", "contract_amount": 1_562_882, "planned_amount": 1_562_882, "actual_amount": 1_357_263},
-            {"no": "804(1)a", "description": "Embankment from Structure Excavation", "category": "Structural", "contract_amount": 443_158, "planned_amount": 419_833, "actual_amount": 411_315},
+            {"no": "803(1)a", "description": "Structure Excavation", "category": "Structural", "contract_amount": 1_562_882, "planned_amount": 1_562_882, "actual_amount": 1_357_263},
             {"no": "804(4)", "description": "Gravel Fill", "category": "Structural", "contract_amount": 1_572_897, "planned_amount": 1_572_897, "actual_amount": 1_336_224},
             {"no": "1706(1)", "description": "Overhaul", "category": "Structural", "contract_amount": 724_377, "planned_amount": 724_377, "actual_amount": 560_761},
-            {"no": "900(1)c2", "description": "Structural Concrete for Footing and Slab on Fill", "category": "Structural", "contract_amount": 4_259_204, "planned_amount": 3_293_796, "actual_amount": 3_561_496},
+            {"no": "900(1)c2", "description": "Structural Concrete for Footing", "category": "Structural", "contract_amount": 4_259_204, "planned_amount": 3_293_796, "actual_amount": 3_561_496},
             {"no": "900(1)", "description": "Structural Concrete for Columns, Beams", "category": "Structural", "contract_amount": 10_295_803, "planned_amount": 5_183_185, "actual_amount": 3_449_789},
-            {"no": "902(1) a", "description": "Reinforcing Steel for Concrete Structures", "category": "Structural", "contract_amount": 23_180_568, "planned_amount": 9_746_376, "actual_amount": 7_625_371},
+            {"no": "902(1) a", "description": "Reinforcing Steel", "category": "Structural", "contract_amount": 23_180_568, "planned_amount": 9_746_376, "actual_amount": 7_625_371},
             {"no": "903(1)", "description": "Formworks and Falseworks", "category": "Structural", "contract_amount": 3_163_252, "planned_amount": 1_239_654, "actual_amount": 948_291},
             {"no": "1047 (1)", "description": "Structural Steel", "category": "Structural", "contract_amount": 35_288_325, "planned_amount": 7_410_548, "actual_amount": 28_583_543},
             {"no": "1047 (2)a", "description": "Structural Steel (Trusses)", "category": "Structural", "contract_amount": 4_375_482, "planned_amount": 0, "actual_amount": 823_223},
-            {"no": "1047 (3)a", "description": "Metal Structure Accessories (Anchor Bolt)", "category": "Structural", "contract_amount": 3_747_979, "planned_amount": 0, "actual_amount": 3_453_257},
-            {"no": "1047 (5)", "description": "Metal Structure Accessories (Steel Plates)", "category": "Structural", "contract_amount": 4_480_181, "planned_amount": 1_409_494, "actual_amount": 3_071_727},
-            {"no": "1001(11)", "description": "Septic Vault, Concrete", "category": "Architectural", "contract_amount": 1_086_528, "planned_amount": 0, "actual_amount": 543_264},
-            {"no": "1032(1)c", "description": "Painting Works (Steel)", "category": "Structural", "contract_amount": 2_502_971, "planned_amount": 406_989, "actual_amount": 0},
-            {"no": "1033(1)", "description": "Metal Deck Panel", "category": "Structural", "contract_amount": 6_193_982, "planned_amount": 1_495_103, "actual_amount": 0},
-            {"no": "1002 (6)", "description": "Cold Waterline Pipes and Fittings", "category": "Architectural", "contract_amount": 916_106, "planned_amount": 164_899, "actual_amount": 0},
+            {"no": "1047 (3)a", "description": "Anchor Bolt", "category": "Structural", "contract_amount": 3_747_979, "planned_amount": 0, "actual_amount": 3_453_257},
+            {"no": "1047 (5)", "description": "Steel Plates", "category": "Structural", "contract_amount": 4_480_181, "planned_amount": 1_409_494, "actual_amount": 3_071_727},
+            {"no": "1001(11)", "description": "Septic Vault", "category": "Architectural", "contract_amount": 1_086_528, "planned_amount": 0, "actual_amount": 543_264},
         ]
         
         st.session_state[f'{prefix}work_items'] = work_items
     
     # ============================================================
-    # S-CURVE DATA (Weekly Cumulative from your Excel)
+    # S-CURVE WEEKLY DATA (for the chart)
     # ============================================================
     
     if f'{prefix}original_plan_weekly' not in st.session_state:
-        # Original Plan cumulative percentages (193 weeks) - from your S-CURVE sheet
+        # Original Plan cumulative percentages
         original_plan_weekly = [
             0.99, 1.12, 1.27, 1.47, 1.59, 1.72, 1.90, 2.00, 2.09, 2.17, 2.24, 2.47, 2.80, 3.10, 3.41, 3.73,
             4.03, 4.33, 4.63, 4.98, 5.32, 5.66, 6.01, 6.21, 6.91, 7.62, 9.34, 11.06, 12.79, 14.74, 16.71, 18.34,
@@ -676,41 +668,54 @@ def show_mpcfs_scurve_tracker(component="infrastructure"):
         while len(revised_plan_weekly) < 193:
             revised_plan_weekly.append(100.00)
         
+        # Actual progress weekly (from your Excel cumulative)
+        actual_weekly = [
+            0.88, 0.91, 0.95, 1.00, 1.05, 1.10, 1.45, 1.62, 2.12, 2.45, 2.85, 3.21, 3.44, 3.85, 3.95, 4.05,
+            4.17, 4.30, 4.40, 4.50, 4.61, 4.70, 4.81, 4.89, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04,
+            5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04,
+            5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 7.33,
+            9.88, 11.61, 13.40, 15.45, 17.73, 20.02, 22.30, 24.59, 24.67, 24.75, 24.83, 24.92, 25.14, 25.34, 25.55, 25.75
+        ]
+        while len(actual_weekly) < 193:
+            actual_weekly.append(25.75)
+        
         st.session_state[f'{prefix}original_plan_weekly'] = original_plan_weekly
         st.session_state[f'{prefix}revised_plan_weekly'] = revised_plan_weekly
+        st.session_state[f'{prefix}actual_weekly'] = actual_weekly
     
     # ============================================================
-    # CORRECT CALCULATION using contract amounts
+    # CALCULATE OVERALL PROGRESS
     # ============================================================
     
     work_items = st.session_state[f'{prefix}work_items']
+    actual_weekly = st.session_state[f'{prefix}actual_weekly']
     
-    # Calculate totals from actual amounts (from your Excel)
     total_planned_amount = sum(item.get('planned_amount', 0) for item in work_items)
     total_actual_amount = sum(item.get('actual_amount', 0) for item in work_items)
     
-    # Calculate percentages
     overall_progress = (total_actual_amount / CONTRACT_AMOUNT) * 100
     overall_original_plan = (total_planned_amount / CONTRACT_AMOUNT) * 100
-    
-    # Revised plan target at this point (from your Excel: 25.75%)
     overall_revised_plan = 25.75
     
     total_actual_cost = total_actual_amount
-    
-    # Calculate slippage
     slippage_vs_original = overall_progress - overall_original_plan
     slippage_vs_revised = overall_progress - overall_revised_plan
+    
+    # Find current week index
+    current_week_idx = 0
+    for i, val in enumerate(actual_weekly):
+        if val >= overall_progress and overall_progress > 0:
+            current_week_idx = i
+            break
     
     # Update session state for dashboard
     st.session_state['infrastructure_progress'] = overall_progress
     st.session_state['infrastructure_target_original'] = overall_original_plan
     st.session_state['infrastructure_target_revised'] = overall_revised_plan
     st.session_state['infrastructure_cost'] = total_actual_cost
-    st.session_state['infrastructure_work_items'] = work_items
     
     # ============================================================
-    # DISPLAY KPI CARDS
+    # KPI CARDS
     # ============================================================
     
     st.markdown("### 📊 Key Performance Indicators")
@@ -718,43 +723,26 @@ def show_mpcfs_scurve_tracker(component="infrastructure"):
     col1, col2, col3, col4 = st.columns(4)
     
     with col1:
-        st.metric(
-            "Overall Progress", 
-            f"{overall_progress:.2f}%",
-            delta=f"₱{total_actual_cost:,.0f} / ₱{CONTRACT_AMOUNT:,.0f}"
-        )
+        st.metric("Overall Progress", f"{overall_progress:.2f}%", delta=f"₱{total_actual_cost:,.0f} utilized")
     
     with col2:
-        slippage_color = "normal" if slippage_vs_original >= 0 else "inverse"
-        st.metric(
-            "Slippage vs Original Plan", 
-            f"{slippage_vs_original:+.2f}%",
-            delta=f"Target: {overall_original_plan:.2f}%",
-            delta_color=slippage_color
-        )
+        st.metric("Slippage vs Original Plan", f"{slippage_vs_original:+.2f}%", 
+                  delta=f"Target: {overall_original_plan:.2f}%",
+                  delta_color="normal" if slippage_vs_original >= 0 else "inverse")
     
     with col3:
-        slippage_color2 = "normal" if slippage_vs_revised >= 0 else "inverse"
-        st.metric(
-            "Slippage vs Revised Plan", 
-            f"{slippage_vs_revised:+.2f}%",
-            delta=f"Target: {overall_revised_plan:.2f}%",
-            delta_color=slippage_color2
-        )
+        st.metric("Slippage vs Revised Plan", f"{slippage_vs_revised:+.2f}%",
+                  delta=f"Target: {overall_revised_plan:.2f}%",
+                  delta_color="normal" if slippage_vs_revised >= 0 else "inverse")
     
     with col4:
-        if slippage_vs_original > 1:
-            status = "✅ AHEAD"
-        elif slippage_vs_original < -1:
-            status = "🔴 BEHIND"
-        else:
-            status = "🟡 ON TRACK"
-        st.metric("Overall Status", status, delta=f"As of March 31, 2026")
+        status = "✅ AHEAD" if slippage_vs_original > 1 else ("🟡 ON TRACK" if slippage_vs_original >= -1 else "🔴 BEHIND")
+        st.metric("Overall Status", status, delta="As of March 31, 2026")
     
     st.markdown("---")
     
     # ============================================================
-    # S-CURVE CHART
+    # S-CURVE CHART - FIXED: Actual starts at 0 and grows
     # ============================================================
     
     st.markdown("### 📈 S-Curve: Planned vs Actual Progress")
@@ -763,13 +751,7 @@ def show_mpcfs_scurve_tracker(component="infrastructure"):
     weeks = list(range(1, 194))
     original_weekly = st.session_state[f'{prefix}original_plan_weekly']
     revised_weekly = st.session_state[f'{prefix}revised_plan_weekly']
-    
-    # Find current week index based on revised plan reaching current progress
-    current_week_idx = 0
-    for i, val in enumerate(revised_weekly):
-        if val >= overall_progress and overall_progress > 0:
-            current_week_idx = i
-            break
+    actual_weekly_data = st.session_state[f'{prefix}actual_weekly']
     
     fig = go.Figure()
     
@@ -793,15 +775,26 @@ def show_mpcfs_scurve_tracker(component="infrastructure"):
         opacity=0.8
     ))
     
-    # Actual Progress (Green, solid)
+    # Actual Progress (Green, solid) - THIS NOW STARTS AT 0 AND GROWS
     fig.add_trace(go.Scatter(
         x=weeks[:current_week_idx + 1], 
-        y=[overall_progress] * (current_week_idx + 1),
+        y=actual_weekly_data[:current_week_idx + 1],
         mode='lines+markers', 
         name='Actual Progress',
         line=dict(color='#2ca02c', width=3),
-        marker=dict(size=6, symbol='circle', color='#2ca02c')
+        marker=dict(size=4, symbol='circle', color='#2ca02c')
     ))
+    
+    # Projected Actual (dotted green line after current week)
+    if current_week_idx < 192:
+        fig.add_trace(go.Scatter(
+            x=weeks[current_week_idx + 1:], 
+            y=[overall_progress] * (192 - current_week_idx),
+            mode='lines', 
+            name='Projected (if no change)',
+            line=dict(color='#2ca02c', width=2, dash='dot'),
+            opacity=0.6
+        ))
     
     # Current week vertical line
     fig.add_vline(
@@ -814,35 +807,12 @@ def show_mpcfs_scurve_tracker(component="infrastructure"):
     )
     
     fig.update_layout(
-        title=dict(
-            text="Project Progress S-Curve (September 2024 - May 2028)",
-            font=dict(size=14, color="#2c3e50")
-        ),
-        xaxis=dict(
-            title="Week Number",
-            title_font=dict(size=12),
-            tickfont=dict(size=10),
-            gridcolor="#e0e0e0",
-            showgrid=True
-        ),
-        yaxis=dict(
-            title="Cumulative Progress (%)",
-            title_font=dict(size=12),
-            tickfont=dict(size=10),
-            range=[0, 105],
-            gridcolor="#e0e0e0",
-            showgrid=True
-        ),
+        title=dict(text="Project Progress S-Curve (September 2024 - May 2028)", font=dict(size=14, color="#2c3e50")),
+        xaxis=dict(title="Week Number", title_font=dict(size=12), tickfont=dict(size=10), gridcolor="#e0e0e0", showgrid=True),
+        yaxis=dict(title="Cumulative Progress (%)", title_font=dict(size=12), tickfont=dict(size=10), range=[0, 105], gridcolor="#e0e0e0", showgrid=True),
         height=450,
         hovermode='x unified',
-        legend=dict(
-            x=0.02, 
-            y=0.98, 
-            bgcolor='rgba(255,255,255,0.9)',
-            bordercolor="#d0d0d0",
-            borderwidth=1,
-            font=dict(size=11)
-        ),
+        legend=dict(x=0.02, y=0.98, bgcolor='rgba(255,255,255,0.9)', bordercolor="#d0d0d0", borderwidth=1, font=dict(size=11)),
         plot_bgcolor='white',
         paper_bgcolor='white'
     )
@@ -855,19 +825,142 @@ def show_mpcfs_scurve_tracker(component="infrastructure"):
     
     col1, col2, col3 = st.columns(3)
     with col1:
-        st.info(f"📋 **Original Plan:** {overall_original_plan:.2f}% (₱{total_planned_amount:,.0f})")
+        st.info(f"📋 **Original Plan:** {overall_original_plan:.2f}%")
     with col2:
         st.info(f"📋 **Revised Plan:** {overall_revised_plan:.2f}%")
     with col3:
-        st.success(f"✅ **Actual Progress:** {overall_progress:.2f}% (₱{total_actual_amount:,.0f})")
+        st.success(f"✅ **Actual Progress:** {overall_progress:.2f}%")
     
     st.markdown("---")
     
     # ============================================================
-    # REMAINING CODE (Itemized Table, etc.) - SAME AS BEFORE
+    # ITEMIZED WORK DETAILS TABLE (RESTORED)
     # ============================================================
     
-    # ... (keep the rest of the code for the editable table, etc.)
+    st.markdown("### 📋 Itemized Work Details")
+    st.markdown("> **✏️ INSTRUCTIONS:** Edit the columns below. Changes are saved when you click **💾 SAVE ALL CHANGES**.")
+    
+    # Category filter
+    categories = ["All", "Civil Works", "Structural", "Architectural", "Electrical", "Mechanical", "Equipment", "Other"]
+    selected_category = st.selectbox("🔍 Filter by Category", categories, key=f"{prefix}_category")
+    
+    # Filter work items
+    if selected_category != "All":
+        filtered_items = [item for item in work_items if item.get('category', 'Other') == selected_category]
+    else:
+        filtered_items = work_items
+    
+    if filtered_items:
+        df_items = pd.DataFrame(filtered_items)
+        
+        # Calculate progress percentages
+        df_items['Actual Progress (%)'] = (df_items['actual_amount'] / df_items['contract_amount']) * 100
+        df_items['Planned Progress (%)'] = (df_items['planned_amount'] / df_items['contract_amount']) * 100
+        df_items['Slippage (%)'] = df_items['Actual Progress (%)'] - df_items['Planned Progress (%)']
+        df_items['Status'] = df_items['Slippage (%)'].apply(
+            lambda x: '✅ Ahead' if x > 1 else ('🟡 On Track' if x >= -1 else '🔴 Behind')
+        )
+        
+        display_df = df_items[[
+            'no', 'description', 'category', 'contract_amount',
+            'planned_amount', 'actual_amount', 'Planned Progress (%)', 
+            'Actual Progress (%)', 'Slippage (%)', 'Status'
+        ]].copy()
+        
+        display_df.columns = [
+            'Item No.', 'Description', 'Category', 'Contract (₱)',
+            'Planned (₱)', 'Actual (₱)', 'Planned (%)',
+            'Actual (%)', 'Slippage (%)', 'Status'
+        ]
+        
+        edited_df = st.data_editor(
+            display_df,
+            use_container_width=True,
+            hide_index=True,
+            key=f"{prefix}_data_editor",
+            column_config={
+                "Item No.": st.column_config.TextColumn("Item No.", width="small", disabled=True),
+                "Description": st.column_config.TextColumn("Description", width="large", disabled=True),
+                "Category": st.column_config.TextColumn("Category", width="small", disabled=True),
+                "Contract (₱)": st.column_config.NumberColumn("Contract (₱)", format="₱%.2f", disabled=True),
+                "Planned (₱)": st.column_config.NumberColumn("Planned (₱)", format="₱%.2f", disabled=True),
+                "Actual (₱)": st.column_config.NumberColumn("Actual (₱)", min_value=0, step=10000, format="₱%.2f"),
+                "Planned (%)": st.column_config.NumberColumn("Planned (%)", format="%.2f", disabled=True),
+                "Actual (%)": st.column_config.NumberColumn("Actual (%)", min_value=0.0, max_value=100.0, step=0.5, format="%.2f"),
+                "Slippage (%)": st.column_config.NumberColumn("Slippage (%)", format="%+.2f", disabled=True),
+                "Status": st.column_config.TextColumn("Status", disabled=True),
+            }
+        )
+        
+        col1, col2, col3 = st.columns([1, 1, 2])
+        with col1:
+            if st.button("💾 SAVE ALL CHANGES", type="primary", use_container_width=True, key=f"{prefix}_save"):
+                for idx, row in edited_df.iterrows():
+                    for original_item in work_items:
+                        if original_item['no'] == row['Item No.']:
+                            original_item['actual_amount'] = row['Actual (₱)']
+                            break
+                st.session_state[f'{prefix}work_items'] = work_items
+                st.success("✅ All changes saved!")
+                st.rerun()
+        
+        with col2:
+            if st.button("🔄 Reset All to Zero", use_container_width=True, key=f"{prefix}_reset"):
+                for item in work_items:
+                    item['actual_amount'] = 0
+                st.session_state[f'{prefix}work_items'] = work_items
+                st.success("✅ Reset complete!")
+                st.rerun()
+        
+        with col3:
+            st.caption(f"📊 Total Progress: {overall_progress:.2f}% | Total Cost: ₱{total_actual_cost:,.2f}")
+    
+    st.markdown("---")
+    
+    # ============================================================
+    # SUMMARY STATISTICS
+    # ============================================================
+    
+    st.markdown("### 📊 Progress Summary by Status")
+    
+    col1, col2, col3, col4 = st.columns(4)
+    
+    ahead_items = len([i for i in work_items if ((i['actual_amount']/i['contract_amount'])*100 - (i['planned_amount']/i['contract_amount'])*100) > 1])
+    on_track_items = len([i for i in work_items if -1 <= ((i['actual_amount']/i['contract_amount'])*100 - (i['planned_amount']/i['contract_amount'])*100) <= 1])
+    behind_items = len([i for i in work_items if ((i['actual_amount']/i['contract_amount'])*100 - (i['planned_amount']/i['contract_amount'])*100) < -1])
+    not_started = len([i for i in work_items if i['actual_amount'] == 0])
+    
+    with col1:
+        st.metric("✅ Ahead", ahead_items)
+    with col2:
+        st.metric("🟡 On Track", on_track_items)
+    with col3:
+        st.metric("🔴 Behind", behind_items)
+    with col4:
+        st.metric("⚪ Not Started", not_started)
+    
+    st.markdown("---")
+    
+    # ============================================================
+    # EXPORT OPTIONS
+    # ============================================================
+    
+    st.markdown("### 📎 Export Data")
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("📊 Export Work Items to CSV", use_container_width=True):
+            export_df = pd.DataFrame(work_items)
+            csv = export_df.to_csv(index=False)
+            st.download_button(
+                "📥 Download CSV", 
+                data=csv, 
+                file_name=f"mpcfs_{component}_work_items_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+                mime="text/csv"
+            )
+    
+    with col2:
+        st.caption(f"Last updated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
 
 def show_cca_analytics():
     """Display CCA analytics and insights"""
