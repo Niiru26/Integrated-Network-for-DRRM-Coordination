@@ -5,7 +5,9 @@ from datetime import datetime, date
 import plotly.express as px
 import plotly.graph_objects as go
 import os
+import copy
 import json
+import hashlib
 import numpy as np
 import io
 import base64
@@ -572,7 +574,15 @@ def show_mpcfs_master_dashboard():
         st.markdown("- Establish research protocols")
         
 def show_mpcfs_scurve_tracker(component="infrastructure"):
-    """MPCFS Infrastructure S-Curve Tracker with Itemized Work Details"""
+    """MPCFS Infrastructure S-Curve Tracker with Snapshot History"""
+    
+    import json
+    import hashlib
+    from supabase import create_client, Client
+    
+    # Supabase initialization
+    SUPABASE_URL = "https://bdzbweytmejqiajnvuea.supabase.co"
+    SUPABASE_KEY = st.secrets.get("SUPABASE_KEY", "")  # Add to .streamlit/secrets.toml
     
     component_titles = {
         "infrastructure": {"name": "Infrastructure", "icon": "🏗️", "amount": 249_040_900.00},
@@ -703,11 +713,9 @@ def show_mpcfs_scurve_tracker(component="infrastructure"):
             80.26, 80.63, 81.00, 81.37, 81.82, 82.27, 82.80, 83.23, 83.65, 84.08, 84.74, 85.63, 86.52, 87.48,
             88.66, 90.23, 91.80, 93.79, 95.79, 97.61, 99.16, 99.34, 99.96, 100.00
         ]
-        # Extend to 193 weeks
         while len(original_plan) < 193:
             original_plan.append(100.00)
         
-        # Revised Plan cumulative percentages from your Excel
         revised_plan = [
             0.98, 1.10, 1.24, 1.43, 1.54, 1.66, 1.83, 1.91, 2.00, 2.08, 2.16, 2.29, 2.55, 2.82, 3.11, 3.39,
             3.68, 3.97, 4.26, 4.55, 4.82, 5.10, 5.38, 5.86, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24,
@@ -726,7 +734,6 @@ def show_mpcfs_scurve_tracker(component="infrastructure"):
         while len(revised_plan) < 193:
             revised_plan.append(100.00)
         
-        # Actual progress from your Excel
         actual = [
             0.88, 0.91, 0.95, 1.00, 1.05, 1.10, 1.45, 1.62, 2.12, 2.45, 2.85, 3.21, 3.44, 3.85, 3.95, 4.05,
             4.17, 4.30, 4.40, 4.50, 4.61, 4.70, 4.81, 4.89, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04,
@@ -747,12 +754,28 @@ def show_mpcfs_scurve_tracker(component="infrastructure"):
     revised_plan = st.session_state[f'{prefix}revised_plan']
     actual_array = st.session_state[f'{prefix}actual']
     
-    # Calculate overall progress from work items
-    total_weight = sum(item['weight'] for item in work_items)
-    weighted_actual = sum(item['weight'] * item['actual'] / 100 for item in work_items)
-    overall_progress = (weighted_actual / total_weight) * 100 if total_weight > 0 else 25.75
+    # ============================================================
+    # CORRECT PROGRESS CALCULATION (FIXED)
+    # ============================================================
     
+    total_weight = sum(item['weight'] for item in work_items)
+    
+    # CORRECT FORMULA: Each item's contribution = (weight * actual) / 100
+    # Then sum all contributions for overall progress
+    weighted_actual_sum = 0
+    for item in work_items:
+        # item['actual'] is already a percentage (e.g., 8.50 for Structural Steel)
+        # item['weight'] is the weight percentage (e.g., 14.17)
+        # Contribution = (14.17 * 8.50) / 100 = 1.20%
+        contribution = (item['weight'] * item['actual']) / 100
+        weighted_actual_sum += contribution
+    
+    overall_progress = weighted_actual_sum  # This should be ~25.75%
     total_actual_cost = sum(item['cost'] for item in work_items)
+    
+    # Verify total weight is close to 100%
+    if abs(total_weight - 100) > 1:
+        st.warning(f"⚠️ Total weight is {total_weight:.2f}% (should be 100%). Some items may be missing.")
     
     # Update session state for dashboard
     st.session_state['infrastructure_progress'] = overall_progress
@@ -784,11 +807,144 @@ def show_mpcfs_scurve_tracker(component="infrastructure"):
     st.markdown("---")
     
     # ============================================================
-    # ITEMIZED WORK DETAILS TABLE
+    # SNAPSHOT HISTORY SECTION
+    # ============================================================
+    
+    st.markdown("### 📸 Progress Snapshots (Unlimited History)")
+    st.caption("Save snapshots to track progress over time. Each snapshot stores all work item data.")
+    
+    # Initialize snapshots in session state
+    if f'{prefix}snapshots' not in st.session_state:
+        st.session_state[f'{prefix}snapshots'] = []
+    
+    # Function to generate unique hash for duplicate detection
+    def generate_data_hash(work_items_data):
+        data_str = json.dumps(work_items_data, sort_keys=True)
+        return hashlib.md5(data_str.encode()).hexdigest()
+    
+    # Save Snapshot button
+    col1, col2, col3 = st.columns([2, 1, 1])
+    with col1:
+        snapshot_notes = st.text_input("Snapshot Notes (optional)", placeholder="e.g., After foundation inspection", key=f"{prefix}_snapshot_notes")
+    
+    with col2:
+        if st.button("💾 Save Current Snapshot", type="primary", use_container_width=True, key=f"{prefix}_save_snapshot"):
+            current_hash = generate_data_hash(work_items)
+            
+            # Check for duplicate
+            is_duplicate = False
+            for snap in st.session_state[f'{prefix}snapshots']:
+                if snap.get('data_hash') == current_hash:
+                    is_duplicate = True
+                    break
+            
+            if is_duplicate:
+                st.warning("⚠️ Data is identical to the last snapshot. No duplicate saved.")
+            else:
+                snapshot = {
+                    "id": len(st.session_state[f'{prefix}snapshots']) + 1,
+                    "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                    "progress": overall_progress,
+                    "total_cost": total_actual_cost,
+                    "work_items": copy.deepcopy(work_items),
+                    "notes": snapshot_notes if snapshot_notes else "",
+                    "data_hash": current_hash
+                }
+                st.session_state[f'{prefix}snapshots'].insert(0, snapshot)  # Newest first
+                st.success(f"✅ Snapshot #{snapshot['id']} saved! Progress: {overall_progress:.2f}%")
+                st.rerun()
+    
+    with col3:
+        if st.button("📤 Sync to Supabase", use_container_width=True, key=f"{prefix}_sync"):
+            if SUPABASE_KEY:
+                try:
+                    supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+                    for snap in st.session_state[f'{prefix}snapshots']:
+                        # Check if already exists
+                        existing = supabase.table("mpcfs_snapshots").select("id").eq("data_hash", snap['data_hash']).execute()
+                        if not existing.data:
+                            supabase.table("mpcfs_snapshots").insert({
+                                "component": component,
+                                "progress": snap['progress'],
+                                "total_cost": snap['total_cost'],
+                                "work_items_json": json.dumps(snap['work_items']),
+                                "notes": snap['notes'],
+                                "created_by": st.session_state.get('user_role', 'Unknown'),
+                                "file_hash": snap['data_hash']
+                            }).execute()
+                    st.success("✅ Snapshots synced to Supabase!")
+                except Exception as e:
+                    st.error(f"Sync failed: {e}")
+            else:
+                st.info("Supabase key not configured. Add to .streamlit/secrets.toml")
+    
+    # Display snapshots
+    if st.session_state[f'{prefix}snapshots']:
+        st.markdown("#### 📋 Snapshot History")
+        
+        # Prepare snapshot display
+        snapshots_data = []
+        for snap in st.session_state[f'{prefix}snapshots']:
+            snapshots_data.append({
+                "ID": snap['id'],
+                "Date & Time": snap['timestamp'],
+                "Progress": f"{snap['progress']:.2f}%",
+                "Cost": f"₱{snap['total_cost']:,.0f}",
+                "Notes": snap['notes'][:50] + "..." if len(snap['notes']) > 50 else snap['notes'],
+                "Actions": f"load_{snap['id']}"
+            })
+        
+        df_snapshots = pd.DataFrame(snapshots_data)
+        
+        # Display as columns with action buttons
+        for snap in st.session_state[f'{prefix}snapshots'][:20]:  # Show last 20
+            col1, col2, col3, col4, col5 = st.columns([1, 2, 1, 1, 1])
+            with col1:
+                st.markdown(f"**#{snap['id']}**")
+            with col2:
+                st.markdown(f"{snap['timestamp']}")
+            with col3:
+                st.markdown(f"**{snap['progress']:.2f}%**")
+            with col4:
+                if st.button(f"📂 Load", key=f"load_snap_{snap['id']}"):
+                    # Restore this snapshot
+                    st.session_state[f'{prefix}work_items'] = snap['work_items']
+                    st.success(f"✅ Loaded snapshot #{snap['id']} from {snap['timestamp']}")
+                    st.rerun()
+            with col5:
+                if st.button(f"🗑️", key=f"del_snap_{snap['id']}"):
+                    st.session_state[f'{prefix}snapshots'] = [s for s in st.session_state[f'{prefix}snapshots'] if s['id'] != snap['id']]
+                    st.rerun()
+            st.caption(f"📝 {snap['notes']}" if snap['notes'] else "")
+            st.markdown("---")
+        
+        # Export all snapshots
+        if st.button("📊 Export All Snapshots to CSV", use_container_width=True):
+            export_data = []
+            for snap in st.session_state[f'{prefix}snapshots']:
+                export_data.append({
+                    "Snapshot ID": snap['id'],
+                    "Timestamp": snap['timestamp'],
+                    "Progress (%)": snap['progress'],
+                    "Total Cost (₱)": snap['total_cost'],
+                    "Notes": snap['notes']
+                })
+            export_df = pd.DataFrame(export_data)
+            csv = export_df.to_csv(index=False)
+            st.download_button("📥 Download CSV", data=csv, 
+                              file_name=f"mpcfs_{component}_snapshots_{datetime.now().strftime('%Y%m%d')}.csv",
+                              mime="text/csv")
+    else:
+        st.info("No snapshots yet. Click 'Save Current Snapshot' to start tracking progress history.")
+    
+    st.markdown("---")
+    
+    # ============================================================
+    # ITEMIZED WORK DETAILS TABLE (EDITABLE)
     # ============================================================
     
     st.markdown("### 📋 Itemized Work Details")
-    st.caption("Update progress and cost for each work item - changes auto-calculate overall progress")
+    st.caption("Edit Actual (%) and Actual Cost (₱) below. Click 'SAVE CHANGES' to update.")
     
     # Category filter
     categories = ["All", "Civil Works", "Structural", "Architectural", "Electrical", "Mechanical", "Equipment", "Other"]
@@ -834,7 +990,7 @@ def show_mpcfs_scurve_tracker(component="infrastructure"):
         # Save button
         col1, col2, col3 = st.columns([1, 1, 2])
         with col1:
-            if st.button("💾 SAVE ALL CHANGES", type="primary", use_container_width=True, key=f"{prefix}_save"):
+            if st.button("💾 SAVE CHANGES", type="primary", use_container_width=True, key=f"{prefix}_save"):
                 # Update the original work_items list
                 for idx, row in edited_df.iterrows():
                     for original_item in work_items:
@@ -846,11 +1002,12 @@ def show_mpcfs_scurve_tracker(component="infrastructure"):
                 st.session_state[f'{prefix}work_items'] = work_items
                 
                 # Recalculate overall progress
-                new_weighted_actual = sum(item['weight'] * item['actual'] / 100 for item in work_items)
-                new_overall = (new_weighted_actual / total_weight) * 100 if total_weight > 0 else 25.75
-                st.session_state['infrastructure_progress'] = new_overall
+                new_weighted_sum = 0
+                for item in work_items:
+                    new_weighted_sum += (item['weight'] * item['actual']) / 100
+                new_overall = new_weighted_sum
                 
-                st.success(f"✅ All changes saved! Overall progress: {new_overall:.2f}%")
+                st.success(f"✅ Changes saved! Overall progress: {new_overall:.2f}%")
                 st.rerun()
         
         with col2:
@@ -863,7 +1020,7 @@ def show_mpcfs_scurve_tracker(component="infrastructure"):
                 st.rerun()
         
         with col3:
-            st.caption(f"📊 Weighted Overall Progress: {overall_progress:.2f}% | Total Cost: ₱{total_actual_cost:,.2f}")
+            st.caption(f"📊 Overall Progress: {overall_progress:.2f}% | Total Cost: ₱{total_actual_cost:,.2f}")
     else:
         st.warning("No work items found for selected category.")
     
@@ -876,7 +1033,6 @@ def show_mpcfs_scurve_tracker(component="infrastructure"):
     st.markdown("### 📈 S-Curve: Planned vs Actual Progress")
     st.markdown("**📍 As of: March 31, 2026**")
     
-    # Create weeks (1-193)
     weeks = list(range(1, 194))
     
     # Find current week index
@@ -886,7 +1042,6 @@ def show_mpcfs_scurve_tracker(component="infrastructure"):
             current_week_idx = i
             break
     
-    # Ensure all arrays have same length
     max_len = 193
     orig_plan = original_plan[:max_len] if len(original_plan) >= max_len else original_plan + [0] * (max_len - len(original_plan))
     rev_plan = revised_plan[:max_len] if len(revised_plan) >= max_len else revised_plan + [0] * (max_len - len(revised_plan))
@@ -894,54 +1049,14 @@ def show_mpcfs_scurve_tracker(component="infrastructure"):
     
     fig = go.Figure()
     
-    # Original Plan (Blue, dashed)
-    fig.add_trace(go.Scatter(
-        x=weeks[:len(orig_plan)], 
-        y=orig_plan,
-        mode='lines', 
-        name='Original Plan',
-        line=dict(color='#3498db', width=2, dash='dash')
-    ))
+    fig.add_trace(go.Scatter(x=weeks[:len(orig_plan)], y=orig_plan, mode='lines', name='Original Plan', line=dict(color='#3498db', width=2, dash='dash')))
+    fig.add_trace(go.Scatter(x=weeks[:len(rev_plan)], y=rev_plan, mode='lines', name='Revised Plan', line=dict(color='#f39c12', width=2, dash='dot')))
+    fig.add_trace(go.Scatter(x=weeks[:len(actual_data)], y=actual_data, mode='lines+markers', name='Actual Progress', line=dict(color='#2ecc71', width=3), marker=dict(size=4)))
     
-    # Revised Plan (Orange, dotted)
-    fig.add_trace(go.Scatter(
-        x=weeks[:len(rev_plan)], 
-        y=rev_plan,
-        mode='lines', 
-        name='Revised Plan',
-        line=dict(color='#f39c12', width=2, dash='dot')
-    ))
+    fig.add_vline(x=current_week_idx + 1 if current_week_idx > 0 else 80, line_dash="dash", line_color="red", line_width=2,
+                  annotation_text=f"Current: Week {current_week_idx + 1 if current_week_idx > 0 else 80} (Mar 31, 2026)", annotation_position="top right")
     
-    # Actual Progress (Green, solid)
-    fig.add_trace(go.Scatter(
-        x=weeks[:len(actual_data)], 
-        y=actual_data,
-        mode='lines+markers', 
-        name='Actual Progress',
-        line=dict(color='#2ecc71', width=3),
-        marker=dict(size=4)
-    ))
-    
-    # Add vertical line at current week
-    fig.add_vline(
-        x=current_week_idx + 1 if current_week_idx > 0 else 80, 
-        line_dash="dash", 
-        line_color="red", 
-        line_width=2,
-        annotation_text=f"Current: Week {current_week_idx + 1 if current_week_idx > 0 else 80} (Mar 31, 2026)", 
-        annotation_position="top right"
-    )
-    
-    fig.update_layout(
-        title="Project Progress S-Curve (Sept 2024 - May 2028)",
-        xaxis_title="Week Number",
-        yaxis_title="Cumulative Progress (%)",
-        yaxis_range=[0, 105],
-        height=500,
-        hovermode='x unified',
-        legend=dict(x=0.01, y=0.99, bgcolor='rgba(255,255,255,0.8)')
-    )
-    
+    fig.update_layout(title="Project Progress S-Curve (Sept 2024 - May 2028)", xaxis_title="Week Number", yaxis_title="Cumulative Progress (%)", yaxis_range=[0, 105], height=500, hovermode='x unified')
     st.plotly_chart(fig, use_container_width=True)
     
     # ============================================================
