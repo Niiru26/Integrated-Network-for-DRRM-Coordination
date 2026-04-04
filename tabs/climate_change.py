@@ -298,15 +298,16 @@ def show_mpcfs_component_placeholder(component_name, icon):
 
 
 def show_mpcfs_scurve_tracker(component="infrastructure"):
-    """MPCFS Infrastructure S-Curve Tracker - Full version with all three lines"""
+    """MPCFS Infrastructure S-Curve Tracker - COMPLETE WORKING VERSION with all features"""
     
     st.markdown(f"#### 🏗️ Infrastructure Component - S-Curve Tracker")
     st.caption(f"Track physical and financial progress | Contract: ₱249,040,900.00")
     
     CONTRACT_AMOUNT = 249_040_900.00
     
-    # Get current progress from session state
-    infra_progress = st.session_state.get('infrastructure_progress', 25.75)
+    # Initialize session state for progress if not exists
+    if 'infrastructure_progress' not in st.session_state:
+        st.session_state.infrastructure_progress = 25.75
     
     # ============================================================
     # S-CURVE DATA (Original Plan, Revised Plan, Actual)
@@ -365,20 +366,34 @@ def show_mpcfs_scurve_tracker(component="infrastructure"):
     # Find current week (where actual reaches 25.75%)
     current_week_idx = 0
     for i, val in enumerate(actual_weekly):
-        if val >= infra_progress and infra_progress > 0:
+        if val >= st.session_state.infrastructure_progress and st.session_state.infrastructure_progress > 0:
             current_week_idx = i
             break
     
-    # KPI Cards
-    col1, col2, col3, col4 = st.columns(4)
+    # ============================================================
+    # KPI CARDS
+    # ============================================================
+    
+    col1, col2, col3, col4, col5 = st.columns(5)
+    
     with col1:
-        st.metric("Overall Progress", f"{infra_progress:.2f}%")
+        st.metric("Overall Progress", f"{st.session_state.infrastructure_progress:.2f}%")
+    
     with col2:
-        st.metric("Original Plan at Week 80", "64.31%")
+        slippage = st.session_state.infrastructure_progress - 25.75
+        st.metric("Slippage vs Revised Plan", f"{slippage:+.2f}%", 
+                  delta="Ahead" if slippage >= 0 else "Behind",
+                  delta_color="normal" if slippage >= 0 else "inverse")
+    
     with col3:
-        st.metric("Revised Plan at Week 80", "25.75%")
+        st.metric("Original Plan at Week 80", "64.31%")
+    
     with col4:
-        st.metric("Status", "✅ ON TRACK" if infra_progress >= 25 else "⚠️ BEHIND")
+        st.metric("Revised Plan at Week 80", "25.75%")
+    
+    with col5:
+        status = "✅ ON TRACK" if st.session_state.infrastructure_progress >= 25 else "⚠️ BEHIND"
+        st.metric("Status", status)
     
     st.markdown("---")
     
@@ -397,7 +412,7 @@ def show_mpcfs_scurve_tracker(component="infrastructure"):
         y=original_plan,
         mode='lines', 
         name='Original Plan',
-        line=dict(color='#3498db', width=2, dash='dash'),
+        line=dict(color='#1f77b4', width=2, dash='dash'),
         opacity=0.8
     ))
     
@@ -407,7 +422,7 @@ def show_mpcfs_scurve_tracker(component="infrastructure"):
         y=revised_plan,
         mode='lines', 
         name='Revised Plan',
-        line=dict(color='#f39c12', width=2, dash='dot'),
+        line=dict(color='#ff7f0e', width=2, dash='dot'),
         opacity=0.8
     ))
     
@@ -417,18 +432,18 @@ def show_mpcfs_scurve_tracker(component="infrastructure"):
         y=actual_weekly[:current_week_idx + 1],
         mode='lines+markers', 
         name='Actual Progress',
-        line=dict(color='#2ecc71', width=3),
-        marker=dict(size=4, symbol='circle', color='#2ecc71')
+        line=dict(color='#2ca02c', width=3),
+        marker=dict(size=4, symbol='circle', color='#2ca02c')
     ))
     
     # Projected Actual (dotted green)
     if current_week_idx < 192:
         fig.add_trace(go.Scatter(
             x=weeks[current_week_idx + 1:], 
-            y=[infra_progress] * (192 - current_week_idx),
+            y=[st.session_state.infrastructure_progress] * (192 - current_week_idx),
             mode='lines', 
             name='Projected (if no change)',
-            line=dict(color='#2ecc71', width=2, dash='dot'),
+            line=dict(color='#2ca02c', width=2, dash='dot'),
             opacity=0.6
         ))
     
@@ -478,14 +493,44 @@ def show_mpcfs_scurve_tracker(component="infrastructure"):
     
     st.plotly_chart(fig, use_container_width=True)
     
-    # Target Summary
+    # ============================================================
+    # TARGET SUMMARY
+    # ============================================================
+    
     col1, col2, col3 = st.columns(3)
     with col1:
         st.info(f"📋 **Original Plan at Week 80:** 64.31%")
     with col2:
         st.info(f"📋 **Revised Plan at Week 80:** 25.75%")
     with col3:
-        st.success(f"✅ **Actual Progress at Week 80:** {infra_progress:.2f}%")
+        st.success(f"✅ **Actual Progress at Week 80:** {st.session_state.infrastructure_progress:.2f}%")
+    
+    st.markdown("---")
+    
+    # ============================================================
+    # QUICK PROGRESS UPDATE (Simple version for now)
+    # ============================================================
+    
+    st.markdown("### ✏️ Update Progress")
+    st.caption("Update the overall progress after fieldwork")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        new_progress = st.number_input(
+            "Enter New Overall Progress (%)",
+            min_value=0.0,
+            max_value=100.0,
+            value=float(st.session_state.infrastructure_progress),
+            step=0.5,
+            format="%.2f"
+        )
+    
+    with col2:
+        if st.button("✅ Update Progress", type="primary", use_container_width=True):
+            st.session_state.infrastructure_progress = new_progress
+            st.success(f"✅ Progress updated to {new_progress:.2f}%")
+            st.rerun()
     
     st.markdown("---")
     st.caption("Data source: MPCFS Project S-CURVE Sheet | Contract: ₱249,040,900.00")
@@ -1080,7 +1125,7 @@ def show_dost_2011_analysis():
 
 
 def show_data_source_comparison():
-    """Show comparison between 2011 DOST and 2024 CLIRAM data"""
+    """Show comparison between 2011 DOST and 2024 CLIRAM data with APA7 citations"""
     
     st.markdown("#### 📊 Climate Data Sources Comparison")
     
@@ -1089,7 +1134,9 @@ def show_data_source_comparison():
     with col1:
         st.markdown("""
         ### 📘 2011 DOST Data
-        **Source:** Climate Change in the Philippines (UN-MDGIF Project)
+        
+        **APA 7th Edition Citation:**
+        > DOST-PAGASA. (2011). *Climate change in the Philippines*. Department of Science and Technology - Philippine Atmospheric, Geophysical and Astronomical Services Administration. (UN-Philippines MDGIF Project in partnership with Adaptayo)
         
         **Features:**
         - Seasonal temperature and rainfall changes
@@ -1106,7 +1153,9 @@ def show_data_source_comparison():
     with col2:
         st.markdown("""
         ### 📗 2024 CLIRAM Data
-        **Source:** CMIP6-Based Climate Change Projections
+        
+        **APA 7th Edition Citation:**
+        > DOST-PAGASA. (2024). *CMIP6-based climate change projections in the Philippines*. Department of Science and Technology - Philippine Atmospheric, Geophysical and Astronomical Services Administration, Quezon City, Philippines.
         
         **Features:**
         - Monthly temperature and rainfall
@@ -1130,6 +1179,14 @@ def show_data_source_comparison():
     | Infrastructure Design | 2024 CLIRAM (extreme event projections) |
     | Agricultural Planning | Both (seasonal from 2011, monthly from CLIRAM) |
     | Water Resource Management | 2024 CLIRAM (detailed monthly rainfall) |
+    """)
+    
+    st.markdown("---")
+    st.markdown("### 📚 Full References (APA 7th Edition)")
+    st.markdown("""
+    **DOST-PAGASA. (2011).** *Climate change in the Philippines*. Department of Science and Technology - Philippine Atmospheric, Geophysical and Astronomical Services Administration. (UN-Philippines MDGIF Project in partnership with Adaptayo)
+    
+    **DOST-PAGASA. (2024).** *CMIP6-based climate change projections in the Philippines*. Department of Science and Technology - Philippine Atmospheric, Geophysical and Astronomical Services Administration, Quezon City, Philippines.
     """)
 
 
