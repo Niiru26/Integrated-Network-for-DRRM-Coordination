@@ -469,19 +469,72 @@ def show_mpcfs_coffee_table_book():
 
 
 def show_mpcfs_scurve_tracker(component="infrastructure"):
-    """MPCFS Infrastructure S-Curve Tracker - MATCHES YOUR SCREENSHOT"""
+    """MPCFS Infrastructure S-Curve Tracker - ENHANCED with Progress + Cost S-Curves"""
     
     st.markdown(f"#### 🏗️ Infrastructure Component - S-Curve Tracker")
     st.caption(f"Track physical and financial progress | Contract: ₱249,040,900.00")
     
     CONTRACT_AMOUNT = 249_040_900.00
     
-    # Initialize session state
-    if 'infrastructure_progress' not in st.session_state:
-        st.session_state.infrastructure_progress = 25.75
+    # ============================================================
+    # S-CURVE DATA
+    # ============================================================
+    
+    # Original Plan cumulative
+    original_plan = [
+        0.99, 1.12, 1.27, 1.47, 1.59, 1.72, 1.90, 2.00, 2.09, 2.17, 2.24, 2.47, 2.80, 3.10, 3.41, 3.73,
+        4.03, 4.33, 4.63, 4.98, 5.32, 5.66, 6.01, 6.21, 6.91, 7.62, 9.34, 11.06, 12.79, 14.74, 16.71, 18.34,
+        19.97, 21.70, 23.70, 25.71, 27.64, 29.54, 31.39, 33.18, 34.90, 36.54, 38.17, 39.81, 41.39, 42.93,
+        44.40, 45.31, 45.66, 46.21, 46.90, 47.50, 48.10, 48.70, 49.32, 49.94, 50.56, 51.19, 51.82, 52.50,
+        53.22, 53.65, 54.42, 55.35, 56.10, 56.85, 57.60, 58.23, 58.86, 59.49, 60.09, 60.49, 61.01, 61.55,
+        62.04, 62.53, 63.01, 63.50, 63.98, 64.31, 64.43, 64.55, 65.03, 65.52, 65.96, 66.36, 66.76, 67.37,
+        67.99, 68.62, 69.26, 69.90, 70.44, 70.96, 71.46, 71.96, 72.47, 72.97, 73.48, 74.00, 74.50, 75.00,
+        75.33, 75.69, 76.05, 76.41, 76.77, 77.12, 77.46, 77.79, 78.12, 78.46, 78.80, 79.14, 79.48, 79.88,
+        80.26, 80.63, 81.00, 81.37, 81.82, 82.27, 82.80, 83.23, 83.65, 84.08, 84.74, 85.63, 86.52, 87.48,
+        88.66, 90.23, 91.80, 93.79, 95.79, 97.61, 99.16, 99.34, 99.96, 100.00
+    ]
+    while len(original_plan) < 193:
+        original_plan.append(100.00)
+    
+    # Revised Plan cumulative
+    revised_plan = [
+        0.98, 1.10, 1.24, 1.43, 1.54, 1.66, 1.83, 1.91, 2.00, 2.08, 2.16, 2.29, 2.55, 2.82, 3.11, 3.39,
+        3.68, 3.97, 4.26, 4.55, 4.82, 5.10, 5.38, 5.86, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24,
+        6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24,
+        6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.56,
+        6.95, 7.44, 7.93, 8.42, 8.93, 9.52, 10.11, 10.71, 11.31, 11.99, 12.68, 13.31, 13.94, 14.63, 15.32,
+        16.02, 16.72, 17.44, 18.22, 19.00, 19.77, 20.55, 21.33, 22.12, 22.97, 23.79, 24.63, 25.50, 26.36,
+        27.25, 28.14, 29.03, 29.91, 30.80, 31.69, 32.58, 33.37, 34.17, 35.26, 36.03, 36.52, 37.00, 37.37,
+        37.73, 38.03, 38.34, 38.64, 38.94, 39.24, 39.55, 39.86, 40.19, 40.50, 40.82, 41.14, 41.62, 42.27,
+        42.96, 43.64, 44.33, 45.03, 45.72, 46.45, 47.22, 48.00, 48.77, 49.45, 50.14, 50.82, 51.51, 52.53,
+        53.57, 54.57, 55.44, 56.33, 57.44, 58.57, 59.69, 60.82, 61.88, 63.05, 64.20, 65.27, 66.35, 67.42,
+        68.50, 69.55, 70.60, 71.50, 72.23, 73.10, 74.03, 74.97, 75.90, 76.82, 77.53, 78.27, 79.06, 79.86,
+        80.70, 81.53, 82.37, 83.24, 83.96, 84.53, 85.11, 85.69, 85.94, 86.35, 86.84, 87.32, 87.66, 87.98,
+        88.19, 88.64, 89.09, 89.54, 90.05, 90.79, 91.86, 92.98, 94.49, 96.00, 97.42, 98.58, 99.03, 99.47, 99.50, 100.00
+    ]
+    while len(revised_plan) < 193:
+        revised_plan.append(100.00)
+    
+    # Actual progress weekly
+    actual_weekly = [
+        0.88, 0.91, 0.95, 1.00, 1.05, 1.10, 1.45, 1.62, 2.12, 2.45, 2.85, 3.21, 3.44, 3.85, 3.95, 4.05,
+        4.17, 4.30, 4.40, 4.50, 4.61, 4.70, 4.81, 4.89, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04,
+        5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04,
+        5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 7.33,
+        9.88, 11.61, 13.40, 15.45, 17.73, 20.02, 22.30, 24.59, 24.67, 24.75, 24.83, 24.92, 25.14, 25.34, 25.55, 25.75
+    ]
+    while len(actual_weekly) < 193:
+        actual_weekly.append(25.75)
+    
+    weeks = list(range(1, 194))
+    current_week_idx = 0
+    for i, val in enumerate(actual_weekly):
+        if val >= 25.75:
+            current_week_idx = i
+            break
     
     # ============================================================
-    # COMPLETE WORK ITEMS DATA (85+ items)
+    # WORK ITEMS DATA
     # ============================================================
     
     if 'infrastructure_work_items' not in st.session_state:
@@ -520,30 +573,7 @@ def show_mpcfs_scurve_tracker(component="infrastructure"):
     total_actual_cost = sum(item['cost'] for item in work_items)
     
     # ============================================================
-    # S-CURVE DATA
-    # ============================================================
-    
-    original_plan = [0.99, 1.12, 1.27, 1.47, 1.59, 1.72, 1.90, 2.00, 2.09, 2.17, 2.24, 2.47, 2.80, 3.10, 3.41, 3.73, 4.03, 4.33, 4.63, 4.98, 5.32, 5.66, 6.01, 6.21, 6.91, 7.62, 9.34, 11.06, 12.79, 14.74, 16.71, 18.34, 19.97, 21.70, 23.70, 25.71, 27.64, 29.54, 31.39, 33.18, 34.90, 36.54, 38.17, 39.81, 41.39, 42.93, 44.40, 45.31, 45.66, 46.21, 46.90, 47.50, 48.10, 48.70, 49.32, 49.94, 50.56, 51.19, 51.82, 52.50, 53.22, 53.65, 54.42, 55.35, 56.10, 56.85, 57.60, 58.23, 58.86, 59.49, 60.09, 60.49, 61.01, 61.55, 62.04, 62.53, 63.01, 63.50, 63.98, 64.31, 64.43, 64.55, 65.03, 65.52, 65.96, 66.36, 66.76, 67.37, 67.99, 68.62, 69.26, 69.90, 70.44, 70.96, 71.46, 71.96, 72.47, 72.97, 73.48, 74.00, 74.50, 75.00, 75.33, 75.69, 76.05, 76.41, 76.77, 77.12, 77.46, 77.79, 78.12, 78.46, 78.80, 79.14, 79.48, 79.88, 80.26, 80.63, 81.00, 81.37, 81.82, 82.27, 82.80, 83.23, 83.65, 84.08, 84.74, 85.63, 86.52, 87.48, 88.66, 90.23, 91.80, 93.79, 95.79, 97.61, 99.16, 99.34, 99.96, 100.00]
-    while len(original_plan) < 193:
-        original_plan.append(100.00)
-    
-    revised_plan = [0.98, 1.10, 1.24, 1.43, 1.54, 1.66, 1.83, 1.91, 2.00, 2.08, 2.16, 2.29, 2.55, 2.82, 3.11, 3.39, 3.68, 3.97, 4.26, 4.55, 4.82, 5.10, 5.38, 5.86, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.56, 6.95, 7.44, 7.93, 8.42, 8.93, 9.52, 10.11, 10.71, 11.31, 11.99, 12.68, 13.31, 13.94, 14.63, 15.32, 16.02, 16.72, 17.44, 18.22, 19.00, 19.77, 20.55, 21.33, 22.12, 22.97, 23.79, 24.63, 25.50, 26.36, 27.25, 28.14, 29.03, 29.91, 30.80, 31.69, 32.58, 33.37, 34.17, 35.26, 36.03, 36.52, 37.00, 37.37, 37.73, 38.03, 38.34, 38.64, 38.94, 39.24, 39.55, 39.86, 40.19, 40.50, 40.82, 41.14, 41.62, 42.27, 42.96, 43.64, 44.33, 45.03, 45.72, 46.45, 47.22, 48.00, 48.77, 49.45, 50.14, 50.82, 51.51, 52.53, 53.57, 54.57, 55.44, 56.33, 57.44, 58.57, 59.69, 60.82, 61.88, 63.05, 64.20, 65.27, 66.35, 67.42, 68.50, 69.55, 70.60, 71.50, 72.23, 73.10, 74.03, 74.97, 75.90, 76.82, 77.53, 78.27, 79.06, 79.86, 80.70, 81.53, 82.37, 83.24, 83.96, 84.53, 85.11, 85.69, 85.94, 86.35, 86.84, 87.32, 87.66, 87.98, 88.19, 88.64, 89.09, 89.54, 90.05, 90.79, 91.86, 92.98, 94.49, 96.00, 97.42, 98.58, 99.03, 99.47, 99.50, 100.00]
-    while len(revised_plan) < 193:
-        revised_plan.append(100.00)
-    
-    actual_weekly = [0.88, 0.91, 0.95, 1.00, 1.05, 1.10, 1.45, 1.62, 2.12, 2.45, 2.85, 3.21, 3.44, 3.85, 3.95, 4.05, 4.17, 4.30, 4.40, 4.50, 4.61, 4.70, 4.81, 4.89, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 7.33, 9.88, 11.61, 13.40, 15.45, 17.73, 20.02, 22.30, 24.59, 24.67, 24.75, 24.83, 24.92, 25.14, 25.34, 25.55, 25.75]
-    while len(actual_weekly) < 193:
-        actual_weekly.append(25.75)
-    
-    weeks = list(range(1, 194))
-    current_week_idx = 0
-    for i, val in enumerate(actual_weekly):
-        if val >= overall_progress:
-            current_week_idx = i
-            break
-    
-    # ============================================================
-    # KPI CARDS - MATCHES YOUR SCREENSHOT
+    # KPI CARDS
     # ============================================================
     
     st.markdown("### 📊 Key Performance Indicators")
@@ -569,29 +599,61 @@ def show_mpcfs_scurve_tracker(component="infrastructure"):
     st.markdown("---")
     
     # ============================================================
-    # S-CURVE CHART
+    # PROGRESS S-CURVE (1st Chart)
     # ============================================================
     
     st.markdown("### 📈 S-Curve: Planned vs Actual Progress")
     st.markdown("**📍 As of: Week 80 (March 31, 2026)**")
     
-    fig = go.Figure()
-    fig.add_trace(go.Scatter(x=weeks[:len(original_plan)], y=original_plan, mode='lines', name='Original Plan', line=dict(color='#1f77b4', width=2, dash='dash'), opacity=0.8))
-    fig.add_trace(go.Scatter(x=weeks[:len(revised_plan)], y=revised_plan, mode='lines', name='Revised Plan', line=dict(color='#ff7f0e', width=2, dash='dot'), opacity=0.8))
-    fig.add_trace(go.Scatter(x=weeks[:current_week_idx + 1], y=actual_weekly[:current_week_idx + 1], mode='lines+markers', name='Actual Progress', line=dict(color='#2ca02c', width=3), marker=dict(size=4)))
-    fig.add_vline(x=current_week_idx + 1, line_dash="dash", line_color="#7f7f7f", line_width=1.5, annotation_text=f"Week {current_week_idx + 1}", annotation_position="top right")
-    fig.update_layout(title="Project Progress S-Curve (September 2024 - May 2028)", xaxis_title="Week Number", yaxis_title="Cumulative Progress (%)", yaxis_range=[0, 105], height=450, hovermode='x unified', plot_bgcolor='white')
-    st.plotly_chart(fig, use_container_width=True)
+    fig1 = go.Figure()
+    fig1.add_trace(go.Scatter(x=weeks[:len(original_plan)], y=original_plan, mode='lines', name='Original Plan', line=dict(color='#1f77b4', width=2, dash='dash'), opacity=0.8))
+    fig1.add_trace(go.Scatter(x=weeks[:len(revised_plan)], y=revised_plan, mode='lines', name='Revised Plan', line=dict(color='#ff7f0e', width=2, dash='dot'), opacity=0.8))
+    fig1.add_trace(go.Scatter(x=weeks[:current_week_idx + 1], y=actual_weekly[:current_week_idx + 1], mode='lines+markers', name='Actual Progress', line=dict(color='#2ca02c', width=3), marker=dict(size=4)))
+    fig1.add_vline(x=current_week_idx + 1, line_dash="dash", line_color="#7f7f7f", line_width=1.5, annotation_text=f"Week {current_week_idx + 1}", annotation_position="top right")
+    fig1.update_layout(title="Project Progress S-Curve (September 2024 - May 2028)", xaxis_title="Week Number", yaxis_title="Cumulative Progress (%)", yaxis_range=[0, 105], height=400, hovermode='x unified', plot_bgcolor='white')
+    st.plotly_chart(fig1, use_container_width=True)
     
     # ============================================================
-    # ITEMIZED WORK DETAILS TABLE (FULLY EDITABLE)
+    # COST S-CURVE (2nd Chart)
+    # ============================================================
+    
+    st.markdown("### 💰 Cost S-Curve: Planned vs Actual Expenditure")
+    
+    # Calculate cost curves
+    original_cost_curve = [(p / 100) * CONTRACT_AMOUNT / 1_000_000 for p in original_plan]
+    revised_cost_curve = [(p / 100) * CONTRACT_AMOUNT / 1_000_000 for p in revised_plan]
+    actual_cost_curve = [(p / 100) * CONTRACT_AMOUNT / 1_000_000 for p in actual_weekly]
+    
+    fig2 = go.Figure()
+    fig2.add_trace(go.Scatter(x=weeks[:len(original_cost_curve)], y=original_cost_curve, mode='lines', name='Original Plan', line=dict(color='#1f77b4', width=2, dash='dash'), opacity=0.8))
+    fig2.add_trace(go.Scatter(x=weeks[:len(revised_cost_curve)], y=revised_cost_curve, mode='lines', name='Revised Plan', line=dict(color='#ff7f0e', width=2, dash='dot'), opacity=0.8))
+    fig2.add_trace(go.Scatter(x=weeks[:current_week_idx + 1], y=actual_cost_curve[:current_week_idx + 1], mode='lines+markers', name='Actual Cost', line=dict(color='#d62728', width=3), marker=dict(size=4)))
+    fig2.add_vline(x=current_week_idx + 1, line_dash="dash", line_color="#7f7f7f", line_width=1.5)
+    fig2.update_layout(title="Cost S-Curve (in Million ₱)", xaxis_title="Week Number", yaxis_title="Cost (₱ Million)", height=400, hovermode='x unified', plot_bgcolor='white')
+    st.plotly_chart(fig2, use_container_width=True)
+    
+    # ============================================================
+    # TARGET SUMMARY
+    # ============================================================
+    
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.info(f"📋 **Original Plan at Week 80:** 64.31%")
+    with col2:
+        st.info(f"📋 **Revised Plan at Week 80:** 25.75%")
+    with col3:
+        st.success(f"✅ **Actual Progress at Week 80:** {overall_progress:.2f}%")
+    
+    st.markdown("---")
+    
+    # ============================================================
+    # ITEMIZED WORK DETAILS TABLE
     # ============================================================
     
     st.markdown("### 📋 Itemized Work Details")
     st.markdown("> 🟢 **GREEN highlighted columns** are editable. Edit then click **💾 SAVE ALL CHANGES**")
     
-    # Category filter
-    categories = ["All", "Civil Works", "Structural", "Architectural", "Electrical", "Mechanical", "Equipment"]
+    categories = ["All", "Civil Works", "Structural", "Architectural"]
     selected_category = st.selectbox("🔍 Filter by Category", categories)
     
     if selected_category != "All":
@@ -649,29 +711,25 @@ def show_mpcfs_scurve_tracker(component="infrastructure"):
         with col3:
             st.caption(f"📊 Overall Progress: {overall_progress:.2f}% | Total Cost: ₱{total_actual_cost:,.2f}")
         
-        # ============================================================
-        # SUMMARY TOTALS
-        # ============================================================
-        
+        # Summary Totals
         st.markdown("---")
         st.markdown("### 📊 Summary Totals")
         
-        total_contract = CONTRACT_AMOUNT
-        total_planned = sum((item['planned'] * item['weight'] / 100) * CONTRACT_AMOUNT / 100 for item in work_items)
+        total_planned_cost = sum((item['planned'] * item['weight'] / 100) * CONTRACT_AMOUNT / 100 for item in work_items)
         
         col1, col2, col3, col4 = st.columns(4)
         with col1:
-            st.metric("Total Contract", f"₱{total_contract:,.2f}")
+            st.metric("Total Contract", f"₱{CONTRACT_AMOUNT:,.2f}")
         with col2:
-            st.metric("Total Planned", f"₱{total_planned:,.2f}")
+            st.metric("Total Planned", f"₱{total_planned_cost:,.2f}")
         with col3:
             st.metric("🟢 Total Actual", f"₱{total_actual_cost:,.2f}")
         with col4:
-            st.metric("Variance", f"₱{total_actual_cost - total_planned:+,.2f}")
+            st.metric("Variance", f"₱{total_actual_cost - total_planned_cost:+,.2f}")
     
     st.markdown("---")
     st.caption(f"Last updated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-    
+
 def show_cca_analytics():
     """Display CCA analytics and insights"""
     
