@@ -298,22 +298,52 @@ def show_mpcfs_component_placeholder(component_name, icon):
 
 
 def show_mpcfs_scurve_tracker(component="infrastructure"):
-    """MPCFS Infrastructure S-Curve Tracker - COMPLETE WORKING VERSION with all features"""
+    """MPCFS Infrastructure S-Curve Tracker - COMPLETE with Itemized Work Table"""
     
     st.markdown(f"#### 🏗️ Infrastructure Component - S-Curve Tracker")
     st.caption(f"Track physical and financial progress | Contract: ₱249,040,900.00")
     
     CONTRACT_AMOUNT = 249_040_900.00
-    
-    # Initialize session state for progress if not exists
-    if 'infrastructure_progress' not in st.session_state:
-        st.session_state.infrastructure_progress = 25.75
+    prefix = "infrastructure_"
     
     # ============================================================
-    # S-CURVE DATA (Original Plan, Revised Plan, Actual)
+    # COMPLETE WORK ITEMS DATA (from your Excel)
     # ============================================================
     
-    # Original Plan cumulative percentages (from your Excel)
+    if f'{prefix}work_items' not in st.session_state:
+        work_items = [
+            # Civil Works
+            {"no": "A.1.1 (8)", "description": "Provision of Field Office for the Engineer", "category": "Civil Works", "weight": 0.546, "planned": 0.547, "actual": 0.50, "cost": 1_360_800},
+            {"no": "A.1.2 (2)", "description": "Provision of 4x4 Pick Up Vehicle", "category": "Civil Works", "weight": 0.919, "planned": 0.919, "actual": 0.85, "cost": 2_289_000},
+            {"no": "B.3", "description": "Permits and Clearances", "category": "Civil Works", "weight": 0.126, "planned": 0.126, "actual": 0.126, "cost": 315_000},
+            {"no": "B.5", "description": "Project Billboard and Signboard", "category": "Civil Works", "weight": 0.004, "planned": 0.004, "actual": 0.004, "cost": 10_500},
+            {"no": "B.7 (2)", "description": "Occupational Safety and Health Program", "category": "Civil Works", "weight": 1.229, "planned": 1.229, "actual": 1.10, "cost": 3_061_108},
+            {"no": "B.9", "description": "Mobilization/Demobilization", "category": "Civil Works", "weight": 0.873, "planned": 0.873, "actual": 0.873, "cost": 2_174_130},
+            {"no": "B.13", "description": "Additional Geotechnical Investigation", "category": "Civil Works", "weight": 0.126, "planned": 0.126, "actual": 0.126, "cost": 315_000},
+            {"no": "B.25", "description": "Detailed Engineering and Architectural Design", "category": "Civil Works", "weight": 0.170, "planned": 0.170, "actual": 0.170, "cost": 424_499},
+            {"no": "101(1)", "description": "Removal of Structures and Obstructions", "category": "Civil Works", "weight": 0.004, "planned": 0.004, "actual": 0.004, "cost": 9_419},
+            {"no": "404", "description": "Reinforcing Steel Bar, Grade 40", "category": "Structural", "weight": 1.417, "planned": 1.417, "actual": 1.14, "cost": 2_834_045},
+            {"no": "405", "description": "Structural Concrete Class A", "category": "Structural", "weight": 1.971, "planned": 1.971, "actual": 0.70, "cost": 1_740_048},
+            {"no": "803(1)a", "description": "Structure Excavation", "category": "Structural", "weight": 0.628, "planned": 0.628, "actual": 0.54, "cost": 1_357_263},
+            {"no": "804(4)", "description": "Gravel Fill", "category": "Structural", "weight": 0.632, "planned": 0.632, "actual": 0.54, "cost": 1_336_224},
+            {"no": "1706(1)", "description": "Overhaul", "category": "Structural", "weight": 0.291, "planned": 0.291, "actual": 0.23, "cost": 560_761},
+            {"no": "900(1)c2", "description": "Structural Concrete for Footing", "category": "Structural", "weight": 1.710, "planned": 1.710, "actual": 1.43, "cost": 3_561_496},
+            {"no": "900(1)", "description": "Structural Concrete for Columns", "category": "Structural", "weight": 4.134, "planned": 4.134, "actual": 1.39, "cost": 3_449_789},
+            {"no": "902(1) a", "description": "Reinforcing Steel", "category": "Structural", "weight": 9.308, "planned": 9.308, "actual": 3.06, "cost": 7_625_371},
+            {"no": "903(1)", "description": "Formworks and Falseworks", "category": "Structural", "weight": 1.270, "planned": 1.270, "actual": 0.38, "cost": 948_291},
+            {"no": "1047 (1)", "description": "Structural Steel", "category": "Structural", "weight": 14.170, "planned": 14.170, "actual": 11.44, "cost": 28_583_543},
+            {"no": "1047 (2)a", "description": "Structural Steel (Trusses)", "category": "Structural", "weight": 1.757, "planned": 1.757, "actual": 0.33, "cost": 823_223},
+            {"no": "1047 (3)a", "description": "Anchor Bolt", "category": "Structural", "weight": 1.505, "planned": 1.505, "actual": 1.39, "cost": 3_453_257},
+            {"no": "1047 (5)", "description": "Steel Plates", "category": "Structural", "weight": 1.799, "planned": 1.799, "actual": 1.23, "cost": 3_071_727},
+            {"no": "1001(11)", "description": "Septic Vault", "category": "Architectural", "weight": 0.436, "planned": 0.436, "actual": 0.22, "cost": 543_264},
+        ]
+        st.session_state[f'{prefix}work_items'] = work_items
+    
+    # ============================================================
+    # S-CURVE DATA
+    # ============================================================
+    
+    # Original Plan cumulative
     original_plan = [
         0.99, 1.12, 1.27, 1.47, 1.59, 1.72, 1.90, 2.00, 2.09, 2.17, 2.24, 2.47, 2.80, 3.10, 3.41, 3.73,
         4.03, 4.33, 4.63, 4.98, 5.32, 5.66, 6.01, 6.21, 6.91, 7.62, 9.34, 11.06, 12.79, 14.74, 16.71, 18.34,
@@ -326,8 +356,10 @@ def show_mpcfs_scurve_tracker(component="infrastructure"):
         80.26, 80.63, 81.00, 81.37, 81.82, 82.27, 82.80, 83.23, 83.65, 84.08, 84.74, 85.63, 86.52, 87.48,
         88.66, 90.23, 91.80, 93.79, 95.79, 97.61, 99.16, 99.34, 99.96, 100.00
     ]
+    while len(original_plan) < 193:
+        original_plan.append(100.00)
     
-    # Revised Plan cumulative percentages (from your Excel)
+    # Revised Plan cumulative
     revised_plan = [
         0.98, 1.10, 1.24, 1.43, 1.54, 1.66, 1.83, 1.91, 2.00, 2.08, 2.16, 2.29, 2.55, 2.82, 3.11, 3.39,
         3.68, 3.97, 4.26, 4.55, 4.82, 5.10, 5.38, 5.86, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24,
@@ -343,8 +375,10 @@ def show_mpcfs_scurve_tracker(component="infrastructure"):
         80.70, 81.53, 82.37, 83.24, 83.96, 84.53, 85.11, 85.69, 85.94, 86.35, 86.84, 87.32, 87.66, 87.98,
         88.19, 88.64, 89.09, 89.54, 90.05, 90.79, 91.86, 92.98, 94.49, 96.00, 97.42, 98.58, 99.03, 99.47, 99.50, 100.00
     ]
+    while len(revised_plan) < 193:
+        revised_plan.append(100.00)
     
-    # Actual progress weekly (from your Excel, stops at 25.75%)
+    # Actual progress weekly
     actual_weekly = [
         0.88, 0.91, 0.95, 1.00, 1.05, 1.10, 1.45, 1.62, 2.12, 2.45, 2.85, 3.21, 3.44, 3.85, 3.95, 4.05,
         4.17, 4.30, 4.40, 4.50, 4.61, 4.70, 4.81, 4.89, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04,
@@ -352,21 +386,25 @@ def show_mpcfs_scurve_tracker(component="infrastructure"):
         5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 7.33,
         9.88, 11.61, 13.40, 15.45, 17.73, 20.02, 22.30, 24.59, 24.67, 24.75, 24.83, 24.92, 25.14, 25.34, 25.55, 25.75
     ]
-    
-    # Extend arrays to 193 weeks
-    while len(original_plan) < 193:
-        original_plan.append(100.00)
-    while len(revised_plan) < 193:
-        revised_plan.append(100.00)
     while len(actual_weekly) < 193:
         actual_weekly.append(25.75)
     
-    weeks = list(range(1, 194))
+    work_items = st.session_state[f'{prefix}work_items']
     
-    # Find current week (where actual reaches 25.75%)
+    # Calculate overall progress from work items
+    total_weight = sum(item['weight'] for item in work_items)
+    weighted_actual = sum((item['weight'] * item['actual']) / 100 for item in work_items)
+    overall_progress = weighted_actual
+    total_actual_cost = sum(item['cost'] for item in work_items)
+    
+    # Update session state
+    st.session_state.infrastructure_progress = overall_progress
+    st.session_state.infrastructure_cost = total_actual_cost
+    
+    weeks = list(range(1, 194))
     current_week_idx = 0
     for i, val in enumerate(actual_weekly):
-        if val >= st.session_state.infrastructure_progress and st.session_state.infrastructure_progress > 0:
+        if val >= overall_progress and overall_progress > 0:
             current_week_idx = i
             break
     
@@ -377,28 +415,21 @@ def show_mpcfs_scurve_tracker(component="infrastructure"):
     col1, col2, col3, col4, col5 = st.columns(5)
     
     with col1:
-        st.metric("Overall Progress", f"{st.session_state.infrastructure_progress:.2f}%")
-    
+        st.metric("Overall Progress", f"{overall_progress:.2f}%")
     with col2:
-        slippage = st.session_state.infrastructure_progress - 25.75
-        st.metric("Slippage vs Revised Plan", f"{slippage:+.2f}%", 
-                  delta="Ahead" if slippage >= 0 else "Behind",
-                  delta_color="normal" if slippage >= 0 else "inverse")
-    
+        slippage = overall_progress - 25.75
+        st.metric("Slippage vs Revised Plan", f"{slippage:+.2f}%")
     with col3:
-        st.metric("Original Plan at Week 80", "64.31%")
-    
+        st.metric("Total Cost Utilized", f"₱{total_actual_cost:,.2f}")
     with col4:
-        st.metric("Revised Plan at Week 80", "25.75%")
-    
+        st.metric("Original Plan at Week 80", "64.31%")
     with col5:
-        status = "✅ ON TRACK" if st.session_state.infrastructure_progress >= 25 else "⚠️ BEHIND"
-        st.metric("Status", status)
+        st.metric("Revised Plan at Week 80", "25.75%")
     
     st.markdown("---")
     
     # ============================================================
-    # S-CURVE CHART - ALL THREE LINES
+    # S-CURVE CHART
     # ============================================================
     
     st.markdown("### 📈 S-Curve: Planned vs Actual Progress")
@@ -406,131 +437,94 @@ def show_mpcfs_scurve_tracker(component="infrastructure"):
     
     fig = go.Figure()
     
-    # Original Plan (Blue, dashed)
-    fig.add_trace(go.Scatter(
-        x=weeks[:len(original_plan)], 
-        y=original_plan,
-        mode='lines', 
-        name='Original Plan',
-        line=dict(color='#1f77b4', width=2, dash='dash'),
-        opacity=0.8
-    ))
+    fig.add_trace(go.Scatter(x=weeks[:len(original_plan)], y=original_plan, mode='lines', name='Original Plan', line=dict(color='#1f77b4', width=2, dash='dash'), opacity=0.8))
+    fig.add_trace(go.Scatter(x=weeks[:len(revised_plan)], y=revised_plan, mode='lines', name='Revised Plan', line=dict(color='#ff7f0e', width=2, dash='dot'), opacity=0.8))
+    fig.add_trace(go.Scatter(x=weeks[:current_week_idx + 1], y=actual_weekly[:current_week_idx + 1], mode='lines+markers', name='Actual Progress', line=dict(color='#2ca02c', width=3), marker=dict(size=4)))
     
-    # Revised Plan (Orange, dotted)
-    fig.add_trace(go.Scatter(
-        x=weeks[:len(revised_plan)], 
-        y=revised_plan,
-        mode='lines', 
-        name='Revised Plan',
-        line=dict(color='#ff7f0e', width=2, dash='dot'),
-        opacity=0.8
-    ))
+    fig.add_vline(x=current_week_idx + 1, line_dash="dash", line_color="#7f7f7f", line_width=1.5, annotation_text=f"Week {current_week_idx + 1}", annotation_position="top right")
     
-    # Actual Progress (Green, solid)
-    fig.add_trace(go.Scatter(
-        x=weeks[:current_week_idx + 1], 
-        y=actual_weekly[:current_week_idx + 1],
-        mode='lines+markers', 
-        name='Actual Progress',
-        line=dict(color='#2ca02c', width=3),
-        marker=dict(size=4, symbol='circle', color='#2ca02c')
-    ))
-    
-    # Projected Actual (dotted green)
-    if current_week_idx < 192:
-        fig.add_trace(go.Scatter(
-            x=weeks[current_week_idx + 1:], 
-            y=[st.session_state.infrastructure_progress] * (192 - current_week_idx),
-            mode='lines', 
-            name='Projected (if no change)',
-            line=dict(color='#2ca02c', width=2, dash='dot'),
-            opacity=0.6
-        ))
-    
-    # Current week vertical line
-    fig.add_vline(
-        x=current_week_idx + 1, 
-        line_dash="dash", 
-        line_color="#7f7f7f", 
-        line_width=1.5,
-        annotation_text=f"Week {current_week_idx + 1}",
-        annotation_position="top right"
-    )
-    
-    fig.update_layout(
-        title=dict(
-            text="Project Progress S-Curve (September 2024 - May 2028)",
-            font=dict(size=14, color="#2c3e50")
-        ),
-        xaxis=dict(
-            title="Week Number",
-            title_font=dict(size=12),
-            tickfont=dict(size=10),
-            gridcolor="#e0e0e0",
-            showgrid=True
-        ),
-        yaxis=dict(
-            title="Cumulative Progress (%)",
-            title_font=dict(size=12),
-            tickfont=dict(size=10),
-            range=[0, 105],
-            gridcolor="#e0e0e0",
-            showgrid=True
-        ),
-        height=450,
-        hovermode='x unified',
-        legend=dict(
-            x=0.02, 
-            y=0.98, 
-            bgcolor='rgba(255,255,255,0.9)',
-            bordercolor="#d0d0d0",
-            borderwidth=1,
-            font=dict(size=11)
-        ),
-        plot_bgcolor='white',
-        paper_bgcolor='white'
-    )
-    
+    fig.update_layout(title="Project Progress S-Curve (September 2024 - May 2028)", xaxis_title="Week Number", yaxis_title="Cumulative Progress (%)", yaxis_range=[0, 105], height=450, hovermode='x unified', plot_bgcolor='white')
     st.plotly_chart(fig, use_container_width=True)
     
     # ============================================================
-    # TARGET SUMMARY
+    # ITEMIZED WORK DETAILS TABLE (EDITABLE)
     # ============================================================
     
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        st.info(f"📋 **Original Plan at Week 80:** 64.31%")
-    with col2:
-        st.info(f"📋 **Revised Plan at Week 80:** 25.75%")
-    with col3:
-        st.success(f"✅ **Actual Progress at Week 80:** {st.session_state.infrastructure_progress:.2f}%")
+    st.markdown("### 📋 Itemized Work Details")
+    st.markdown("> 🟢 **Edit the 'Actual %' and 'Actual Cost' columns below. Click SAVE ALL CHANGES to update.**")
     
-    st.markdown("---")
+    # Category filter
+    categories = ["All", "Civil Works", "Structural", "Architectural"]
+    selected_category = st.selectbox("🔍 Filter by Category", categories)
     
-    # ============================================================
-    # QUICK PROGRESS UPDATE (Simple version for now)
-    # ============================================================
+    if selected_category != "All":
+        filtered_items = [item for item in work_items if item.get('category') == selected_category]
+    else:
+        filtered_items = work_items
     
-    st.markdown("### ✏️ Update Progress")
-    st.caption("Update the overall progress after fieldwork")
-    
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        new_progress = st.number_input(
-            "Enter New Overall Progress (%)",
-            min_value=0.0,
-            max_value=100.0,
-            value=float(st.session_state.infrastructure_progress),
-            step=0.5,
-            format="%.2f"
+    if filtered_items:
+        df_items = pd.DataFrame(filtered_items)
+        df_items['Variance (%)'] = df_items['actual'] - df_items['planned']
+        df_items['Status'] = df_items['Variance (%)'].apply(lambda x: '✅ Ahead' if x > 0.1 else ('🟡 On Track' if x >= -0.1 else '🔴 Behind'))
+        
+        display_df = df_items[['no', 'description', 'weight', 'planned', 'actual', 'cost', 'Variance (%)', 'Status']].copy()
+        display_df.columns = ['Item No.', 'Description', 'Weight (%)', 'Planned (%)', '🟢 Actual (%)', '🟢 Actual Cost (₱)', 'Variance (%)', 'Status']
+        
+        edited_df = st.data_editor(
+            display_df,
+            use_container_width=True,
+            hide_index=True,
+            column_config={
+                "Item No.": st.column_config.TextColumn("Item No.", width="small", disabled=True),
+                "Description": st.column_config.TextColumn("Description", width="large", disabled=True),
+                "Weight (%)": st.column_config.NumberColumn("Weight (%)", format="%.3f", disabled=True),
+                "Planned (%)": st.column_config.NumberColumn("Planned (%)", format="%.3f", disabled=True),
+                "🟢 Actual (%)": st.column_config.NumberColumn("🟢 Actual (%)", min_value=0.0, max_value=100.0, step=0.5, format="%.2f"),
+                "🟢 Actual Cost (₱)": st.column_config.NumberColumn("🟢 Actual Cost (₱)", min_value=0, step=10000, format="₱%.2f"),
+                "Variance (%)": st.column_config.NumberColumn("Variance (%)", format="%+.2f", disabled=True),
+                "Status": st.column_config.TextColumn("Status", disabled=True),
+            }
         )
-    
-    with col2:
-        if st.button("✅ Update Progress", type="primary", use_container_width=True):
-            st.session_state.infrastructure_progress = new_progress
-            st.success(f"✅ Progress updated to {new_progress:.2f}%")
-            st.rerun()
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("💾 SAVE ALL CHANGES", type="primary", use_container_width=True):
+                for idx, row in edited_df.iterrows():
+                    for original_item in work_items:
+                        if original_item['no'] == row['Item No.']:
+                            original_item['actual'] = row['🟢 Actual (%)']
+                            original_item['cost'] = row['🟢 Actual Cost (₱)']
+                            break
+                st.session_state[f'{prefix}work_items'] = work_items
+                st.success("✅ Changes saved! Progress recalculated.")
+                st.rerun()
+        
+        with col2:
+            if st.button("🔄 Reset to Zero", use_container_width=True):
+                for item in work_items:
+                    item['actual'] = 0
+                    item['cost'] = 0
+                st.session_state[f'{prefix}work_items'] = work_items
+                st.success("✅ Reset complete.")
+                st.rerun()
+        
+        # Summary Totals
+        st.markdown("---")
+        st.markdown("### 📊 Summary Totals")
+        
+        total_contract = sum(item['weight'] for item in work_items) * CONTRACT_AMOUNT / 100
+        total_planned_cost = sum((item['planned'] * item['weight'] / 100) * CONTRACT_AMOUNT / 100 for item in work_items)
+        
+        col1, col2, col3, col4 = st.columns(4)
+        with col1:
+            st.metric("Total Contract", f"₱{CONTRACT_AMOUNT:,.2f}")
+        with col2:
+            st.metric("Total Planned Cost", f"₱{total_planned_cost:,.2f}")
+        with col3:
+            st.metric("Total Actual Cost", f"₱{total_actual_cost:,.2f}")
+        with col4:
+            variance = total_actual_cost - total_planned_cost
+            st.metric("Cost Variance", f"₱{variance:+,.2f}")
     
     st.markdown("---")
     st.caption("Data source: MPCFS Project S-CURVE Sheet | Contract: ₱249,040,900.00")
