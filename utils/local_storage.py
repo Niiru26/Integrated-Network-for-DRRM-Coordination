@@ -1,184 +1,177 @@
 # utils/local_storage.py
+import streamlit as st
 import os
-import json
-import shutil
 from datetime import datetime
-from pathlib import Path
+from supabase import create_client
 
-# Base storage directory
-BASE_STORAGE_DIR = "local_storage"
+def get_supabase_client():
+    """Get Supabase client from session state"""
+    if 'supabase_client' not in st.session_state:
+        supabase_url = st.secrets["SUPABASE_URL"]
+        supabase_key = st.secrets["SUPABASE_KEY"]
+        st.session_state.supabase_client = create_client(supabase_url, supabase_key)
+    return st.session_state.supabase_client
 
-def get_storage_path(subfolder=""):
-    """Get storage path for files"""
-    if subfolder:
-        path = os.path.join(BASE_STORAGE_DIR, subfolder)
-    else:
-        path = BASE_STORAGE_DIR
+
+# =============================================================================
+# LOCAL STORAGE FUNCTIONS (for files saved on local computer)
+# =============================================================================
+
+def ensure_directory(path):
+    """Create directory if it doesn't exist"""
     os.makedirs(path, exist_ok=True)
     return path
 
-def get_storage_usage():
-    """Get storage usage statistics"""
-    total_size = 0
-    file_count = 0
-    
-    if os.path.exists(BASE_STORAGE_DIR):
-        for dirpath, dirnames, filenames in os.walk(BASE_STORAGE_DIR):
-            for f in filenames:
-                fp = os.path.join(dirpath, f)
-                if os.path.exists(fp):
-                    total_size += os.path.getsize(fp)
-                    file_count += 1
-    
-    return {
-        "total_size_bytes": total_size,
-        "total_size_mb": round(total_size / (1024 * 1024), 2),
-        "file_count": file_count,
-        "storage_path": BASE_STORAGE_DIR
-    }
 
-def save_file(file_path, content, mode='w'):
-    """Save file to local storage"""
-    os.makedirs(os.path.dirname(file_path), exist_ok=True)
-    with open(file_path, mode) as f:
-        f.write(content)
-    return True
+def get_storage_path(category, subcategory=None, filename=None):
+    """Get full storage path for a file"""
+    path = os.path.join("local_storage", category)
+    if subcategory:
+        path = os.path.join(path, subcategory)
+    ensure_directory(path)
+    if filename:
+        return os.path.join(path, filename)
+    return path
 
-def save_binary_file(file_path, content):
-    """Save binary file to local storage"""
-    os.makedirs(os.path.dirname(file_path), exist_ok=True)
-    with open(file_path, 'wb') as f:
-        f.write(content)
-    return True
+
+def save_file(uploaded_file, category, subcategory=None, custom_name=None):
+    """Save uploaded file to local storage"""
+    if not uploaded_file:
+        return None
+    
+    # Generate filename
+    if custom_name:
+        filename = custom_name
+    else:
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"{timestamp}_{uploaded_file.name}"
+    
+    # Get storage path
+    file_path = get_storage_path(category, subcategory, filename)
+    
+    # Save file
+    with open(file_path, "wb") as f:
+        f.write(uploaded_file.getbuffer())
+    
+    return file_path
+
 
 def delete_file(file_path):
-    """Delete file from local storage"""
-    if os.path.exists(file_path):
+    """Delete a file from local storage"""
+    if file_path and os.path.exists(file_path):
         os.remove(file_path)
         return True
     return False
 
-def get_file_size(file_path):
-    """Get file size in bytes"""
-    if os.path.exists(file_path):
-        return os.path.getsize(file_path)
-    return 0
 
 def file_exists(file_path):
     """Check if file exists"""
-    return os.path.exists(file_path)
+    return os.path.exists(file_path) if file_path else False
+
+
+def get_file_size(file_path):
+    """Get file size in human-readable format"""
+    if not file_path or not os.path.exists(file_path):
+        return "0 B"
+    return format_file_size(os.path.getsize(file_path))
+
 
 def get_file_info(file_path):
-    """Get file information including name, size, modified date"""
-    if os.path.exists(file_path):
-        stat = os.stat(file_path)
-        return {
-            "name": os.path.basename(file_path),
-            "size": stat.st_size,
-            "size_mb": round(stat.st_size / (1024 * 1024), 2),
-            "modified": datetime.fromtimestamp(stat.st_mtime).isoformat(),
-            "modified_str": datetime.fromtimestamp(stat.st_mtime).strftime("%Y-%m-%d %H:%M:%S"),
-            "path": file_path
-        }
-    return None
+    """Get file information"""
+    if not file_path or not os.path.exists(file_path):
+        return None
+    
+    stat = os.stat(file_path)
+    return {
+        "size": get_file_size(file_path),
+        "modified": datetime.fromtimestamp(stat.st_mtime).isoformat(),
+        "created": datetime.fromtimestamp(stat.st_ctime).isoformat()
+    }
 
-def save_file_to_cloud(file_path, content):
-    """Save file to cloud (Supabase) - placeholder"""
-    return save_file(file_path, content)
+
+def get_storage_usage():
+    """Get total storage usage"""
+    total_size = 0
+    if os.path.exists("local_storage"):
+        for root, dirs, files in os.walk("local_storage"):
+            for f in files:
+                file_path = os.path.join(root, f)
+                total_size += os.path.getsize(file_path)
+    return format_file_size(total_size)
+
+
+def format_file_size(size_bytes):
+    """Format file size in human-readable format"""
+    if size_bytes == 0:
+        return "0 B"
+    for unit in ['B', 'KB', 'MB', 'GB']:
+        if size_bytes < 1024:
+            return f"{size_bytes:.1f} {unit}"
+        size_bytes /= 1024
+    return f"{size_bytes:.1f} TB"
+
+
+# =============================================================================
+# CLOUD STORAGE FUNCTIONS (Supabase Storage - shared across all users)
+# =============================================================================
+
+def save_file_to_cloud(uploaded_file, folder, filename=None):
+    """Save uploaded file to Supabase Storage (cloud)"""
+    if not uploaded_file:
+        return None
+    
+    client = get_supabase_client()
+    
+    if not filename:
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"{timestamp}_{uploaded_file.name}"
+    
+    # Full path in bucket
+    file_path = f"{folder}/{filename}"
+    
+    try:
+        # Upload to Supabase Storage
+        client.storage.from_("indc_files").upload(
+            file_path,
+            uploaded_file.getvalue(),
+            {"content-type": uploaded_file.type}
+        )
+        
+        # Get public URL
+        public_url = client.storage.from_("indc_files").get_public_url(file_path)
+        
+        return {
+            "path": file_path,
+            "url": public_url,
+            "filename": filename,
+            "original_name": uploaded_file.name,
+            "size": len(uploaded_file.getvalue()),
+            "uploaded_at": datetime.now().isoformat()
+        }
+    except Exception as e:
+        st.error(f"Upload failed: {e}")
+        return None
+
 
 def delete_file_from_cloud(file_path):
-    """Delete file from cloud - placeholder"""
-    return delete_file(file_path)
+    """Delete file from Supabase Storage"""
+    if not file_path:
+        return False
+    
+    client = get_supabase_client()
+    
+    try:
+        client.storage.from_("indc_files").remove([file_path])
+        return True
+    except Exception as e:
+        print(f"Delete failed: {e}")
+        return False
+
 
 def get_file_url(file_path):
-    """Get file URL - placeholder"""
-    return file_path if os.path.exists(file_path) else None
-
-def list_files(directory):
-    """List all files in a directory"""
-    if os.path.exists(directory):
-        return [f for f in os.listdir(directory) if os.path.isfile(os.path.join(directory, f))]
-    return []
-
-def read_file(file_path):
-    """Read file content"""
-    if os.path.exists(file_path):
-        with open(file_path, 'r', encoding='utf-8') as f:
-            return f.read()
-    return None
-
-def read_binary_file(file_path):
-    """Read binary file content"""
-    if os.path.exists(file_path):
-        with open(file_path, 'rb') as f:
-            return f.read()
-    return None
-
-def create_backup(file_path, backup_dir="backups"):
-    """Create a backup of a file"""
-    if os.path.exists(file_path):
-        backup_path = get_storage_path(backup_dir)
-        backup_file = os.path.join(backup_path, f"{os.path.basename(file_path)}_{datetime.now().strftime('%Y%m%d_%H%M%S')}")
-        shutil.copy2(file_path, backup_file)
-        return backup_file
-    return None
-
-def restore_backup(backup_file, target_path):
-    """Restore a backup file"""
-    if os.path.exists(backup_file):
-        os.makedirs(os.path.dirname(target_path), exist_ok=True)
-        shutil.copy2(backup_file, target_path)
-        return True
-    return False
-
-def get_all_files(directory, extension=None):
-    """Get all files in a directory, optionally filtered by extension"""
-    files = []
-    if os.path.exists(directory):
-        for f in os.listdir(directory):
-            file_path = os.path.join(directory, f)
-            if os.path.isfile(file_path):
-                if extension is None or f.endswith(extension):
-                    files.append(file_path)
-    return files
-
-def clear_storage(subfolder=None):
-    """Clear storage directory"""
-    target = get_storage_path(subfolder) if subfolder else BASE_STORAGE_DIR
-    if os.path.exists(target):
-        shutil.rmtree(target)
-        os.makedirs(target, exist_ok=True)
-        return True
-    return False
-
-def get_file_metadata(file_path):
-    """Get detailed file metadata"""
-    if os.path.exists(file_path):
-        stat = os.stat(file_path)
-        return {
-            "name": os.path.basename(file_path),
-            "path": file_path,
-            "size_bytes": stat.st_size,
-            "size_kb": round(stat.st_size / 1024, 2),
-            "size_mb": round(stat.st_size / (1024 * 1024), 2),
-            "created": datetime.fromtimestamp(stat.st_ctime).isoformat(),
-            "modified": datetime.fromtimestamp(stat.st_mtime).isoformat(),
-            "accessed": datetime.fromtimestamp(stat.st_atime).isoformat()
-        }
-    return None
-
-def move_file(source, destination):
-    """Move a file from source to destination"""
-    if os.path.exists(source):
-        os.makedirs(os.path.dirname(destination), exist_ok=True)
-        shutil.move(source, destination)
-        return True
-    return False
-
-def copy_file(source, destination):
-    """Copy a file from source to destination"""
-    if os.path.exists(source):
-        os.makedirs(os.path.dirname(destination), exist_ok=True)
-        shutil.copy2(source, destination)
-        return True
-    return False
+    """Get public URL for a file"""
+    if not file_path:
+        return None
+    
+    client = get_supabase_client()
+    return client.storage.from_("indc_files").get_public_url(file_path)
