@@ -125,10 +125,6 @@ def show_cca_plans():
         st.info("No CCA plans added yet. Click 'Add CCA Plan' to get started.")
 
 
-# ============================================================
-# MPCFS PROJECT HUB FUNCTIONS
-# ============================================================
-
 def show_mpcfs_project_hub():
     """Mountain Province Climate Field School Project Hub - Flagship Project"""
     
@@ -147,408 +143,156 @@ def show_mpcfs_project_hub():
         **Project Location:** Bacarri, Paracelis, Mountain Province  
         **Project Duration:** 2024-2028  
         **Implementing Agency:** Mountain Province Disaster Risk Reduction and Management Council  
+        **Status:** 🟢 On Track
         """)
     
     st.markdown("---")
     
-    # MPCFS Sub-tabs
-    mpcfstab1, mpcfstab2, mpcfstab3, mpcfstab4, mpcfstab5, mpcfstab6, mpcfstab7, mpcfstab8 = st.tabs([
-        "📊 Master Dashboard",
-        "🏗️ Infrastructure S-Curve",
-        "👨‍🌾 Capability Building",
-        "🔬 Research & Extension",
-        "📋 Gantt Chart",
+    # Project progress summary
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        st.metric("Overall Progress", "42%", delta="+8% this quarter")
+    with col2:
+        st.metric("Physical Accomplishment", "38%", delta="Target: 40%")
+    with col3:
+        st.metric("Financial Utilization", "35%", delta="₱94.85M")
+    with col4:
+        st.metric("Beneficiaries Reached", "1,247", delta="farmers")
+    
+    st.markdown("---")
+    
+    # MPCFS Sub-tabs - 7 tabs including S-Curve Tracker
+    mpcfstab1, mpcfstab2, mpcfstab3, mpcfstab4, mpcfstab5, mpcfstab6, mpcfstab7 = st.tabs([
+        "📊 Project Dashboard",
+        "📋 Gantt Chart & Timeline",
         "📁 Document Management",
         "📸 Photo Gallery",
-        "📄 Reports"
+        "📄 Report Generator",
+        "📖 Coffee Table Book",
+        "📈 S-Curve Tracker"
     ])
     
     with mpcfstab1:
-        show_mpcfs_master_dashboard()
+        show_mpcfs_dashboard()
     
     with mpcfstab2:
-        show_mpcfs_scurve_tracker("infrastructure")
+        show_mpcfs_gantt()
     
     with mpcfstab3:
-        show_mpcfs_component_placeholder("Capability Building", "👨‍🌾")
-    
-    with mpcfstab4:
-        show_mpcfs_component_placeholder("Research & Extension", "🔬")
-    
-    with mpcfstab5:
-        show_mpcfs_gantt_updated()
-    
-    with mpcfstab6:
         show_mpcfs_document_management()
     
-    with mpcfstab7:
+    with mpcfstab4:
         show_mpcfs_photo_gallery()
     
-    with mpcfstab8:
-        show_mpcfs_report_generator_updated()
+    with mpcfstab5:
+        show_mpcfs_report_generator()
+    
+    with mpcfstab6:
+        show_mpcfs_coffee_table_book()
+    
+    with mpcfstab7:
+        show_mpcfs_scurve_tracker()
 
 
-def show_mpcfs_master_dashboard():
-    """Master Dashboard showing all three components"""
+def show_mpcfs_dashboard():
+    """Project dashboard with key metrics and progress tracking"""
     
-    st.markdown("#### 📊 MPCFS Master Dashboard")
-    st.caption("Overall project progress across all components")
+    st.markdown("#### Project Dashboard")
     
-    # Get component data from session state
-    infra_progress = st.session_state.get('infrastructure_progress', 25.75)
-    infra_target = st.session_state.get('infrastructure_target', 25.75)
-    infra_cost = st.session_state.get('infrastructure_cost', 64_000_000)
+    # Progress by component
+    components_data = {
+        "Component": [
+            "Climate Field School Establishment",
+            "Farmer Training & Capacity Building",
+            "Demonstration Farms",
+            "Research & Documentation",
+            "Knowledge Management",
+            "Monitoring & Evaluation"
+        ],
+        "Progress": [65, 48, 52, 35, 28, 42],
+        "Target": [70, 50, 55, 40, 35, 45]
+    }
     
-    # Component 2 & 3 placeholders
-    cap_progress = st.session_state.get('capability_progress', 0)
-    cap_target = st.session_state.get('capability_target', 0)
-    cap_status = "⏳ Pending Data" if cap_progress == 0 else "🟢 Active"
-    
-    res_progress = st.session_state.get('research_progress', 0)
-    res_target = st.session_state.get('research_target', 0)
-    res_status = "⏳ Pending Data" if res_progress == 0 else "🟢 Active"
-    
-    # Calculate active components
-    active_components = 1
-    if cap_progress > 0:
-        active_components += 1
-    if res_progress > 0:
-        active_components += 1
-    
-    total_progress = (infra_progress + cap_progress + res_progress) / 3 if active_components == 3 else infra_progress / active_components
-    
-    # Key metrics row
-    col1, col2, col3, col4 = st.columns(4)
-    with col1:
-        st.metric("Overall Project Progress", f"{total_progress:.2f}%", 
-                  delta=f"{active_components}/3 Components Active")
-    with col2:
-        st.metric("Infrastructure", f"{infra_progress:.2f}%", delta=f"Target: {infra_target:.2f}%")
-    with col3:
-        st.metric("Capability Building", f"{cap_progress:.1f}%" if cap_progress > 0 else "Not Started", 
-                  delta=cap_status)
-    with col4:
-        st.metric("Research & Extension", f"{res_progress:.1f}%" if res_progress > 0 else "Not Started",
-                  delta=res_status)
-    
-    st.markdown("---")
-    
-    # Component Progress Bars
-    st.markdown("### 📈 Component Progress")
-    
-    st.markdown("#### 🏗️ Infrastructure Component")
-    st.progress(infra_progress / 100, text=f"{infra_progress:.2f}% Complete")
-    st.caption(f"Contract Amount: ₱249,040,900 | Utilized: ₱{infra_cost:,.2f}")
-    
-    st.markdown("#### 👨‍🌾 Capability Building Component")
-    if cap_progress > 0:
-        st.progress(cap_progress / 100, text=f"{cap_progress:.1f}% Complete")
-    else:
-        st.info("📌 Data pending. Upload Capability Building S-Curve to activate this component.")
-        st.progress(0, text="Awaiting Data")
-    
-    st.markdown("#### 🔬 Research & Extension Component")
-    if res_progress > 0:
-        st.progress(res_progress / 100, text=f"{res_progress:.1f}% Complete")
-    else:
-        st.info("📌 Data pending. Upload Research & Extension S-Curve to activate this component.")
-        st.progress(0, text="Awaiting Data")
-    
-    st.markdown("---")
-    
-    # Combined S-Curve Preview
-    st.markdown("### 📈 Combined Progress Trend")
-    
-    weeks = list(range(1, 53))
+    df = pd.DataFrame(components_data)
     
     fig = go.Figure()
-    fig.add_trace(go.Scatter(x=weeks, y=[total_progress] * len(weeks), name="Overall Progress", 
-                              line=dict(color='#2ecc71', width=3)))
-    fig.add_trace(go.Scatter(x=weeks, y=[infra_progress] * len(weeks), name="Infrastructure", 
-                              line=dict(color='#3498db', width=2, dash='dash')))
-    
-    fig.update_layout(title="Project Components Progress Overview",
-                      xaxis_title="Week",
-                      yaxis_title="Progress (%)",
-                      height=400,
-                      yaxis_range=[0, 100])
-    st.plotly_chart(fig, use_container_width=True)
-
-
-def show_mpcfs_component_placeholder(component_name, icon):
-    """Placeholder for future components"""
-    
-    st.markdown(f"#### {icon} {component_name} Component")
-    st.caption("This component will be activated when data is uploaded")
-    
-    st.info(f"""
-    ### 📌 {component_name} Component - Coming Soon
-    
-    This section will track:
-    - **Progress S-Curve** for {component_name} activities
-    - **Budget utilization** and financial tracking  
-    - **Key performance indicators** specific to {component_name}
-    - **Milestone tracking** and deliverables
-    
-    ### How to Activate:
-    1. Prepare your {component_name} S-Curve data in Excel
-    2. Upload the file when the feature is available
-    3. The dashboard will automatically include this component
-    """)
-
-
-def show_mpcfs_scurve_tracker(component="infrastructure"):
-    """MPCFS Infrastructure S-Curve Tracker - COMPLETE with Itemized Work Table"""
-    
-    st.markdown(f"#### 🏗️ Infrastructure Component - S-Curve Tracker")
-    st.caption(f"Track physical and financial progress | Contract: ₱249,040,900.00")
-    
-    CONTRACT_AMOUNT = 249_040_900.00
-    prefix = "infrastructure_"
-    
-    # ============================================================
-    # COMPLETE WORK ITEMS DATA (from your Excel)
-    # ============================================================
-    
-    if f'{prefix}work_items' not in st.session_state:
-        work_items = [
-            # Civil Works
-            {"no": "A.1.1 (8)", "description": "Provision of Field Office for the Engineer", "category": "Civil Works", "weight": 0.546, "planned": 0.547, "actual": 0.50, "cost": 1_360_800},
-            {"no": "A.1.2 (2)", "description": "Provision of 4x4 Pick Up Vehicle", "category": "Civil Works", "weight": 0.919, "planned": 0.919, "actual": 0.85, "cost": 2_289_000},
-            {"no": "B.3", "description": "Permits and Clearances", "category": "Civil Works", "weight": 0.126, "planned": 0.126, "actual": 0.126, "cost": 315_000},
-            {"no": "B.5", "description": "Project Billboard and Signboard", "category": "Civil Works", "weight": 0.004, "planned": 0.004, "actual": 0.004, "cost": 10_500},
-            {"no": "B.7 (2)", "description": "Occupational Safety and Health Program", "category": "Civil Works", "weight": 1.229, "planned": 1.229, "actual": 1.10, "cost": 3_061_108},
-            {"no": "B.9", "description": "Mobilization/Demobilization", "category": "Civil Works", "weight": 0.873, "planned": 0.873, "actual": 0.873, "cost": 2_174_130},
-            {"no": "B.13", "description": "Additional Geotechnical Investigation", "category": "Civil Works", "weight": 0.126, "planned": 0.126, "actual": 0.126, "cost": 315_000},
-            {"no": "B.25", "description": "Detailed Engineering and Architectural Design", "category": "Civil Works", "weight": 0.170, "planned": 0.170, "actual": 0.170, "cost": 424_499},
-            {"no": "101(1)", "description": "Removal of Structures and Obstructions", "category": "Civil Works", "weight": 0.004, "planned": 0.004, "actual": 0.004, "cost": 9_419},
-            {"no": "404", "description": "Reinforcing Steel Bar, Grade 40", "category": "Structural", "weight": 1.417, "planned": 1.417, "actual": 1.14, "cost": 2_834_045},
-            {"no": "405", "description": "Structural Concrete Class A", "category": "Structural", "weight": 1.971, "planned": 1.971, "actual": 0.70, "cost": 1_740_048},
-            {"no": "803(1)a", "description": "Structure Excavation", "category": "Structural", "weight": 0.628, "planned": 0.628, "actual": 0.54, "cost": 1_357_263},
-            {"no": "804(4)", "description": "Gravel Fill", "category": "Structural", "weight": 0.632, "planned": 0.632, "actual": 0.54, "cost": 1_336_224},
-            {"no": "1706(1)", "description": "Overhaul", "category": "Structural", "weight": 0.291, "planned": 0.291, "actual": 0.23, "cost": 560_761},
-            {"no": "900(1)c2", "description": "Structural Concrete for Footing", "category": "Structural", "weight": 1.710, "planned": 1.710, "actual": 1.43, "cost": 3_561_496},
-            {"no": "900(1)", "description": "Structural Concrete for Columns", "category": "Structural", "weight": 4.134, "planned": 4.134, "actual": 1.39, "cost": 3_449_789},
-            {"no": "902(1) a", "description": "Reinforcing Steel", "category": "Structural", "weight": 9.308, "planned": 9.308, "actual": 3.06, "cost": 7_625_371},
-            {"no": "903(1)", "description": "Formworks and Falseworks", "category": "Structural", "weight": 1.270, "planned": 1.270, "actual": 0.38, "cost": 948_291},
-            {"no": "1047 (1)", "description": "Structural Steel", "category": "Structural", "weight": 14.170, "planned": 14.170, "actual": 11.44, "cost": 28_583_543},
-            {"no": "1047 (2)a", "description": "Structural Steel (Trusses)", "category": "Structural", "weight": 1.757, "planned": 1.757, "actual": 0.33, "cost": 823_223},
-            {"no": "1047 (3)a", "description": "Anchor Bolt", "category": "Structural", "weight": 1.505, "planned": 1.505, "actual": 1.39, "cost": 3_453_257},
-            {"no": "1047 (5)", "description": "Steel Plates", "category": "Structural", "weight": 1.799, "planned": 1.799, "actual": 1.23, "cost": 3_071_727},
-            {"no": "1001(11)", "description": "Septic Vault", "category": "Architectural", "weight": 0.436, "planned": 0.436, "actual": 0.22, "cost": 543_264},
-        ]
-        st.session_state[f'{prefix}work_items'] = work_items
-    
-    # ============================================================
-    # S-CURVE DATA
-    # ============================================================
-    
-    # Original Plan cumulative
-    original_plan = [
-        0.99, 1.12, 1.27, 1.47, 1.59, 1.72, 1.90, 2.00, 2.09, 2.17, 2.24, 2.47, 2.80, 3.10, 3.41, 3.73,
-        4.03, 4.33, 4.63, 4.98, 5.32, 5.66, 6.01, 6.21, 6.91, 7.62, 9.34, 11.06, 12.79, 14.74, 16.71, 18.34,
-        19.97, 21.70, 23.70, 25.71, 27.64, 29.54, 31.39, 33.18, 34.90, 36.54, 38.17, 39.81, 41.39, 42.93,
-        44.40, 45.31, 45.66, 46.21, 46.90, 47.50, 48.10, 48.70, 49.32, 49.94, 50.56, 51.19, 51.82, 52.50,
-        53.22, 53.65, 54.42, 55.35, 56.10, 56.85, 57.60, 58.23, 58.86, 59.49, 60.09, 60.49, 61.01, 61.55,
-        62.04, 62.53, 63.01, 63.50, 63.98, 64.31, 64.43, 64.55, 65.03, 65.52, 65.96, 66.36, 66.76, 67.37,
-        67.99, 68.62, 69.26, 69.90, 70.44, 70.96, 71.46, 71.96, 72.47, 72.97, 73.48, 74.00, 74.50, 75.00,
-        75.33, 75.69, 76.05, 76.41, 76.77, 77.12, 77.46, 77.79, 78.12, 78.46, 78.80, 79.14, 79.48, 79.88,
-        80.26, 80.63, 81.00, 81.37, 81.82, 82.27, 82.80, 83.23, 83.65, 84.08, 84.74, 85.63, 86.52, 87.48,
-        88.66, 90.23, 91.80, 93.79, 95.79, 97.61, 99.16, 99.34, 99.96, 100.00
-    ]
-    while len(original_plan) < 193:
-        original_plan.append(100.00)
-    
-    # Revised Plan cumulative
-    revised_plan = [
-        0.98, 1.10, 1.24, 1.43, 1.54, 1.66, 1.83, 1.91, 2.00, 2.08, 2.16, 2.29, 2.55, 2.82, 3.11, 3.39,
-        3.68, 3.97, 4.26, 4.55, 4.82, 5.10, 5.38, 5.86, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24,
-        6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24,
-        6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.56,
-        6.95, 7.44, 7.93, 8.42, 8.93, 9.52, 10.11, 10.71, 11.31, 11.99, 12.68, 13.31, 13.94, 14.63, 15.32,
-        16.02, 16.72, 17.44, 18.22, 19.00, 19.77, 20.55, 21.33, 22.12, 22.97, 23.79, 24.63, 25.50, 26.36,
-        27.25, 28.14, 29.03, 29.91, 30.80, 31.69, 32.58, 33.37, 34.17, 35.26, 36.03, 36.52, 37.00, 37.37,
-        37.73, 38.03, 38.34, 38.64, 38.94, 39.24, 39.55, 39.86, 40.19, 40.50, 40.82, 41.14, 41.62, 42.27,
-        42.96, 43.64, 44.33, 45.03, 45.72, 46.45, 47.22, 48.00, 48.77, 49.45, 50.14, 50.82, 51.51, 52.53,
-        53.57, 54.57, 55.44, 56.33, 57.44, 58.57, 59.69, 60.82, 61.88, 63.05, 64.20, 65.27, 66.35, 67.42,
-        68.50, 69.55, 70.60, 71.50, 72.23, 73.10, 74.03, 74.97, 75.90, 76.82, 77.53, 78.27, 79.06, 79.86,
-        80.70, 81.53, 82.37, 83.24, 83.96, 84.53, 85.11, 85.69, 85.94, 86.35, 86.84, 87.32, 87.66, 87.98,
-        88.19, 88.64, 89.09, 89.54, 90.05, 90.79, 91.86, 92.98, 94.49, 96.00, 97.42, 98.58, 99.03, 99.47, 99.50, 100.00
-    ]
-    while len(revised_plan) < 193:
-        revised_plan.append(100.00)
-    
-    # Actual progress weekly
-    actual_weekly = [
-        0.88, 0.91, 0.95, 1.00, 1.05, 1.10, 1.45, 1.62, 2.12, 2.45, 2.85, 3.21, 3.44, 3.85, 3.95, 4.05,
-        4.17, 4.30, 4.40, 4.50, 4.61, 4.70, 4.81, 4.89, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04,
-        5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04,
-        5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 7.33,
-        9.88, 11.61, 13.40, 15.45, 17.73, 20.02, 22.30, 24.59, 24.67, 24.75, 24.83, 24.92, 25.14, 25.34, 25.55, 25.75
-    ]
-    while len(actual_weekly) < 193:
-        actual_weekly.append(25.75)
-    
-    work_items = st.session_state[f'{prefix}work_items']
-    
-    # Calculate overall progress from work items
-    total_weight = sum(item['weight'] for item in work_items)
-    weighted_actual = sum((item['weight'] * item['actual']) / 100 for item in work_items)
-    overall_progress = weighted_actual
-    total_actual_cost = sum(item['cost'] for item in work_items)
-    
-    # Update session state
-    st.session_state.infrastructure_progress = overall_progress
-    st.session_state.infrastructure_cost = total_actual_cost
-    
-    weeks = list(range(1, 194))
-    current_week_idx = 0
-    for i, val in enumerate(actual_weekly):
-        if val >= overall_progress and overall_progress > 0:
-            current_week_idx = i
-            break
-    
-    # ============================================================
-    # KPI CARDS
-    # ============================================================
-    
-    col1, col2, col3, col4, col5 = st.columns(5)
-    
-    with col1:
-        st.metric("Overall Progress", f"{overall_progress:.2f}%")
-    with col2:
-        slippage = overall_progress - 25.75
-        st.metric("Slippage vs Revised Plan", f"{slippage:+.2f}%")
-    with col3:
-        st.metric("Total Cost Utilized", f"₱{total_actual_cost:,.2f}")
-    with col4:
-        st.metric("Original Plan at Week 80", "64.31%")
-    with col5:
-        st.metric("Revised Plan at Week 80", "25.75%")
-    
-    st.markdown("---")
-    
-    # ============================================================
-    # S-CURVE CHART
-    # ============================================================
-    
-    st.markdown("### 📈 S-Curve: Planned vs Actual Progress")
-    st.markdown("**📍 As of: Week 80 (March 31, 2026)**")
-    
-    fig = go.Figure()
-    
-    fig.add_trace(go.Scatter(x=weeks[:len(original_plan)], y=original_plan, mode='lines', name='Original Plan', line=dict(color='#1f77b4', width=2, dash='dash'), opacity=0.8))
-    fig.add_trace(go.Scatter(x=weeks[:len(revised_plan)], y=revised_plan, mode='lines', name='Revised Plan', line=dict(color='#ff7f0e', width=2, dash='dot'), opacity=0.8))
-    fig.add_trace(go.Scatter(x=weeks[:current_week_idx + 1], y=actual_weekly[:current_week_idx + 1], mode='lines+markers', name='Actual Progress', line=dict(color='#2ca02c', width=3), marker=dict(size=4)))
-    
-    fig.add_vline(x=current_week_idx + 1, line_dash="dash", line_color="#7f7f7f", line_width=1.5, annotation_text=f"Week {current_week_idx + 1}", annotation_position="top right")
-    
-    fig.update_layout(title="Project Progress S-Curve (September 2024 - May 2028)", xaxis_title="Week Number", yaxis_title="Cumulative Progress (%)", yaxis_range=[0, 105], height=450, hovermode='x unified', plot_bgcolor='white')
+    fig.add_trace(go.Bar(name="Actual Progress", x=df["Component"], y=df["Progress"], marker_color="#2ecc71"))
+    fig.add_trace(go.Bar(name="Target", x=df["Component"], y=df["Target"], marker_color="#f39c12"))
+    fig.update_layout(title="Progress by Component", height=400, barmode="group")
     st.plotly_chart(fig, use_container_width=True)
     
-    # ============================================================
-    # ITEMIZED WORK DETAILS TABLE (EDITABLE)
-    # ============================================================
+    # Quarterly progress
+    st.markdown("#### Quarterly Progress Tracking")
+    quarters = ["Q1 2024", "Q2 2024", "Q3 2024", "Q4 2024", "Q1 2025"]
+    progress = [15, 28, 35, 40, 42]
     
-    st.markdown("### 📋 Itemized Work Details")
-    st.markdown("> 🟢 **Edit the 'Actual %' and 'Actual Cost' columns below. Click SAVE ALL CHANGES to update.**")
+    fig = px.line(x=quarters, y=progress, markers=True, title="Overall Project Progress Trend")
+    fig.update_layout(xaxis_title="Quarter", yaxis_title="Progress (%)", yaxis_range=[0, 100])
+    st.plotly_chart(fig, use_container_width=True)
     
-    # Category filter
-    categories = ["All", "Civil Works", "Structural", "Architectural"]
-    selected_category = st.selectbox("🔍 Filter by Category", categories)
-    
-    if selected_category != "All":
-        filtered_items = [item for item in work_items if item.get('category') == selected_category]
-    else:
-        filtered_items = work_items
-    
-    if filtered_items:
-        df_items = pd.DataFrame(filtered_items)
-        df_items['Variance (%)'] = df_items['actual'] - df_items['planned']
-        df_items['Status'] = df_items['Variance (%)'].apply(lambda x: '✅ Ahead' if x > 0.1 else ('🟡 On Track' if x >= -0.1 else '🔴 Behind'))
-        
-        display_df = df_items[['no', 'description', 'weight', 'planned', 'actual', 'cost', 'Variance (%)', 'Status']].copy()
-        display_df.columns = ['Item No.', 'Description', 'Weight (%)', 'Planned (%)', '🟢 Actual (%)', '🟢 Actual Cost (₱)', 'Variance (%)', 'Status']
-        
-        edited_df = st.data_editor(
-            display_df,
-            use_container_width=True,
-            hide_index=True,
-            column_config={
-                "Item No.": st.column_config.TextColumn("Item No.", width="small", disabled=True),
-                "Description": st.column_config.TextColumn("Description", width="large", disabled=True),
-                "Weight (%)": st.column_config.NumberColumn("Weight (%)", format="%.3f", disabled=True),
-                "Planned (%)": st.column_config.NumberColumn("Planned (%)", format="%.3f", disabled=True),
-                "🟢 Actual (%)": st.column_config.NumberColumn("🟢 Actual (%)", min_value=0.0, max_value=100.0, step=0.5, format="%.2f"),
-                "🟢 Actual Cost (₱)": st.column_config.NumberColumn("🟢 Actual Cost (₱)", min_value=0, step=10000, format="₱%.2f"),
-                "Variance (%)": st.column_config.NumberColumn("Variance (%)", format="%+.2f", disabled=True),
-                "Status": st.column_config.TextColumn("Status", disabled=True),
-            }
-        )
-        
-        col1, col2 = st.columns(2)
-        with col1:
-            if st.button("💾 SAVE ALL CHANGES", type="primary", use_container_width=True):
-                for idx, row in edited_df.iterrows():
-                    for original_item in work_items:
-                        if original_item['no'] == row['Item No.']:
-                            original_item['actual'] = row['🟢 Actual (%)']
-                            original_item['cost'] = row['🟢 Actual Cost (₱)']
-                            break
-                st.session_state[f'{prefix}work_items'] = work_items
-                st.success("✅ Changes saved! Progress recalculated.")
-                st.rerun()
-        
-        with col2:
-            if st.button("🔄 Reset to Zero", use_container_width=True):
-                for item in work_items:
-                    item['actual'] = 0
-                    item['cost'] = 0
-                st.session_state[f'{prefix}work_items'] = work_items
-                st.success("✅ Reset complete.")
-                st.rerun()
-        
-        # Summary Totals
-        st.markdown("---")
-        st.markdown("### 📊 Summary Totals")
-        
-        total_contract = sum(item['weight'] for item in work_items) * CONTRACT_AMOUNT / 100
-        total_planned_cost = sum((item['planned'] * item['weight'] / 100) * CONTRACT_AMOUNT / 100 for item in work_items)
-        
-        col1, col2, col3, col4 = st.columns(4)
-        with col1:
-            st.metric("Total Contract", f"₱{CONTRACT_AMOUNT:,.2f}")
-        with col2:
-            st.metric("Total Planned Cost", f"₱{total_planned_cost:,.2f}")
-        with col3:
-            st.metric("Total Actual Cost", f"₱{total_actual_cost:,.2f}")
-        with col4:
-            variance = total_actual_cost - total_planned_cost
-            st.metric("Cost Variance", f"₱{variance:+,.2f}")
-    
-    st.markdown("---")
-    st.caption("Data source: MPCFS Project S-CURVE Sheet | Contract: ₱249,040,900.00")
+    # Key achievements
+    st.markdown("#### Key Achievements")
+    achievements = [
+        "✅ Climate Field School facility construction at 65% completion",
+        "✅ 1,247 farmers trained in climate-resilient agriculture techniques",
+        "✅ 3 demonstration farms established across Paracelis",
+        "✅ Baseline survey completed with 2,500+ farmer respondents",
+        "✅ Project Management Office fully operational"
+    ]
+    for achievement in achievements:
+        st.markdown(achievement)
 
 
-def show_mpcfs_gantt_updated():
-    """Updated Gantt chart"""
+def show_mpcfs_gantt():
+    """Gantt chart for project timeline and task tracking"""
     
-    st.markdown("#### 📋 Project Gantt Chart & Timeline")
-    st.caption("Track project milestones by component")
+    st.markdown("#### Project Gantt Chart & Timeline")
+    st.caption("Track project milestones, tasks, and deadlines")
     
-    st.info("📌 Full Gantt chart with task tracking is being enhanced. Current progress is shown in the dashboard.")
-    
-    # Simple task list
     tasks = [
-        {"Component": "🏗️ Infrastructure", "Task": "Site Development", "Progress": 45},
-        {"Component": "🏗️ Infrastructure", "Task": "Structural Works", "Progress": 35},
-        {"Component": "🏗️ Infrastructure", "Task": "Architectural Works", "Progress": 10},
-        {"Component": "👨‍🌾 Capability Building", "Task": "Training Program", "Progress": 0, "Status": "Pending"},
-        {"Component": "🔬 Research & Extension", "Task": "Research Setup", "Progress": 0, "Status": "Pending"},
+        {"Task": "Project Inception & Planning", "Start": "2024-01-01", "Finish": "2024-03-31", "Complete": 100},
+        {"Task": "Field School Construction", "Start": "2024-04-01", "Finish": "2025-06-30", "Complete": 65},
+        {"Task": "Farmer Training Program", "Start": "2024-05-01", "Finish": "2026-12-31", "Complete": 48},
+        {"Task": "Demo Farm Establishment", "Start": "2024-06-01", "Finish": "2025-03-31", "Complete": 52},
+        {"Task": "Research & Documentation", "Start": "2024-07-01", "Finish": "2027-12-31", "Complete": 35},
+        {"Task": "Knowledge Management", "Start": "2025-01-01", "Finish": "2028-06-30", "Complete": 28},
+        {"Task": "Monitoring & Evaluation", "Start": "2024-04-01", "Finish": "2028-12-31", "Complete": 42},
+        {"Task": "Coffee Table Book Production", "Start": "2027-01-01", "Finish": "2028-12-31", "Complete": 10},
+        {"Task": "Project Close-out", "Start": "2028-10-01", "Finish": "2028-12-31", "Complete": 0}
     ]
     
     df_tasks = pd.DataFrame(tasks)
-    st.dataframe(df_tasks, use_container_width=True, hide_index=True)
+    df_tasks["Start"] = pd.to_datetime(df_tasks["Start"])
+    df_tasks["Finish"] = pd.to_datetime(df_tasks["Finish"])
+    
+    fig = go.Figure()
+    for i, task in df_tasks.iterrows():
+        fig.add_trace(go.Bar(
+            x=[(task["Finish"] - task["Start"]).days],
+            y=[task["Task"]],
+            orientation='h',
+            marker=dict(color='#2ecc71', opacity=0.8),
+            text=f"{task['Complete']}% Complete",
+            textposition='outside'
+        ))
+    
+    fig.update_layout(title="Project Timeline", xaxis_title="Duration (Days)", height=500, showlegend=False)
+    st.plotly_chart(fig, use_container_width=True)
+    
+    st.markdown("#### Task Status")
+    for task in tasks:
+        col1, col2, col3 = st.columns([3, 1, 1])
+        with col1:
+            st.markdown(f"**{task['Task']}**")
+        with col2:
+            st.markdown(f"{task['Complete']}% Complete")
+        with col3:
+            if task['Complete'] >= 90:
+                st.success("✅")
+            elif task['Complete'] >= 50:
+                st.warning("🟡 In Progress")
+            else:
+                st.info("⏳ Pending")
 
 
 def show_mpcfs_document_management():
@@ -597,16 +341,23 @@ def show_mpcfs_document_management():
                 st.session_state.mpcfs_documents.append(new_doc)
                 
                 if doc_file:
+                    save_path = f"mpcfs_documents/{doc_file.name}"
                     os.makedirs("mpcfs_documents", exist_ok=True)
-                    with open(f"mpcfs_documents/{doc_file.name}", "wb") as f:
+                    with open(save_path, "wb") as f:
                         f.write(doc_file.getbuffer())
-                    st.success(f"✅ Document '{doc_title}' uploaded!")
+                    st.success(f"✅ Document '{doc_title}' uploaded and saved locally!")
                 else:
                     st.success(f"✅ Document '{doc_title}' recorded!")
                 st.rerun()
     
     if st.session_state.mpcfs_documents:
         df = pd.DataFrame(st.session_state.mpcfs_documents)
+        categories = ["All"] + list(df['category'].unique())
+        selected_category = st.selectbox("Filter by Category", categories)
+        
+        if selected_category != "All":
+            df = df[df['category'] == selected_category]
+        
         st.dataframe(df[['title', 'category', 'date', 'version', 'author']], use_container_width=True, hide_index=True)
     else:
         st.info("No documents uploaded yet.")
@@ -650,8 +401,9 @@ def show_mpcfs_photo_gallery():
                 }
                 st.session_state.mpcfs_photos.append(new_photo)
                 
+                save_path = f"mpcfs_photos/{photo_file.name}"
                 os.makedirs("mpcfs_photos", exist_ok=True)
-                with open(f"mpcfs_photos/{photo_file.name}", "wb") as f:
+                with open(save_path, "wb") as f:
                     f.write(photo_file.getbuffer())
                 
                 st.success(f"✅ Photo '{photo_title}' uploaded!")
@@ -672,8 +424,8 @@ def show_mpcfs_photo_gallery():
         st.info("No photos uploaded yet.")
 
 
-def show_mpcfs_report_generator_updated():
-    """Generate consolidated reports"""
+def show_mpcfs_report_generator():
+    """Generate consolidated reports with cover letter"""
     
     st.markdown("#### Report Generator")
     st.caption("Generate consolidated reports with cover letter for submission")
@@ -684,8 +436,8 @@ def show_mpcfs_report_generator_updated():
     ])
     
     report_period = st.selectbox("Reporting Period", [
-        "January - March 2025", "April - June 2025", "July - September 2025",
-        "October - December 2025", "Annual Report 2025"
+        "January - March 2024", "April - June 2024", "July - September 2024",
+        "October - December 2024", "Annual Report 2024"
     ])
     
     if st.button("📄 Generate Report", type="primary"):
@@ -696,894 +448,422 @@ def show_mpcfs_report_generator_updated():
     st.info("💡 Pro Tip: All reports will automatically pull data from the project dashboard.")
 
 
-# ============================================================
-# CLIMATE PROJECTIONS FUNCTIONS
-# ============================================================
-
-def show_climate_projections():
-    """Display Climate Change Projections from both 2011 DOST and 2024 CLIRAM data"""
+def show_mpcfs_coffee_table_book():
+    """Coffee table book generator"""
     
-    st.markdown("### 📊 Climate Change Projections")
-    st.caption("CMIP6-CLIRAM (2024) and DOST-PAGASA (2011) climate data for Mountain Province")
+    st.markdown("#### 📖 Coffee Table Book Generator")
+    st.caption("Compile project experiences, beneficiary stories, and documentation")
     
-    # ============================================================
-    # CLIRAM 2024 DATA - Monthly Rainfall
-    # ============================================================
+    st.markdown("""
+    ### About the MPCFS Coffee Table Book
     
-    cliram_rainfall = {
-        "baseline": {
-            "January": 40.8, "February": 45.2, "March": 56.0, "April": 96.9,
-            "May": 235.4, "June": 264.1, "July": 387.7, "August": 444.0,
-            "September": 313.6, "October": 247.5, "November": 181.0, "December": 105.6
-        },
-        "2021-2050": {
-            "January": {"upper": 44.7, "median": 40.7, "lower": 37.7},
-            "February": {"upper": 50.3, "median": 45.6, "lower": 40.6},
-            "March": {"upper": 60.1, "median": 51.5, "lower": 44.5},
-            "April": {"upper": 105.5, "median": 92.0, "lower": 79.6},
-            "May": {"upper": 246.4, "median": 225.6, "lower": 210.5},
-            "June": {"upper": 288.8, "median": 269.2, "lower": 248.6},
-            "July": {"upper": 417.2, "median": 393.5, "lower": 377.0},
-            "August": {"upper": 469.9, "median": 446.6, "lower": 426.5},
-            "September": {"upper": 340.0, "median": 318.9, "lower": 303.9},
-            "October": {"upper": 285.8, "median": 259.9, "lower": 240.6},
-            "November": {"upper": 198.9, "median": 184.2, "lower": 172.4},
-            "December": {"upper": 116.9, "median": 105.4, "lower": 95.9}
-        },
-        "2051-2080": {
-            "January": {"upper": 48.0, "median": 43.3, "lower": 37.6},
-            "February": {"upper": 49.6, "median": 45.1, "lower": 39.4},
-            "March": {"upper": 59.6, "median": 50.6, "lower": 43.8},
-            "April": {"upper": 103.0, "median": 91.3, "lower": 78.3},
-            "May": {"upper": 254.2, "median": 225.5, "lower": 202.4},
-            "June": {"upper": 291.6, "median": 271.6, "lower": 253.4},
-            "July": {"upper": 429.8, "median": 404.8, "lower": 379.6},
-            "August": {"upper": 480.6, "median": 448.8, "lower": 425.3},
-            "September": {"upper": 346.3, "median": 327.7, "lower": 307.6},
-            "October": {"upper": 285.7, "median": 262.3, "lower": 245.9},
-            "November": {"upper": 210.4, "median": 185.1, "lower": 165.8},
-            "December": {"upper": 123.3, "median": 109.3, "lower": 96.6}
-        },
-        "2071-2100": {
-            "January": {"upper": 47.2, "median": 42.7, "lower": 36.4},
-            "February": {"upper": 50.3, "median": 44.6, "lower": 38.9},
-            "March": {"upper": 58.7, "median": 50.4, "lower": 43.3},
-            "April": {"upper": 103.8, "median": 87.8, "lower": 73.1},
-            "May": {"upper": 250.0, "median": 225.6, "lower": 197.2},
-            "June": {"upper": 296.4, "median": 272.4, "lower": 257.8},
-            "July": {"upper": 434.9, "median": 401.8, "lower": 381.7},
-            "August": {"upper": 493.3, "median": 457.4, "lower": 427.0},
-            "September": {"upper": 357.1, "median": 325.9, "lower": 308.8},
-            "October": {"upper": 292.8, "median": 267.8, "lower": 239.4},
-            "November": {"upper": 215.0, "median": 186.9, "lower": 169.9},
-            "December": {"upper": 125.0, "median": 110.9, "lower": 99.1}
-        }
-    }
+    This feature will document the journey of the Mountain Province Climate Field School Project, capturing:
+    - **Beneficiary Stories**: Personal accounts from farmers and community members
+    - **Project Milestones**: Key achievements and turning points
+    - **Photo Gallery**: Visual documentation of project activities
+    - **Lessons Learned**: Insights and best practices for replication
+    """)
     
-    # ============================================================
-    # CLIRAM 2024 DATA - Monthly Temperature
-    # ============================================================
-    
-    cliram_temperature = {
-        "baseline": {
-            "January": 18.8, "February": 19.5, "March": 21.0, "April": 22.5,
-            "May": 23.0, "June": 23.2, "July": 22.7, "August": 22.6,
-            "September": 22.4, "October": 21.6, "November": 20.7, "December": 19.5
-        },
-        "2021-2050": {
-            "January": {"upper": 20.0, "median": 19.8, "lower": 19.6, "change": 1.0},
-            "February": {"upper": 20.7, "median": 20.4, "lower": 20.2, "change": 0.9},
-            "March": {"upper": 22.1, "median": 21.9, "lower": 21.7, "change": 0.9},
-            "April": {"upper": 23.6, "median": 23.4, "lower": 23.2, "change": 0.9},
-            "May": {"upper": 24.3, "median": 24.1, "lower": 23.9, "change": 1.1},
-            "June": {"upper": 24.4, "median": 24.2, "lower": 24.0, "change": 1.0},
-            "July": {"upper": 23.9, "median": 23.7, "lower": 23.5, "change": 1.0},
-            "August": {"upper": 23.7, "median": 23.5, "lower": 23.4, "change": 0.9},
-            "September": {"upper": 23.6, "median": 23.4, "lower": 23.2, "change": 1.0},
-            "October": {"upper": 22.7, "median": 22.6, "lower": 22.4, "change": 1.0},
-            "November": {"upper": 21.8, "median": 21.6, "lower": 21.5, "change": 0.9},
-            "December": {"upper": 20.6, "median": 20.4, "lower": 20.2, "change": 0.9}
-        },
-        "2071-2100": {
-            "January": {"upper": 21.7, "median": 21.0, "lower": 20.2, "change": 2.2},
-            "February": {"upper": 22.3, "median": 21.5, "lower": 20.8, "change": 2.0},
-            "March": {"upper": 24.0, "median": 23.1, "lower": 22.4, "change": 2.1},
-            "April": {"upper": 25.7, "median": 24.7, "lower": 23.9, "change": 2.2},
-            "May": {"upper": 26.4, "median": 25.4, "lower": 24.6, "change": 2.4},
-            "June": {"upper": 26.4, "median": 25.5, "lower": 24.7, "change": 2.3},
-            "July": {"upper": 25.8, "median": 24.9, "lower": 24.1, "change": 2.2},
-            "August": {"upper": 25.6, "median": 24.8, "lower": 23.9, "change": 2.2},
-            "September": {"upper": 25.5, "median": 24.6, "lower": 23.8, "change": 2.2},
-            "October": {"upper": 24.7, "median": 23.8, "lower": 22.9, "change": 2.2},
-            "November": {"upper": 23.7, "median": 22.9, "lower": 22.1, "change": 2.2},
-            "December": {"upper": 22.4, "median": 21.6, "lower": 21.6, "change": 2.1}
-        }
-    }
-    
-    # Create tabs
-    proj_tab1, proj_tab2, proj_tab3, proj_tab4, proj_tab5 = st.tabs([
-        "📊 Data Source Comparison",
-        "🌡️ CLIRAM Temperature",
-        "🌧️ CLIRAM Rainfall",
-        "📈 2011 DOST Analysis",
-        "🌱 Recommendations"
-    ])
-    
-    with proj_tab1:
-        show_data_source_comparison()
-    
-    with proj_tab2:
-        show_cliram_temperature(cliram_temperature)
-    
-    with proj_tab3:
-        show_cliram_rainfall(cliram_rainfall)
-    
-    with proj_tab4:
-        show_dost_2011_analysis()
-    
-    with proj_tab5:
-        show_adaptation_recommendations()
+    if st.button("📖 Generate Coffee Table Book", type="primary"):
+        st.success("Coffee table book generation will be available in the next phase.")
 
 
-def show_data_source_comparison():
-    """Show comparison between 2011 DOST and 2024 CLIRAM data"""
+def show_mpcfs_scurve_tracker():
+    """MPCFS Infrastructure S-Curve Tracker - Professional project progress monitoring"""
     
-    st.markdown("#### 📊 Climate Data Sources Comparison")
+    st.markdown("#### 📈 Infrastructure S-Curve Tracker")
+    st.caption("Track physical and financial progress against baseline plans | Data from: Sept 2024 - May 2028")
     
-    col1, col2 = st.columns(2)
+    # Contract Information
+    CONTRACT_AMOUNT = 249_040_900.00
+    PROJECT_NAME = "Mountain Province Climate Field School"
+    LOCATION = "Paracelis, Mountain Province"
     
+    # Weekly time periods (193 weeks from Sept 2024 to May 2028)
+    weeks = list(range(1, 194))
+    
+    # ORIGINAL PLAN - Cumulative percentages from your data
+    original_plan_cumulative = [
+        0.99, 1.12, 1.27, 1.47, 1.59, 1.72, 1.90, 2.00, 2.09, 2.17, 2.24, 2.47, 2.80, 3.10, 3.41, 3.73,
+        4.03, 4.33, 4.63, 4.98, 5.32, 5.66, 6.01, 6.21, 6.91, 7.62, 9.34, 11.06, 12.79, 14.74, 16.71, 18.34,
+        19.97, 21.70, 23.70, 25.71, 27.64, 29.54, 31.39, 33.18, 34.90, 36.54, 38.17, 39.81, 41.39, 42.93,
+        44.40, 45.31, 45.66, 46.21, 46.90, 47.50, 48.10, 48.70, 49.32, 49.94, 50.56, 51.19, 51.82, 52.50,
+        53.22, 53.65, 54.42, 55.35, 56.10, 56.85, 57.60, 58.23, 58.86, 59.49, 60.09, 60.49, 61.01, 61.55,
+        62.04, 62.53, 63.01, 63.50, 63.98, 64.31, 64.43, 64.55, 65.03, 65.52, 65.96, 66.36, 66.76, 67.37,
+        67.99, 68.62, 69.26, 69.90, 70.44, 70.96, 71.46, 71.96, 72.47, 72.97, 73.48, 74.00, 74.50, 75.00,
+        75.33, 75.69, 76.05, 76.41, 76.77, 77.12, 77.46, 77.79, 78.12, 78.46, 78.80, 79.14, 79.48, 79.88,
+        80.26, 80.63, 81.00, 81.37, 81.82, 82.27, 82.80, 83.23, 83.65, 84.08, 84.74, 85.63, 86.52, 87.48,
+        88.66, 90.23, 91.80, 93.79, 95.79, 97.61, 99.16, 99.34, 99.96, 100.00
+    ]
+    
+    # Extend to full 193 weeks
+    while len(original_plan_cumulative) < 193:
+        original_plan_cumulative.append(100.00)
+    
+    # REVISED PLAN - Cumulative percentages from your data
+    revised_plan_cumulative = [
+        0.98, 1.10, 1.24, 1.43, 1.54, 1.66, 1.83, 1.91, 2.00, 2.08, 2.16, 2.29, 2.55, 2.82, 3.11, 3.39,
+        3.68, 3.97, 4.26, 4.55, 4.82, 5.10, 5.38, 5.86, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24,
+        6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24,
+        6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.56,
+        6.95, 7.44, 7.93, 8.42, 8.93, 9.52, 10.11, 10.71, 11.31, 11.99, 12.68, 13.31, 13.94, 14.63, 15.32,
+        16.02, 16.72, 17.44, 18.22, 19.00, 19.77, 20.55, 21.33, 22.12, 22.97, 23.79, 24.63, 25.50, 26.36,
+        27.25, 28.14, 29.03, 29.91, 30.80, 31.69, 32.58, 33.37, 34.17, 35.26, 36.03, 36.52, 37.00, 37.37,
+        37.73, 38.03, 38.34, 38.64, 38.94, 39.24, 39.55, 39.86, 40.19, 40.50, 40.82, 41.14, 41.62, 42.27,
+        42.96, 43.64, 44.33, 45.03, 45.72, 46.45, 47.22, 48.00, 48.77, 49.45, 50.14, 50.82, 51.51, 52.53,
+        53.57, 54.57, 55.44, 56.33, 57.44, 58.57, 59.69, 60.82, 61.88, 63.05, 64.20, 65.27, 66.35, 67.42,
+        68.50, 69.55, 70.60, 71.50, 72.23, 73.10, 74.03, 74.97, 75.90, 76.82, 77.53, 78.27, 79.06, 79.86,
+        80.70, 81.53, 82.37, 83.24, 83.96, 84.53, 85.11, 85.69, 85.94, 86.35, 86.84, 87.32, 87.66, 87.98,
+        88.19, 88.64, 89.09, 89.54, 90.05, 90.79, 91.86, 92.98, 94.49, 96.00, 97.42, 98.58, 99.03, 99.47, 99.50, 100.00
+    ]
+    
+    while len(revised_plan_cumulative) < 193:
+        revised_plan_cumulative.append(100.00)
+    
+    # ACTUAL ACCOMPLISHMENT - Cumulative percentages from your data
+    actual_cumulative = [
+        0.88, 0.91, 0.95, 1.00, 1.05, 1.10, 1.45, 1.62, 2.12, 2.45, 2.85, 3.21, 3.44, 3.85, 3.95, 4.05,
+        4.17, 4.30, 4.40, 4.50, 4.61, 4.70, 4.81, 4.89, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04,
+        5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04,
+        5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 7.33,
+        9.88, 11.61, 13.40, 15.45, 17.73, 20.02, 22.30, 24.59, 24.67, 24.75, 24.83, 24.92, 25.14, 25.34, 25.55, 25.75
+    ]
+    
+    while len(actual_cumulative) < 193:
+        actual_cumulative.append(actual_cumulative[-1] if actual_cumulative else 25.75)
+    
+    # Initialize session state for editable actuals
+    if 'scurve_actuals' not in st.session_state:
+        st.session_state.scurve_actuals = actual_cumulative.copy()
+    
+    if 'scurve_cost_actuals' not in st.session_state:
+        st.session_state.scurve_cost_actuals = [p * CONTRACT_AMOUNT / 100 for p in st.session_state.scurve_actuals]
+    
+    if 'scurve_last_updated' not in st.session_state:
+        st.session_state.scurve_last_updated = datetime.now().isoformat()
+    
+    if 'scurve_editor_role' not in st.session_state:
+        st.session_state.scurve_editor_role = "Viewer"
+    
+    # Calculate current progress
+    current_week = max([i for i, val in enumerate(st.session_state.scurve_actuals) if val > 0], default=0)
+    current_actual = st.session_state.scurve_actuals[current_week] if current_week < len(st.session_state.scurve_actuals) else 0
+    current_revised = revised_plan_cumulative[current_week] if current_week < len(revised_plan_cumulative) else 0
+    
+    physical_variance = current_actual - current_revised
+    current_cost = current_actual * CONTRACT_AMOUNT / 100
+    planned_cost = current_revised * CONTRACT_AMOUNT / 100
+    cost_variance = current_cost - planned_cost
+    
+    st.markdown("### 📊 Key Performance Indicators")
+    
+    col1, col2, col3, col4, col5 = st.columns(5)
     with col1:
-        st.markdown("""
-        ### 📘 2011 DOST Data
-        **Source:** Climate Change in the Philippines (UN-MDGIF Project)
-        
-        **Features:**
-        - Seasonal temperature and rainfall changes
-        - 2020 and 2050 projections only
-        - Medium-range emission scenario
-        - Baseline: 1971-2000
-        
-        **Best for:**
-        - LCCAP baseline reference
-        - Long-term trend analysis
-        - Policy formulation
-        
-        **APA Citation:**
-        DOST-PAGASA. (2011). *Climate change in the Philippines*. DOST-PAGASA.
-        """)
+        st.metric("Overall Progress", f"{current_actual:.2f}%", delta=f"{current_actual - current_revised:.2f}% vs Revised")
+    with col2:
+        st.metric("Physical Variance", f"{physical_variance:+.2f}%", 
+                  delta="Ahead" if physical_variance >= 0 else "Behind",
+                  delta_color="normal" if physical_variance >= 0 else "inverse")
+    with col3:
+        st.metric("Cost Utilized", f"₱{current_cost:,.0f}", delta=f"{(current_actual/100):.1f}% of Total")
+    with col4:
+        st.metric("Cost Variance", f"₱{cost_variance:+,.0f}",
+                  delta="Under" if cost_variance <= 0 else "Over",
+                  delta_color="normal" if cost_variance <= 0 else "inverse")
+    with col5:
+        schedule_status = "✅ ON TRACK" if physical_variance >= -2 else "⚠️ BEHIND"
+        st.metric("Schedule Status", schedule_status, delta=f"Target: {current_revised:.2f}%")
+    
+    st.markdown("---")
+    
+    # S-CURVE CHART
+    st.markdown("### 📈 S-Curve: Planned vs Actual Progress")
+    
+    plot_df = pd.DataFrame({
+        "Week": weeks[:len(original_plan_cumulative)],
+        "Original Plan (%)": original_plan_cumulative,
+        "Revised Plan (%)": revised_plan_cumulative,
+        "Actual Progress (%)": st.session_state.scurve_actuals
+    })
+    
+    fig = go.Figure()
+    
+    fig.add_trace(go.Scatter(
+        x=plot_df["Week"], y=plot_df["Original Plan (%)"],
+        mode='lines', name='Original Plan',
+        line=dict(color='#3498db', width=2, dash='dash')
+    ))
+    
+    fig.add_trace(go.Scatter(
+        x=plot_df["Week"], y=plot_df["Revised Plan (%)"],
+        mode='lines', name='Revised Plan',
+        line=dict(color='#f39c12', width=2, dash='dot')
+    ))
+    
+    fig.add_trace(go.Scatter(
+        x=plot_df["Week"], y=plot_df["Actual Progress (%)"],
+        mode='lines+markers', name='Actual Progress',
+        line=dict(color='#2ecc71', width=3),
+        marker=dict(size=4)
+    ))
+    
+    fig.add_vline(x=current_week, line_dash="dash", line_color="red", 
+                  annotation_text=f"Current: Week {current_week}", annotation_position="top right")
+    
+    fig.update_layout(
+        title="Project Progress S-Curve",
+        xaxis_title="Week Number (Sept 2024 → May 2028)",
+        yaxis_title="Cumulative Progress (%)",
+        yaxis_range=[0, 105],
+        height=500,
+        hovermode='x unified',
+        legend=dict(x=0.01, y=0.99, bgcolor='rgba(255,255,255,0.8)')
+    )
+    
+    st.plotly_chart(fig, use_container_width=True)
+    
+    # COST S-CURVE CHART
+    st.markdown("### 💰 Cost S-Curve: Planned vs Actual Expenditure")
+    
+    cost_df = pd.DataFrame({
+        "Week": weeks[:len(original_plan_cumulative)],
+        "Original Plan (₱M)": [p * CONTRACT_AMOUNT / 100 / 1_000_000 for p in original_plan_cumulative],
+        "Revised Plan (₱M)": [p * CONTRACT_AMOUNT / 100 / 1_000_000 for p in revised_plan_cumulative],
+        "Actual Cost (₱M)": [c / 1_000_000 for c in st.session_state.scurve_cost_actuals]
+    })
+    
+    fig2 = go.Figure()
+    
+    fig2.add_trace(go.Scatter(
+        x=cost_df["Week"], y=cost_df["Original Plan (₱M)"],
+        mode='lines', name='Original Plan (₱M)',
+        line=dict(color='#3498db', width=2, dash='dash')
+    ))
+    
+    fig2.add_trace(go.Scatter(
+        x=cost_df["Week"], y=cost_df["Revised Plan (₱M)"],
+        mode='lines', name='Revised Plan (₱M)',
+        line=dict(color='#f39c12', width=2, dash='dot')
+    ))
+    
+    fig2.add_trace(go.Scatter(
+        x=cost_df["Week"], y=cost_df["Actual Cost (₱M)"],
+        mode='lines+markers', name='Actual Cost (₱M)',
+        line=dict(color='#e74c3c', width=3),
+        marker=dict(size=4)
+    ))
+    
+    fig2.add_vline(x=current_week, line_dash="dash", line_color="red")
+    
+    fig2.update_layout(
+        title="Project Cost S-Curve (in Million ₱)",
+        xaxis_title="Week Number",
+        yaxis_title="Cumulative Cost (₱ Million)",
+        height=450,
+        hovermode='x unified'
+    )
+    
+    st.plotly_chart(fig2, use_container_width=True)
+    
+    # DATA ENTRY SECTION
+    st.markdown("---")
+    st.markdown("### ✏️ Progress Data Entry")
+    
+    col1, col2 = st.columns([1, 3])
+    with col1:
+        role = st.selectbox("User Role", ["Viewer", "Project Engineer", "Finance Officer", "Project Manager"],
+                           index=["Viewer", "Project Engineer", "Finance Officer", "Project Manager"].index(st.session_state.scurve_editor_role))
+        if role != st.session_state.scurve_editor_role:
+            st.session_state.scurve_editor_role = role
+            st.rerun()
     
     with col2:
-        st.markdown("""
-        ### 📗 2024 CLIRAM Data
-        **Source:** CMIP6-Based Climate Change Projections
-        
-        **Features:**
-        - Monthly temperature and rainfall
-        - Multiple time periods (2021-2100)
-        - Upper/Median/Lower bounds (uncertainty)
-        - Latest CMIP6 models
-        
-        **Best for:**
-        - Detailed monthly planning
-        - Risk assessment
-        - Sectoral adaptation planning
-        
-        **APA Citation:**
-        DOST-PAGASA. (2024). *CMIP6-based climate change projections in the Philippines*. DOST-PAGASA.
-        """)
+        if role == "Viewer":
+            st.info("👁️ You are in View Only mode. Please select a role above to edit data.")
     
+    if role in ["Project Engineer", "Finance Officer", "Project Manager"]:
+        
+        week_options = []
+        for i in range(0, min(80, len(st.session_state.scurve_actuals))):
+            week_num = i + 1
+            actual_pct = st.session_state.scurve_actuals[i]
+            target_pct = revised_plan_cumulative[i] if i < len(revised_plan_cumulative) else 0
+            week_options.append(f"Week {week_num} | Actual: {actual_pct:.2f}% | Target: {target_pct:.2f}%")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            selected_week_display = st.selectbox("Select Week to Update", week_options, key="week_select")
+            selected_week_idx = week_options.index(selected_week_display) if selected_week_display else 0
+        
+        with col2:
+            st.markdown(f"**Current Progress:** {st.session_state.scurve_actuals[selected_week_idx]:.2f}%")
+            st.markdown(f"**Target Progress:** {revised_plan_cumulative[selected_week_idx]:.2f}%")
+        
+        if role == "Project Engineer":
+            st.subheader("🏗️ Physical Progress Entry (Engineer)")
+            new_progress = st.number_input(
+                "Physical Accomplishment (%)",
+                min_value=0.0, max_value=100.0,
+                value=float(st.session_state.scurve_actuals[selected_week_idx]),
+                step=0.5, format="%.2f"
+            )
+            
+            if st.button("✅ Update Physical Progress", type="primary", use_container_width=True):
+                update_future = st.checkbox("Apply to all future weeks", value=False)
+                
+                if update_future:
+                    for i in range(selected_week_idx, len(st.session_state.scurve_actuals)):
+                        st.session_state.scurve_actuals[i] = min(new_progress, 100.0)
+                else:
+                    st.session_state.scurve_actuals[selected_week_idx] = min(new_progress, 100.0)
+                
+                st.session_state.scurve_cost_actuals = [p * CONTRACT_AMOUNT / 100 for p in st.session_state.scurve_actuals]
+                st.session_state.scurve_last_updated = datetime.now().isoformat()
+                st.success(f"✅ Progress updated to {new_progress:.2f}% for Week {selected_week_idx + 1}")
+                st.rerun()
+        
+        elif role == "Finance Officer":
+            st.subheader("💰 Financial Progress Entry (Finance)")
+            new_cost = st.number_input(
+                "Actual Cost Incurred (₱)",
+                min_value=0.0, max_value=float(CONTRACT_AMOUNT),
+                value=float(st.session_state.scurve_cost_actuals[selected_week_idx]),
+                step=100000.0, format="%.2f"
+            )
+            
+            if st.button("✅ Update Financial Progress", type="primary", use_container_width=True):
+                new_progress_pct = (new_cost / CONTRACT_AMOUNT) * 100
+                update_future = st.checkbox("Apply to all future weeks", value=False)
+                
+                if update_future:
+                    for i in range(selected_week_idx, len(st.session_state.scurve_actuals)):
+                        st.session_state.scurve_actuals[i] = min(new_progress_pct, 100.0)
+                else:
+                    st.session_state.scurve_actuals[selected_week_idx] = min(new_progress_pct, 100.0)
+                
+                st.session_state.scurve_cost_actuals = [p * CONTRACT_AMOUNT / 100 for p in st.session_state.scurve_actuals]
+                st.session_state.scurve_last_updated = datetime.now().isoformat()
+                st.success(f"✅ Cost updated to ₱{new_cost:,.2f} ({new_progress_pct:.2f}%)")
+                st.rerun()
+        
+        elif role == "Project Manager":
+            st.subheader("📋 Project Manager - Full Access")
+            
+            col1, col2 = st.columns(2)
+            with col1:
+                new_progress = st.number_input(
+                    "Physical Accomplishment (%)",
+                    min_value=0.0, max_value=100.0,
+                    value=float(st.session_state.scurve_actuals[selected_week_idx]),
+                    step=0.5, format="%.2f"
+                )
+            with col2:
+                new_cost = st.number_input(
+                    "Actual Cost Incurred (₱)",
+                    min_value=0.0, max_value=float(CONTRACT_AMOUNT),
+                    value=float(st.session_state.scurve_cost_actuals[selected_week_idx]),
+                    step=100000.0, format="%.2f"
+                )
+            
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                if st.button("✅ Update Both", type="primary", use_container_width=True):
+                    st.session_state.scurve_actuals[selected_week_idx] = min(new_progress, 100.0)
+                    st.session_state.scurve_cost_actuals[selected_week_idx] = new_cost
+                    st.session_state.scurve_last_updated = datetime.now().isoformat()
+                    st.success(f"✅ Updated Week {selected_week_idx + 1}: {new_progress:.2f}% | ₱{new_cost:,.2f}")
+                    st.rerun()
+            
+            with col2:
+                if st.button("📊 Sync from Cost", use_container_width=True):
+                    new_progress_from_cost = (new_cost / CONTRACT_AMOUNT) * 100
+                    st.session_state.scurve_actuals[selected_week_idx] = min(new_progress_from_cost, 100.0)
+                    st.session_state.scurve_last_updated = datetime.now().isoformat()
+                    st.success(f"✅ Synced progress to {new_progress_from_cost:.2f}% from cost data")
+                    st.rerun()
+    
+    # VARIANCE SUMMARY TABLE
     st.markdown("---")
-    st.markdown("### 🔄 How to Use Both Data Sources")
-    st.markdown("""
-    | Use Case | Recommended Data |
-    |----------|------------------|
-    | LCCAP Executive Summary | 2011 DOST (simpler, policy-ready) |
-    | Detailed Sector Planning | 2024 CLIRAM (monthly, uncertainty ranges) |
-    | Infrastructure Design | 2024 CLIRAM (extreme event projections) |
-    | Agricultural Planning | Both (seasonal from 2011, monthly from CLIRAM) |
-    | Water Resource Management | 2024 CLIRAM (detailed monthly rainfall) |
-    """)
-
-
-def show_cliram_temperature(cliram_temperature):
-    """Show CLIRAM 2024 temperature projections"""
+    st.markdown("### 📋 Progress Variance Summary")
     
-    st.markdown("#### 🌡️ CLIRAM Temperature Projections (2024)")
-    st.caption("Monthly temperature projections with uncertainty ranges")
+    start_week = max(0, current_week - 11)
+    variance_data = []
     
-    # Period selector
-    periods = ["2021-2050", "2071-2100"]
-    selected_period = st.selectbox("Select Time Period", periods, key="cliram_temp_period")
-    
-    # Get data
-    period_data = cliram_temperature[selected_period]
-    baseline = cliram_temperature["baseline"]
-    
-    months = list(baseline.keys())
-    baseline_values = [baseline[m] for m in months]
-    median_values = [period_data[m]["median"] for m in months]
-    upper_values = [period_data[m]["upper"] for m in months]
-    lower_values = [period_data[m]["lower"] for m in months]
-    
-    # Create chart
-    fig = go.Figure()
-    
-    fig.add_trace(go.Scatter(
-        x=months, y=baseline_values,
-        mode='lines+markers', name='Baseline (1971-2000)',
-        line=dict(color='#3498db', width=2)
-    ))
-    
-    fig.add_trace(go.Scatter(
-        x=months, y=median_values,
-        mode='lines+markers', name=f'Projected ({selected_period})',
-        line=dict(color='#e74c3c', width=2)
-    ))
-    
-    fig.add_trace(go.Scatter(
-        x=months, y=upper_values,
-        mode='lines', name='Upper Bound',
-        line=dict(color='#e74c3c', width=1, dash='dash')
-    ))
-    
-    fig.add_trace(go.Scatter(
-        x=months, y=lower_values,
-        mode='lines', name='Lower Bound',
-        line=dict(color='#e74c3c', width=1, dash='dash'),
-        fill='tonexty', fillcolor='rgba(231, 76, 60, 0.1)'
-    ))
-    
-    fig.update_layout(
-        title=f"Monthly Temperature Projections for Mountain Province ({selected_period})",
-        xaxis_title="Month", yaxis_title="Temperature (°C)",
-        height=500, hovermode='x unified'
-    )
-    
-    st.plotly_chart(fig, use_container_width=True)
-    
-    # Summary table
-    st.markdown("#### 📋 Monthly Temperature Data")
-    
-    table_data = []
-    for i, month in enumerate(months):
-        table_data.append({
-            "Month": month,
-            "Baseline (°C)": baseline_values[i],
-            f"{selected_period} Median (°C)": median_values[i],
-            "Change (°C)": median_values[i] - baseline_values[i],
-            "Range (°C)": f"{lower_values[i]:.1f} - {upper_values[i]:.1f}"
+    for i in range(start_week, min(current_week + 1, len(st.session_state.scurve_actuals))):
+        week_num = i + 1
+        actual = st.session_state.scurve_actuals[i]
+        original = original_plan_cumulative[i] if i < len(original_plan_cumulative) else 0
+        revised = revised_plan_cumulative[i] if i < len(revised_plan_cumulative) else 0
+        var_vs_original = actual - original
+        var_vs_revised = actual - revised
+        
+        variance_data.append({
+            "Week": week_num,
+            "Actual (%)": f"{actual:.2f}",
+            "Original Plan (%)": f"{original:.2f}",
+            "Revised Plan (%)": f"{revised:.2f}",
+            "Δ vs Original": f"{var_vs_original:+.2f}%",
+            "Δ vs Revised": f"{var_vs_revised:+.2f}%"
         })
     
-    st.dataframe(pd.DataFrame(table_data), use_container_width=True, hide_index=True)
+    if variance_data:
+        df_var = pd.DataFrame(variance_data)
+        st.dataframe(df_var, use_container_width=True, hide_index=True)
     
-    st.caption("Source: DOST-PAGASA CMIP6-CLIRAM (2024)")
-
-
-def show_cliram_rainfall(cliram_rainfall):
-    """Show CLIRAM 2024 rainfall projections"""
-    
-    st.markdown("#### 🌧️ CLIRAM Rainfall Projections (2024)")
-    st.caption("Monthly rainfall projections with uncertainty ranges")
-    
-    # Period selector
-    periods = ["2021-2050", "2051-2080", "2071-2100"]
-    selected_period = st.selectbox("Select Time Period", periods, key="cliram_rain_period")
-    
-    # Get data
-    period_data = cliram_rainfall[selected_period]
-    baseline = cliram_rainfall["baseline"]
-    
-    months = list(baseline.keys())
-    baseline_values = [baseline[m] for m in months]
-    median_values = [period_data[m]["median"] for m in months]
-    upper_values = [period_data[m]["upper"] for m in months]
-    lower_values = [period_data[m]["lower"] for m in months]
-    
-    # Calculate percentage changes
-    pct_changes = [(median_values[i] - baseline_values[i]) / baseline_values[i] * 100 for i in range(12)]
-    
-    # Create chart
-    fig = go.Figure()
-    
-    fig.add_trace(go.Scatter(
-        x=months, y=baseline_values,
-        mode='lines+markers', name='Baseline (1971-2000)',
-        line=dict(color='#3498db', width=2)
-    ))
-    
-    fig.add_trace(go.Scatter(
-        x=months, y=median_values,
-        mode='lines+markers', name=f'Projected ({selected_period})',
-        line=dict(color='#2ecc71', width=2)
-    ))
-    
-    fig.add_trace(go.Scatter(
-        x=months, y=upper_values,
-        mode='lines', name='Upper Bound',
-        line=dict(color='#2ecc71', width=1, dash='dash')
-    ))
-    
-    fig.add_trace(go.Scatter(
-        x=months, y=lower_values,
-        mode='lines', name='Lower Bound',
-        line=dict(color='#2ecc71', width=1, dash='dash'),
-        fill='tonexty', fillcolor='rgba(46, 204, 113, 0.1)'
-    ))
-    
-    fig.update_layout(
-        title=f"Monthly Rainfall Projections for Mountain Province ({selected_period})",
-        xaxis_title="Month", yaxis_title="Rainfall (mm)",
-        height=500, hovermode='x unified'
-    )
-    
-    st.plotly_chart(fig, use_container_width=True)
-    
-    # Summary table
-    st.markdown("#### 📋 Monthly Rainfall Data")
-    
-    table_data = []
-    for i, month in enumerate(months):
-        table_data.append({
-            "Month": month,
-            "Baseline (mm)": baseline_values[i],
-            f"{selected_period} Median (mm)": median_values[i],
-            "Change (mm)": median_values[i] - baseline_values[i],
-            "Change (%)": f"{pct_changes[i]:+.1f}%",
-            "Range (mm)": f"{lower_values[i]:.0f} - {upper_values[i]:.0f}"
-        })
-    
-    st.dataframe(pd.DataFrame(table_data), use_container_width=True, hide_index=True)
-    
-    # Seasonal summary
-    st.markdown("#### 🌦️ Seasonal Summary")
-    
-    seasons = {
-        "DJF (Dec-Feb)": ["December", "January", "February"],
-        "MAM (Mar-May)": ["March", "April", "May"],
-        "JJA (Jun-Aug)": ["June", "July", "August"],
-        "SON (Sep-Nov)": ["September", "October", "November"]
-    }
-    
-    seasonal_data = []
-    for season_name, season_months in seasons.items():
-        baseline_seasonal = sum([baseline[m] for m in season_months])
-        projected_seasonal = sum([period_data[m]["median"] for m in season_months])
-        pct_change = (projected_seasonal - baseline_seasonal) / baseline_seasonal * 100
-        seasonal_data.append({
-            "Season": season_name,
-            "Baseline (mm)": baseline_seasonal,
-            f"Projected {selected_period} (mm)": projected_seasonal,
-            "Change (%)": f"{pct_change:+.1f}%"
-        })
-    
-    st.dataframe(pd.DataFrame(seasonal_data), use_container_width=True, hide_index=True)
-    
-    st.caption("Source: DOST-PAGASA CMIP6-CLIRAM (2024)")
-
-
-def show_dost_2011_analysis():
-    """Show 2011 DOST analysis (simpler, policy-ready)"""
-    
-    st.markdown("#### 📈 DOST-PAGASA 2011 Analysis")
-    st.caption("Seasonal projections under medium-range emission scenario")
-    
-    # Temperature table
-    st.markdown("### 🌡️ Temperature Projections")
-    
-    temp_data = {
-        "Season": ["DJF", "MAM", "JJA", "SON"],
-        "Baseline (°C)": [22.7, 26.0, 26.1, 24.9],
-        "2020 Increase": [0.9, 0.9, 0.9, 0.9],
-        "2020 Projected": [23.6, 26.9, 27.0, 25.8],
-        "2050 Increase": [1.9, 2.1, 1.9, 1.9],
-        "2050 Projected": [24.6, 28.1, 28.0, 26.8]
-    }
-    
-    df_temp = pd.DataFrame(temp_data)
-    st.dataframe(df_temp, use_container_width=True, hide_index=True)
-    
-    # Rainfall table
-    st.markdown("### 🌧️ Rainfall Projections")
-    
-    rain_data = {
-        "Season": ["DJF", "MAM", "JJA", "SON", "ANNUAL"],
-        "Baseline (mm)": [74.8, 286.8, 1121.1, 699.2, 2181.9],
-        "2020 Change (%)": [-2.7, -7.7, 16.4, 14.9, 5.2],
-        "2050 Change (%)": [1.1, -27.4, 26.6, 8.5, 2.2],
-        "2050 Projected (mm)": [75.6, 208.2, 1419.4, 758.6, 2461.8]
-    }
-    
-    df_rain = pd.DataFrame(rain_data)
-    st.dataframe(df_rain, use_container_width=True, hide_index=True)
-    
-    # Key findings
-    st.markdown("### 🔍 Key Findings for LCCAP")
-    st.markdown("""
-    - **Temperature increase:** +1.9°C to +2.1°C by 2050
-    - **Maximum temperature:** Could reach 34.1°C in MAM by 2050
-    - **Wet season (JJA):** Rainfall increases by 26.6% by 2050 → Higher flood risk
-    - **Dry season (MAM):** Rainfall decreases by 27.4% by 2050 → Higher drought risk
-    - **Annual rainfall:** Slight increase of 2.2% by 2050
-    """)
-    
-    # APA Reference
+    # EXPORT OPTIONS
     st.markdown("---")
-    st.markdown("#### 📚 Reference (APA 7th Edition)")
-    st.markdown("""
-    DOST-PAGASA. (2011). *Climate change in the Philippines*. Department of Science and Technology - 
-    Philippine Atmospheric, Geophysical and Astronomical Services Administration. 
-    (UN-Philippines MDGIF Project in partnership with Adaptayo)
-    """)
+    st.markdown("### 📎 Export & Reports")
     
-    st.caption("Source: DOST-PAGASA, 2011. Climate Change in the Philippines (Medium-Range Emission Scenario)")
-
-
-def show_data_source_comparison():
-    """Show comparison between 2011 DOST and 2024 CLIRAM data with APA7 citations"""
-    
-    st.markdown("#### 📊 Climate Data Sources Comparison")
-    
-    col1, col2 = st.columns(2)
+    col1, col2, col3 = st.columns(3)
     
     with col1:
-        st.markdown("""
-        ### 📘 2011 DOST Data
-        
-        **APA 7th Edition Citation:**
-        > DOST-PAGASA. (2011). *Climate change in the Philippines*. Department of Science and Technology - Philippine Atmospheric, Geophysical and Astronomical Services Administration. (UN-Philippines MDGIF Project in partnership with Adaptayo)
-        
-        **Features:**
-        - Seasonal temperature and rainfall changes
-        - 2020 and 2050 projections only
-        - Medium-range emission scenario
-        - Baseline: 1971-2000
-        
-        **Best for:**
-        - LCCAP baseline reference
-        - Long-term trend analysis
-        - Policy formulation
-        """)
+        if st.button("📊 Export Progress Data (CSV)", use_container_width=True):
+            export_df = pd.DataFrame({
+                "Week": weeks[:len(st.session_state.scurve_actuals)],
+                "Original_Plan_Pct": original_plan_cumulative,
+                "Revised_Plan_Pct": revised_plan_cumulative,
+                "Actual_Progress_Pct": st.session_state.scurve_actuals,
+                "Actual_Cost_PHP": st.session_state.scurve_cost_actuals
+            })
+            csv = export_df.to_csv(index=False)
+            st.download_button(
+                label="📥 Download CSV",
+                data=csv,
+                file_name=f"mpcfs_scurve_{datetime.now().strftime('%Y%m%d')}.csv",
+                mime="text/csv"
+            )
     
     with col2:
-        st.markdown("""
-        ### 📗 2024 CLIRAM Data
-        
-        **APA 7th Edition Citation:**
-        > DOST-PAGASA. (2024). *CMIP6-based climate change projections in the Philippines*. Department of Science and Technology - Philippine Atmospheric, Geophysical and Astronomical Services Administration, Quezon City, Philippines.
-        
-        **Features:**
-        - Monthly temperature and rainfall
-        - Multiple time periods (2021-2100)
-        - Upper/Median/Lower bounds (uncertainty)
-        - Latest CMIP6 models
-        
-        **Best for:**
-        - Detailed monthly planning
-        - Risk assessment
-        - Sectoral adaptation planning
-        """)
-    
-    st.markdown("---")
-    st.markdown("### 🔄 How to Use Both Data Sources")
-    st.markdown("""
-    | Use Case | Recommended Data |
-    |----------|------------------|
-    | LCCAP Executive Summary | 2011 DOST (simpler, policy-ready) |
-    | Detailed Sector Planning | 2024 CLIRAM (monthly, uncertainty ranges) |
-    | Infrastructure Design | 2024 CLIRAM (extreme event projections) |
-    | Agricultural Planning | Both (seasonal from 2011, monthly from CLIRAM) |
-    | Water Resource Management | 2024 CLIRAM (detailed monthly rainfall) |
-    """)
-    
-    st.markdown("---")
-    st.markdown("### 📚 Full References (APA 7th Edition)")
-    st.markdown("""
-    **DOST-PAGASA. (2011).** *Climate change in the Philippines*. Department of Science and Technology - Philippine Atmospheric, Geophysical and Astronomical Services Administration. (UN-Philippines MDGIF Project in partnership with Adaptayo)
-    
-    **DOST-PAGASA. (2024).** *CMIP6-based climate change projections in the Philippines*. Department of Science and Technology - Philippine Atmospheric, Geophysical and Astronomical Services Administration, Quezon City, Philippines.
-    """)
-
-
-def show_cliram_temperature(cliram_temperature):
-    """Show CLIRAM 2024 temperature projections"""
-    
-    st.markdown("#### 🌡️ CLIRAM Temperature Projections (2024)")
-    st.caption("Monthly temperature projections with uncertainty ranges")
-    
-    # Period selector
-    periods = ["2021-2050", "2071-2100"]
-    selected_period = st.selectbox("Select Time Period", periods, key="cliram_temp_period")
-    
-    # Get data
-    period_data = cliram_temperature[selected_period]
-    baseline = cliram_temperature["baseline"]
-    
-    months = list(baseline.keys())
-    baseline_values = [baseline[m] for m in months]
-    median_values = [period_data[m]["median"] for m in months]
-    upper_values = [period_data[m]["upper"] for m in months]
-    lower_values = [period_data[m]["lower"] for m in months]
-    
-    # Create chart
-    fig = go.Figure()
-    
-    fig.add_trace(go.Scatter(
-        x=months, y=baseline_values,
-        mode='lines+markers', name='Baseline (1971-2000)',
-        line=dict(color='#3498db', width=2)
-    ))
-    
-    fig.add_trace(go.Scatter(
-        x=months, y=median_values,
-        mode='lines+markers', name=f'Projected ({selected_period})',
-        line=dict(color='#e74c3c', width=2)
-    ))
-    
-    fig.add_trace(go.Scatter(
-        x=months, y=upper_values,
-        mode='lines', name='Upper Bound',
-        line=dict(color='#e74c3c', width=1, dash='dash')
-    ))
-    
-    fig.add_trace(go.Scatter(
-        x=months, y=lower_values,
-        mode='lines', name='Lower Bound',
-        line=dict(color='#e74c3c', width=1, dash='dash'),
-        fill='tonexty', fillcolor='rgba(231, 76, 60, 0.1)'
-    ))
-    
-    fig.update_layout(
-        title=f"Monthly Temperature Projections for Mountain Province ({selected_period})",
-        xaxis_title="Month", yaxis_title="Temperature (°C)",
-        height=500, hovermode='x unified'
-    )
-    
-    st.plotly_chart(fig, use_container_width=True)
-    
-    # Summary table
-    st.markdown("#### 📋 Monthly Temperature Data")
-    
-    table_data = []
-    for i, month in enumerate(months):
-        table_data.append({
-            "Month": month,
-            "Baseline (°C)": baseline_values[i],
-            f"{selected_period} Median (°C)": median_values[i],
-            "Change (°C)": median_values[i] - baseline_values[i],
-            "Range (°C)": f"{lower_values[i]:.1f} - {upper_values[i]:.1f}"
-        })
-    
-    st.dataframe(pd.DataFrame(table_data), use_container_width=True, hide_index=True)
-    
-    st.caption("Source: DOST-PAGASA CMIP6-CLIRAM (2024)")
-
-
-def show_cliram_rainfall(cliram_rainfall):
-    """Show CLIRAM 2024 rainfall projections"""
-    
-    st.markdown("#### 🌧️ CLIRAM Rainfall Projections (2024)")
-    st.caption("Monthly rainfall projections with uncertainty ranges")
-    
-    # Period selector
-    periods = ["2021-2050", "2051-2080", "2071-2100"]
-    selected_period = st.selectbox("Select Time Period", periods, key="cliram_rain_period")
-    
-    # Get data
-    period_data = cliram_rainfall[selected_period]
-    baseline = cliram_rainfall["baseline"]
-    
-    months = list(baseline.keys())
-    baseline_values = [baseline[m] for m in months]
-    median_values = [period_data[m]["median"] for m in months]
-    upper_values = [period_data[m]["upper"] for m in months]
-    lower_values = [period_data[m]["lower"] for m in months]
-    
-    # Calculate percentage changes
-    pct_changes = [(median_values[i] - baseline_values[i]) / baseline_values[i] * 100 for i in range(12)]
-    
-    # Create chart
-    fig = go.Figure()
-    
-    fig.add_trace(go.Scatter(
-        x=months, y=baseline_values,
-        mode='lines+markers', name='Baseline (1971-2000)',
-        line=dict(color='#3498db', width=2)
-    ))
-    
-    fig.add_trace(go.Scatter(
-        x=months, y=median_values,
-        mode='lines+markers', name=f'Projected ({selected_period})',
-        line=dict(color='#2ecc71', width=2)
-    ))
-    
-    fig.add_trace(go.Scatter(
-        x=months, y=upper_values,
-        mode='lines', name='Upper Bound',
-        line=dict(color='#2ecc71', width=1, dash='dash')
-    ))
-    
-    fig.add_trace(go.Scatter(
-        x=months, y=lower_values,
-        mode='lines', name='Lower Bound',
-        line=dict(color='#2ecc71', width=1, dash='dash'),
-        fill='tonexty', fillcolor='rgba(46, 204, 113, 0.1)'
-    ))
-    
-    fig.update_layout(
-        title=f"Monthly Rainfall Projections for Mountain Province ({selected_period})",
-        xaxis_title="Month", yaxis_title="Rainfall (mm)",
-        height=500, hovermode='x unified'
-    )
-    
-    st.plotly_chart(fig, use_container_width=True)
-    
-    # Summary table
-    st.markdown("#### 📋 Monthly Rainfall Data")
-    
-    table_data = []
-    for i, month in enumerate(months):
-        table_data.append({
-            "Month": month,
-            "Baseline (mm)": baseline_values[i],
-            f"{selected_period} Median (mm)": median_values[i],
-            "Change (mm)": median_values[i] - baseline_values[i],
-            "Change (%)": f"{pct_changes[i]:+.1f}%",
-            "Range (mm)": f"{lower_values[i]:.0f} - {upper_values[i]:.0f}"
-        })
-    
-    st.dataframe(pd.DataFrame(table_data), use_container_width=True, hide_index=True)
-    
-    # Seasonal summary
-    st.markdown("#### 🌦️ Seasonal Summary")
-    
-    seasons = {
-        "DJF (Dec-Feb)": ["December", "January", "February"],
-        "MAM (Mar-May)": ["March", "April", "May"],
-        "JJA (Jun-Aug)": ["June", "July", "August"],
-        "SON (Sep-Nov)": ["September", "October", "November"]
-    }
-    
-    seasonal_data = []
-    for season_name, season_months in seasons.items():
-        baseline_seasonal = sum([baseline[m] for m in season_months])
-        projected_seasonal = sum([period_data[m]["median"] for m in season_months])
-        pct_change = (projected_seasonal - baseline_seasonal) / baseline_seasonal * 100
-        seasonal_data.append({
-            "Season": season_name,
-            "Baseline (mm)": baseline_seasonal,
-            f"Projected {selected_period} (mm)": projected_seasonal,
-            "Change (%)": f"{pct_change:+.1f}%"
-        })
-    
-    st.dataframe(pd.DataFrame(seasonal_data), use_container_width=True, hide_index=True)
-    
-    st.caption("Source: DOST-PAGASA CMIP6-CLIRAM (2024)")
-
-
-def show_dost_2011_analysis():
-    """Show 2011 DOST analysis (simpler, policy-ready)"""
-    
-    st.markdown("#### 📈 DOST-PAGASA 2011 Analysis")
-    st.caption("Seasonal projections under medium-range emission scenario")
-    
-    # Temperature table
-    st.markdown("### 🌡️ Temperature Projections")
-    
-    temp_data = {
-        "Season": ["DJF", "MAM", "JJA", "SON"],
-        "Baseline (°C)": [22.7, 26.0, 26.1, 24.9],
-        "2020 Increase": [0.9, 0.9, 0.9, 0.9],
-        "2020 Projected": [23.6, 26.9, 27.0, 25.8],
-        "2050 Increase": [1.9, 2.1, 1.9, 1.9],
-        "2050 Projected": [24.6, 28.1, 28.0, 26.8]
-    }
-    
-    df_temp = pd.DataFrame(temp_data)
-    st.dataframe(df_temp, use_container_width=True, hide_index=True)
-    
-    # Rainfall table
-    st.markdown("### 🌧️ Rainfall Projections")
-    
-    rain_data = {
-        "Season": ["DJF", "MAM", "JJA", "SON", "ANNUAL"],
-        "Baseline (mm)": [74.8, 286.8, 1121.1, 699.2, 2181.9],
-        "2020 Change (%)": [-2.7, -7.7, 16.4, 14.9, 5.2],
-        "2050 Change (%)": [1.1, -27.4, 26.6, 8.5, 2.2],
-        "2050 Projected (mm)": [75.6, 208.2, 1419.4, 758.6, 2461.8]
-    }
-    
-    df_rain = pd.DataFrame(rain_data)
-    st.dataframe(df_rain, use_container_width=True, hide_index=True)
-    
-    # Key findings
-    st.markdown("### 🔍 Key Findings for LCCAP")
-    st.markdown("""
-    - **Temperature increase:** +1.9°C to +2.1°C by 2050
-    - **Maximum temperature:** Could reach 34.1°C in MAM by 2050
-    - **Wet season (JJA):** Rainfall increases by 26.6% by 2050 → Higher flood risk
-    - **Dry season (MAM):** Rainfall decreases by 27.4% by 2050 → Higher drought risk
-    - **Annual rainfall:** Slight increase of 2.2% by 2050
-    """)
-    
-    st.caption("Source: DOST-PAGASA, 2011. Climate Change in the Philippines (Medium-Range Emission Scenario)")
-
-def show_temperature_projections():
-    """Display temperature projections from 2011 DOST data"""
-    
-    st.markdown("#### 🌡️ Temperature Projections")
-    st.caption("Projected changes in temperature based on DOST-PAGASA (2011) data")
-    
-    # Temperature data from your tables
-    temp_data = {
-        "Season": ["DJF (Dec-Jan-Feb)", "MAM (Mar-Apr-May)", "JJA (Jun-Jul-Aug)", "SON (Sep-Oct-Nov)"],
-        "Baseline (1971-2000) °C": [22.7, 26.0, 26.1, 24.9],
-        "2020 Increase (°C)": [0.9, 0.9, 0.9, 0.9],
-        "2020 Projected (°C)": [23.6, 26.9, 27.0, 25.8],
-        "2050 Increase (°C)": [1.9, 2.1, 1.9, 1.9],
-        "2050 Projected (°C)": [24.6, 28.1, 28.0, 26.8]
-    }
-    
-    df_temp = pd.DataFrame(temp_data)
-    st.dataframe(df_temp, use_container_width=True, hide_index=True)
-    
-    # Create chart
-    seasons = df_temp["Season"].tolist()
-    baseline = df_temp["Baseline (1971-2000) °C"].tolist()
-    projected_2020 = df_temp["2020 Projected (°C)"].tolist()
-    projected_2050 = df_temp["2050 Projected (°C)"].tolist()
-    
-    fig = go.Figure()
-    fig.add_trace(go.Bar(name='Baseline (1971-2000)', x=seasons, y=baseline, marker_color='#3498db'))
-    fig.add_trace(go.Bar(name='2020 Projected', x=seasons, y=projected_2020, marker_color='#f39c12'))
-    fig.add_trace(go.Bar(name='2050 Projected', x=seasons, y=projected_2050, marker_color='#e74c3c'))
-    
-    fig.update_layout(title="Temperature Projections by Season", xaxis_title="Season", yaxis_title="Temperature (°C)", height=450, barmode='group')
-    st.plotly_chart(fig, use_container_width=True)
-    
-    # Maximum and Minimum Temperature
-    st.markdown("### Maximum & Minimum Temperature Projections")
-    
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        st.markdown("**Maximum Temperature**")
-        max_data = {
-            "Season": ["DJF", "MAM", "JJA", "SON"],
-            "Baseline (°C)": [27.5, 31.5, 30.7, 29.2],
-            "2050 Projected (°C)": [29.6, 34.1, 32.5, 31.4]
-        }
-        df_max = pd.DataFrame(max_data)
-        st.dataframe(df_max, use_container_width=True, hide_index=True)
-    
-    with col2:
-        st.markdown("**Minimum Temperature**")
-        min_data = {
-            "Season": ["DJF", "MAM", "JJA", "SON"],
-            "Baseline (°C)": [17.8, 20.6, 21.7, 20.5],
-            "2050 Projected (°C)": [19.7, 22.5, 24.1, 22.3]
-        }
-        df_min = pd.DataFrame(min_data)
-        st.dataframe(df_min, use_container_width=True, hide_index=True)
-    
-    st.caption("Source: DOST-PAGASA, 2011. Climate Change in the Philippines (Medium-Range Emission Scenario)")
-
-
-def show_rainfall_projections():
-    """Display rainfall projections from 2011 DOST data"""
-    
-    st.markdown("#### 🌧️ Rainfall Projections")
-    st.caption("Projected changes in rainfall based on DOST-PAGASA (2011) data")
-    
-    # Rainfall data from your tables
-    rain_data = {
-        "Season": ["DJF (Dec-Jan-Feb)", "MAM (Mar-Apr-May)", "JJA (Jun-Jul-Aug)", "SON (Sep-Oct-Nov)", "ANNUAL"],
-        "Baseline (1971-2000) mm": [74.8, 286.8, 1121.1, 699.2, 2181.9],
-        "2020 Change (%)": [-2.7, -7.7, 16.4, 14.9, 5.2],
-        "2020 Projected (mm)": [72.8, 264.7, 1304.9, 803.4, 2295.8],
-        "2050 Change (%)": [1.1, -27.4, 26.6, 8.5, 2.2],
-        "2050 Projected (mm)": [75.6, 208.2, 1419.4, 758.6, 2461.8]
-    }
-    
-    df_rain = pd.DataFrame(rain_data)
-    st.dataframe(df_rain, use_container_width=True, hide_index=True)
-    
-    # Create chart
-    seasons = ["DJF", "MAM", "JJA", "SON"]
-    baseline = [74.8, 286.8, 1121.1, 699.2]
-    projected_2050 = [75.6, 208.2, 1419.4, 758.6]
-    
-    fig = go.Figure()
-    fig.add_trace(go.Bar(name='Baseline (1971-2000)', x=seasons, y=baseline, marker_color='#3498db'))
-    fig.add_trace(go.Bar(name='2050 Projected', x=seasons, y=projected_2050, marker_color='#2ecc71'))
-    
-    fig.update_layout(title="Rainfall Projections by Season", xaxis_title="Season", yaxis_title="Rainfall (mm)", height=450, barmode='group')
-    st.plotly_chart(fig, use_container_width=True)
-    
-    st.caption("Source: DOST-PAGASA, 2011. Climate Change in the Philippines (Medium-Range Emission Scenario)")
-
-
-def show_comparative_analysis():
-    """Show comparative analysis across time periods"""
-    
-    st.markdown("#### 📊 Comparative Climate Analysis")
-    st.caption("How climate variables change from 2020 to 2050")
-    
-    # Summary table
-    summary_data = {
-        "Climate Variable": [
-            "Annual Average Temperature",
-            "Maximum Temperature (MAM)",
-            "Minimum Temperature (JJA)",
-            "Annual Rainfall",
-            "Wet Season Rainfall (JJA)",
-            "Dry Season Rainfall (MAM)"
-        ],
-        "Baseline (1971-2000)": [
-            "24.9°C", "31.5°C", "21.7°C", "2,182 mm", "1,121 mm", "287 mm"
-        ],
-        "2020 Projected": [
-            "25.8°C", "32.6°C", "22.6°C", "2,296 mm", "1,305 mm", "265 mm"
-        ],
-        "2050 Projected": [
-            "26.9°C", "34.1°C", "24.1°C", "2,462 mm", "1,419 mm", "208 mm"
-        ],
-        "Change (2050 vs Baseline)": [
-            "+2.0°C", "+2.6°C", "+2.4°C", "+12.8%", "+26.6%", "-27.4%"
-        ]
-    }
-    
-    df_summary = pd.DataFrame(summary_data)
-    st.dataframe(df_summary, use_container_width=True, hide_index=True)
-    
-    st.markdown("---")
-    
-    # Key findings
-    st.markdown("### 🔍 Key Findings")
-    st.markdown("""
-    - **Temperatures are rising:** By 2050, average temperatures could increase by up to 2.0°C
-    - **Hotter summers:** Maximum temperatures in MAM could reach 34.1°C by 2050
-    - **Wetter wet season:** JJA rainfall could increase by 26.6% by 2050
-    - **Drier dry season:** MAM rainfall could decrease by 27.4% by 2050
-    - **More extreme events:** Increased risk of both flooding and drought
-    """)
-
-
-def show_adaptation_recommendations():
-    """Show adaptation recommendations based on projections"""
-    
-    st.markdown("#### 🌱 Adaptation Recommendations")
-    st.caption("Climate-smart strategies for Mountain Province")
-    
-    st.markdown("""
-    ### 🎯 Priority Adaptation Actions
-    
-    **Agriculture:**
-    - Promote drought-resistant and flood-tolerant crop varieties
-    - Implement climate-smart agriculture practices
-    - Develop water-efficient irrigation systems
-    
-    **Water Resources:**
-    - Construct small-scale water impounding projects
-    - Implement rainwater harvesting systems
-    - Protect and restore watershed areas
-    
-    **Infrastructure:**
-    - Upgrade drainage systems for higher rainfall intensity
-    - Design climate-resilient roads and bridges
-    - Strengthen early warning systems
-    
-    **Health:**
-    - Establish heat wave response protocols
-    - Strengthen vector-borne disease surveillance
-    - Conduct climate-health awareness campaigns
-    
-    **Ecosystems:**
-    - Implement reforestation programs
-    - Protect critical habitats
-    - Promote nature-based solutions
-    """)
-    
-    st.info("Source: DOST-PAGASA Climate Projections (2011, 2024) and INDC Adaptation Framework")
+        if st.button("📄 Generate Progress Report", use_container_width=True):
+            st.markdown("---")
+            st.markdown("### 📋 MPCFS Progress Report")
+            st.markdown(f"**Generated:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+            st.markdown(f"**Project:** {PROJECT_NAME}")
+            st.markdown(f"**Location:** {LOCATION}")
+            st.markdown(f"**Contract Amount:** ₱{CONTRACT_AMOUNT:,.2f}")
+            st.markdown("---")
+            st.markdown(f"**Overall Progress:** {current_actual:.2f}%")
+            st.markdown(f"**Schedule Variance:** {physical_variance:+.2f}%")
+            st.markdown(f"**Cost Variance:** ₱{cost_variance:+,.2f}")
+            st.markdown(f"**Status:** {'ON TRACK' if physical_variance >= -2 else 'BEHIND SCHEDULE'}")
+            st.info("Full report generation with charts will be available in the next update.")
+    
+    with col3:
+        st.caption(f"Last updated: {st.session_state.scurve_last_updated[:16] if st.session_state.scurve_last_updated else 'Never'}")
+        st.caption(f"Data source: MPCFS S-CURVE Sheet | Contract: ₱{CONTRACT_AMOUNT:,.0f}")
+    
+    # RESET OPTION (PM only)
+    if role == "Project Manager":
+        st.markdown("---")
+        with st.expander("⚠️ Admin Actions", expanded=False):
+            st.warning("This will reset all actual progress data to baseline values.")
+            if st.button("🔄 Reset to Baseline Actuals", use_container_width=True):
+                st.session_state.scurve_actuals = actual_cumulative.copy()
+                st.session_state.scurve_cost_actuals = [p * CONTRACT_AMOUNT / 100 for p in actual_cumulative]
+                st.session_state.scurve_last_updated = datetime.now().isoformat()
+                st.success("✅ Reset to baseline actuals complete!")
+                st.rerun()
 
 
 def show_cca_analytics():
@@ -1599,6 +879,270 @@ def show_cca_analytics():
     - Financing gap analysis
     - Municipal CCA readiness scores
     """)
+
+
+def show_climate_projections():
+    """Display Climate Change Projections from DOST data"""
+    
+    st.markdown("### 📊 Climate Change Projections")
+    st.caption("Future climate scenarios based on DOST-PAGASA projections")
+    
+    proj_tab1, proj_tab2, proj_tab3, proj_tab4 = st.tabs([
+        "🌡️ Temperature Projections",
+        "🌧️ Rainfall Projections",
+        "⚡ Extreme Events",
+        "📝 Narrative Analysis"
+    ])
+    
+    with proj_tab1:
+        show_temperature_projections()
+    
+    with proj_tab2:
+        show_rainfall_projections()
+    
+    with proj_tab3:
+        show_extreme_events_projections()
+    
+    with proj_tab4:
+        show_projection_narrative()
+
+
+def show_temperature_projections():
+    """Display temperature projections"""
+    
+    st.markdown("#### 🌡️ Temperature Projections")
+    st.caption("Projected changes in temperature based on DOST-PAGASA data")
+    
+    with st.expander("📊 Input Projection Data (DOST)", expanded=False):
+        with st.form("temp_projection_form"):
+            st.markdown("**Baseline (1971-2000)**")
+            col1, col2 = st.columns(2)
+            with col1:
+                baseline_temp_avg = st.number_input("Average Temperature (°C)", value=22.1, step=0.1)
+            with col2:
+                baseline_hot_nights = st.number_input("Hot Nights per Year", value=15, step=1)
+            
+            st.markdown("**Future Projections (2020-2050)**")
+            col1, col2 = st.columns(2)
+            with col1:
+                future_temp_avg = st.number_input("Future Average Temp (°C)", value=23.8, step=0.1)
+            with col2:
+                future_hot_nights = st.number_input("Future Hot Nights per Year", value=45, step=1)
+            
+            scenario = st.selectbox("Climate Scenario", ["RCP 4.5 (Moderate)", "RCP 8.5 (High Emissions)"])
+            
+            submitted = st.form_submit_button("💾 Save Projection Data")
+            
+            if submitted:
+                st.session_state.climate_projections["temperature"] = {
+                    "baseline": {"mean": baseline_temp_avg, "hot_nights": baseline_hot_nights},
+                    "near_term": {"mean": future_temp_avg, "hot_nights": future_hot_nights},
+                    "scenario": scenario,
+                    "updated_at": datetime.now().isoformat()
+                }
+                st.success("✅ Temperature projection data saved!")
+                st.rerun()
+    
+    temp_data = st.session_state.climate_projections.get("temperature", {})
+    
+    if temp_data:
+        periods = ["Baseline\n(1971-2000)", "Near-term\n(2020-2050)"]
+        mean_temps = [temp_data.get("baseline", {}).get("mean", 0), temp_data.get("near_term", {}).get("mean", 0)]
+        
+        fig = go.Figure()
+        fig.add_trace(go.Bar(x=periods, y=mean_temps, text=mean_temps, textposition='outside',
+                              marker_color=['#3498db', '#e74c3c']))
+        fig.update_layout(title='Temperature Projections (°C)', xaxis_title='Period', yaxis_title='Temperature (°C)')
+        st.plotly_chart(fig, use_container_width=True)
+        
+        hot_nights = [temp_data.get("baseline", {}).get("hot_nights", 0), temp_data.get("near_term", {}).get("hot_nights", 0)]
+        fig2 = px.bar(x=periods, y=hot_nights, title='Hot Nights per Year', color=hot_nights, color_continuous_scale='Reds')
+        st.plotly_chart(fig2, use_container_width=True)
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            temp_increase = temp_data.get("near_term", {}).get("mean", 0) - temp_data.get("baseline", {}).get("mean", 0)
+            st.metric("Temperature Increase", f"+{temp_increase:.1f}°C")
+        with col2:
+            nights_increase = temp_data.get("near_term", {}).get("hot_nights", 0) - temp_data.get("baseline", {}).get("hot_nights", 0)
+            st.metric("Additional Hot Nights", f"+{nights_increase} days/year")
+    else:
+        st.info("No temperature projection data yet. Use the form above to input DOST data.")
+
+
+def show_rainfall_projections():
+    """Display rainfall projections"""
+    
+    st.markdown("#### 🌧️ Rainfall Projections")
+    st.caption("Projected changes in rainfall patterns")
+    
+    with st.expander("📊 Input Rainfall Projection Data", expanded=False):
+        with st.form("rainfall_projection_form"):
+            st.markdown("**Baseline (1971-2000)**")
+            baseline_annual_rainfall = st.number_input("Annual Rainfall (mm)", value=2500, step=50)
+            baseline_rainy_days = st.number_input("Rainy Days per Year", value=150, step=5)
+            
+            st.markdown("**Future Projections (2020-2050)**")
+            future_annual_rainfall = st.number_input("Future Annual Rainfall (mm)", value=2750, step=50)
+            future_rainy_days = st.number_input("Future Rainy Days per Year", value=165, step=5)
+            
+            submitted = st.form_submit_button("💾 Save Rainfall Data")
+            
+            if submitted:
+                st.session_state.climate_projections["rainfall"] = {
+                    "baseline": {"annual": baseline_annual_rainfall, "rainy_days": baseline_rainy_days},
+                    "near_term": {"annual": future_annual_rainfall, "rainy_days": future_rainy_days},
+                    "updated_at": datetime.now().isoformat()
+                }
+                st.success("✅ Rainfall projection data saved!")
+                st.rerun()
+    
+    rain_data = st.session_state.climate_projections.get("rainfall", {})
+    
+    if rain_data:
+        periods = ["Baseline", "Near-term"]
+        annual_rainfall = [rain_data.get("baseline", {}).get("annual", 0), rain_data.get("near_term", {}).get("annual", 0)]
+        fig = px.bar(x=periods, y=annual_rainfall, title='Annual Rainfall (mm)', color=annual_rainfall)
+        st.plotly_chart(fig, use_container_width=True)
+        
+        rainy_days = [rain_data.get("baseline", {}).get("rainy_days", 0), rain_data.get("near_term", {}).get("rainy_days", 0)]
+        fig2 = px.bar(x=periods, y=rainy_days, title='Rainy Days per Year', color=rainy_days)
+        st.plotly_chart(fig2, use_container_width=True)
+        
+        rain_increase = rain_data.get("near_term", {}).get("annual", 0) - rain_data.get("baseline", {}).get("annual", 0)
+        days_increase = rain_data.get("near_term", {}).get("rainy_days", 0) - rain_data.get("baseline", {}).get("rainy_days", 0)
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            st.metric("Rainfall Change", f"+{rain_increase:.0f} mm")
+        with col2:
+            st.metric("Additional Rainy Days", f"+{days_increase} days/year")
+    else:
+        st.info("No rainfall projection data yet.")
+
+
+def show_extreme_events_projections():
+    """Display extreme events projections"""
+    
+    st.markdown("#### ⚡ Extreme Events Projections")
+    st.caption("Projected changes in extreme weather events")
+    
+    with st.expander("📊 Input Extreme Events Data", expanded=False):
+        with st.form("extreme_events_form"):
+            st.markdown("**Baseline Frequency (1971-2000)**")
+            baseline_typhoons = st.number_input("Typhoons per Year", value=3, step=1)
+            baseline_landslides = st.number_input("Landslide Events per Year", value=4, step=1)
+            
+            st.markdown("**Future Projections (2020-2050)**")
+            future_typhoons = st.number_input("Future Typhoons per Year", value=4, step=1)
+            future_landslides = st.number_input("Future Landslide Events per Year", value=7, step=1)
+            
+            submitted = st.form_submit_button("💾 Save Extreme Events Data")
+            
+            if submitted:
+                st.session_state.climate_projections["extreme_events"] = {
+                    "baseline": {"typhoons": baseline_typhoons, "landslides": baseline_landslides},
+                    "near_term": {"typhoons": future_typhoons, "landslides": future_landslides},
+                    "updated_at": datetime.now().isoformat()
+                }
+                st.success("✅ Extreme events data saved!")
+                st.rerun()
+    
+    extreme_data = st.session_state.climate_projections.get("extreme_events", {})
+    
+    if extreme_data:
+        events = ['Typhoons', 'Landslides']
+        baseline_values = [extreme_data.get("baseline", {}).get("typhoons", 0), extreme_data.get("baseline", {}).get("landslides", 0)]
+        future_values = [extreme_data.get("near_term", {}).get("typhoons", 0), extreme_data.get("near_term", {}).get("landslides", 0)]
+        
+        fig = go.Figure()
+        fig.add_trace(go.Bar(name='Baseline', x=events, y=baseline_values, marker_color='#3498db'))
+        fig.add_trace(go.Bar(name='Near-term (2020-2050)', x=events, y=future_values, marker_color='#e74c3c'))
+        fig.update_layout(title='Extreme Events Frequency', barmode='group')
+        st.plotly_chart(fig, use_container_width=True)
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            typhoon_increase = future_values[0] - baseline_values[0]
+            st.metric("Typhoon Increase", f"+{typhoon_increase} per year")
+        with col2:
+            landslide_increase = future_values[1] - baseline_values[1]
+            st.metric("Landslide Increase", f"+{landslide_increase} per year")
+    else:
+        st.info("No extreme events data yet.")
+
+
+def show_projection_narrative():
+    """Generate narrative from projection data"""
+    
+    st.markdown("#### 📝 Climate Projection Narrative")
+    st.caption("What these projections mean for Mountain Province")
+    
+    temp_data = st.session_state.climate_projections.get("temperature", {})
+    rain_data = st.session_state.climate_projections.get("rainfall", {})
+    extreme_data = st.session_state.climate_projections.get("extreme_events", {})
+    
+    if temp_data or rain_data or extreme_data:
+        st.markdown("### 🔍 Analysis of Climate Projections")
+        
+        if temp_data:
+            baseline_temp = temp_data.get("baseline", {}).get("mean", 0)
+            future_temp = temp_data.get("near_term", {}).get("mean", 0)
+            temp_increase = future_temp - baseline_temp
+            
+            st.markdown(f"""
+            ### 🌡️ Temperature
+            
+            Based on DOST-PAGASA projections, Mountain Province is expected to experience a temperature increase 
+            of **{temp_increase:.1f}°C** by 2050.
+            
+            **What this means:**
+            - Higher temperatures will affect agriculture and water resources
+            - Increased energy demand for cooling
+            - Higher risk of heat-related illnesses
+            """)
+        
+        if rain_data:
+            baseline_rain = rain_data.get("baseline", {}).get("annual", 0)
+            future_rain = rain_data.get("near_term", {}).get("annual", 0)
+            rain_increase = future_rain - baseline_rain
+            
+            st.markdown(f"""
+            ### 🌧️ Rainfall Patterns
+            
+            Annual rainfall is projected to increase by **{rain_increase:.0f} mm** by 2050.
+            
+            **What this means:**
+            - More intense rainfall events increase landslide and flood risks
+            - Agriculture faces both more wet days and more intense rainfall
+            - Infrastructure needs to adapt to heavier rainfall
+            """)
+        
+        if extreme_data:
+            baseline_typhoons = extreme_data.get("baseline", {}).get("typhoons", 0)
+            future_typhoons = extreme_data.get("near_term", {}).get("typhoons", 0)
+            typhoon_increase = future_typhoons - baseline_typhoons
+            
+            st.markdown(f"""
+            ### ⚡ Extreme Events
+            
+            Typhoons are projected to increase from {baseline_typhoons:.0f} to {future_typhoons:.0f} per year.
+            
+            **What this means:**
+            - More frequent disaster declarations
+            - Greater strain on emergency services
+            - Increased need for early warning systems
+            """)
+        
+        st.markdown("### 🎯 Recommended Adaptation Actions")
+        st.markdown("""
+        - Strengthen road drainage systems for increased rainfall
+        - Promote climate-resilient crop varieties
+        - Enhance early warning systems
+        - Prepare for increased heat-related illnesses
+        """)
+    else:
+        st.info("No projection data available. Please input temperature, rainfall, and extreme events data first.")
 
 
 def show_cca_documents():
