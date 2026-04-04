@@ -504,31 +504,406 @@ def show_mpcfs_report_generator_updated():
 # ============================================================
 
 def show_climate_projections():
-    """Display Climate Change Projections from CMIP6-CLIRAM data"""
+    """Display Climate Change Projections from both 2011 DOST and 2024 CLIRAM data"""
     
     st.markdown("### 📊 Climate Change Projections")
-    st.caption("CMIP6-CLIRAM future climate scenarios for Mountain Province (2021-2100)")
+    st.caption("CMIP6-CLIRAM (2024) and DOST-PAGASA (2011) climate data for Mountain Province")
     
-    # Create tabs for different projections
-    proj_tab1, proj_tab2, proj_tab3, proj_tab4 = st.tabs([
-        "🌡️ Temperature Projections",
-        "🌧️ Rainfall Projections",
-        "📊 Comparative Analysis",
-        "🌱 Adaptation Recommendations"
+    # ============================================================
+    # CLIRAM 2024 DATA - Monthly Rainfall
+    # ============================================================
+    
+    cliram_rainfall = {
+        "baseline": {
+            "January": 40.8, "February": 45.2, "March": 56.0, "April": 96.9,
+            "May": 235.4, "June": 264.1, "July": 387.7, "August": 444.0,
+            "September": 313.6, "October": 247.5, "November": 181.0, "December": 105.6
+        },
+        "2021-2050": {
+            "January": {"upper": 44.7, "median": 40.7, "lower": 37.7},
+            "February": {"upper": 50.3, "median": 45.6, "lower": 40.6},
+            "March": {"upper": 60.1, "median": 51.5, "lower": 44.5},
+            "April": {"upper": 105.5, "median": 92.0, "lower": 79.6},
+            "May": {"upper": 246.4, "median": 225.6, "lower": 210.5},
+            "June": {"upper": 288.8, "median": 269.2, "lower": 248.6},
+            "July": {"upper": 417.2, "median": 393.5, "lower": 377.0},
+            "August": {"upper": 469.9, "median": 446.6, "lower": 426.5},
+            "September": {"upper": 340.0, "median": 318.9, "lower": 303.9},
+            "October": {"upper": 285.8, "median": 259.9, "lower": 240.6},
+            "November": {"upper": 198.9, "median": 184.2, "lower": 172.4},
+            "December": {"upper": 116.9, "median": 105.4, "lower": 95.9}
+        },
+        "2051-2080": {
+            "January": {"upper": 48.0, "median": 43.3, "lower": 37.6},
+            "February": {"upper": 49.6, "median": 45.1, "lower": 39.4},
+            "March": {"upper": 59.6, "median": 50.6, "lower": 43.8},
+            "April": {"upper": 103.0, "median": 91.3, "lower": 78.3},
+            "May": {"upper": 254.2, "median": 225.5, "lower": 202.4},
+            "June": {"upper": 291.6, "median": 271.6, "lower": 253.4},
+            "July": {"upper": 429.8, "median": 404.8, "lower": 379.6},
+            "August": {"upper": 480.6, "median": 448.8, "lower": 425.3},
+            "September": {"upper": 346.3, "median": 327.7, "lower": 307.6},
+            "October": {"upper": 285.7, "median": 262.3, "lower": 245.9},
+            "November": {"upper": 210.4, "median": 185.1, "lower": 165.8},
+            "December": {"upper": 123.3, "median": 109.3, "lower": 96.6}
+        },
+        "2071-2100": {
+            "January": {"upper": 47.2, "median": 42.7, "lower": 36.4},
+            "February": {"upper": 50.3, "median": 44.6, "lower": 38.9},
+            "March": {"upper": 58.7, "median": 50.4, "lower": 43.3},
+            "April": {"upper": 103.8, "median": 87.8, "lower": 73.1},
+            "May": {"upper": 250.0, "median": 225.6, "lower": 197.2},
+            "June": {"upper": 296.4, "median": 272.4, "lower": 257.8},
+            "July": {"upper": 434.9, "median": 401.8, "lower": 381.7},
+            "August": {"upper": 493.3, "median": 457.4, "lower": 427.0},
+            "September": {"upper": 357.1, "median": 325.9, "lower": 308.8},
+            "October": {"upper": 292.8, "median": 267.8, "lower": 239.4},
+            "November": {"upper": 215.0, "median": 186.9, "lower": 169.9},
+            "December": {"upper": 125.0, "median": 110.9, "lower": 99.1}
+        }
+    }
+    
+    # ============================================================
+    # CLIRAM 2024 DATA - Monthly Temperature
+    # ============================================================
+    
+    cliram_temperature = {
+        "baseline": {
+            "January": 18.8, "February": 19.5, "March": 21.0, "April": 22.5,
+            "May": 23.0, "June": 23.2, "July": 22.7, "August": 22.6,
+            "September": 22.4, "October": 21.6, "November": 20.7, "December": 19.5
+        },
+        "2021-2050": {
+            "January": {"upper": 20.0, "median": 19.8, "lower": 19.6, "change": 1.0},
+            "February": {"upper": 20.7, "median": 20.4, "lower": 20.2, "change": 0.9},
+            "March": {"upper": 22.1, "median": 21.9, "lower": 21.7, "change": 0.9},
+            "April": {"upper": 23.6, "median": 23.4, "lower": 23.2, "change": 0.9},
+            "May": {"upper": 24.3, "median": 24.1, "lower": 23.9, "change": 1.1},
+            "June": {"upper": 24.4, "median": 24.2, "lower": 24.0, "change": 1.0},
+            "July": {"upper": 23.9, "median": 23.7, "lower": 23.5, "change": 1.0},
+            "August": {"upper": 23.7, "median": 23.5, "lower": 23.4, "change": 0.9},
+            "September": {"upper": 23.6, "median": 23.4, "lower": 23.2, "change": 1.0},
+            "October": {"upper": 22.7, "median": 22.6, "lower": 22.4, "change": 1.0},
+            "November": {"upper": 21.8, "median": 21.6, "lower": 21.5, "change": 0.9},
+            "December": {"upper": 20.6, "median": 20.4, "lower": 20.2, "change": 0.9}
+        },
+        "2071-2100": {
+            "January": {"upper": 21.7, "median": 21.0, "lower": 20.2, "change": 2.2},
+            "February": {"upper": 22.3, "median": 21.5, "lower": 20.8, "change": 2.0},
+            "March": {"upper": 24.0, "median": 23.1, "lower": 22.4, "change": 2.1},
+            "April": {"upper": 25.7, "median": 24.7, "lower": 23.9, "change": 2.2},
+            "May": {"upper": 26.4, "median": 25.4, "lower": 24.6, "change": 2.4},
+            "June": {"upper": 26.4, "median": 25.5, "lower": 24.7, "change": 2.3},
+            "July": {"upper": 25.8, "median": 24.9, "lower": 24.1, "change": 2.2},
+            "August": {"upper": 25.6, "median": 24.8, "lower": 23.9, "change": 2.2},
+            "September": {"upper": 25.5, "median": 24.6, "lower": 23.8, "change": 2.2},
+            "October": {"upper": 24.7, "median": 23.8, "lower": 22.9, "change": 2.2},
+            "November": {"upper": 23.7, "median": 22.9, "lower": 22.1, "change": 2.2},
+            "December": {"upper": 22.4, "median": 21.6, "lower": 21.6, "change": 2.1}
+        }
+    }
+    
+    # Create tabs
+    proj_tab1, proj_tab2, proj_tab3, proj_tab4, proj_tab5 = st.tabs([
+        "📊 Data Source Comparison",
+        "🌡️ CLIRAM Temperature",
+        "🌧️ CLIRAM Rainfall",
+        "📈 2011 DOST Analysis",
+        "🌱 Recommendations"
     ])
     
     with proj_tab1:
-        show_temperature_projections()
+        show_data_source_comparison()
     
     with proj_tab2:
-        show_rainfall_projections()
+        show_cliram_temperature(cliram_temperature)
     
     with proj_tab3:
-        show_comparative_analysis()
+        show_cliram_rainfall(cliram_rainfall)
     
     with proj_tab4:
+        show_dost_2011_analysis()
+    
+    with proj_tab5:
         show_adaptation_recommendations()
 
+
+def show_data_source_comparison():
+    """Show comparison between 2011 DOST and 2024 CLIRAM data"""
+    
+    st.markdown("#### 📊 Climate Data Sources Comparison")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.markdown("""
+        ### 📘 2011 DOST Data
+        **Source:** Climate Change in the Philippines (UN-MDGIF Project)
+        
+        **Features:**
+        - Seasonal temperature and rainfall changes
+        - 2020 and 2050 projections only
+        - Medium-range emission scenario
+        - Baseline: 1971-2000
+        
+        **Best for:**
+        - LCCAP baseline reference
+        - Long-term trend analysis
+        - Policy formulation
+        """)
+    
+    with col2:
+        st.markdown("""
+        ### 📗 2024 CLIRAM Data
+        **Source:** CMIP6-Based Climate Change Projections
+        
+        **Features:**
+        - Monthly temperature and rainfall
+        - Multiple time periods (2021-2100)
+        - Upper/Median/Lower bounds (uncertainty)
+        - Latest CMIP6 models
+        
+        **Best for:**
+        - Detailed monthly planning
+        - Risk assessment
+        - Sectoral adaptation planning
+        """)
+    
+    st.markdown("---")
+    st.markdown("### 🔄 How to Use Both Data Sources")
+    st.markdown("""
+    | Use Case | Recommended Data |
+    |----------|------------------|
+    | LCCAP Executive Summary | 2011 DOST (simpler, policy-ready) |
+    | Detailed Sector Planning | 2024 CLIRAM (monthly, uncertainty ranges) |
+    | Infrastructure Design | 2024 CLIRAM (extreme event projections) |
+    | Agricultural Planning | Both (seasonal from 2011, monthly from CLIRAM) |
+    | Water Resource Management | 2024 CLIRAM (detailed monthly rainfall) |
+    """)
+
+
+def show_cliram_temperature(cliram_temperature):
+    """Show CLIRAM 2024 temperature projections"""
+    
+    st.markdown("#### 🌡️ CLIRAM Temperature Projections (2024)")
+    st.caption("Monthly temperature projections with uncertainty ranges")
+    
+    # Period selector
+    periods = ["2021-2050", "2071-2100"]
+    selected_period = st.selectbox("Select Time Period", periods, key="cliram_temp_period")
+    
+    # Get data
+    period_data = cliram_temperature[selected_period]
+    baseline = cliram_temperature["baseline"]
+    
+    months = list(baseline.keys())
+    baseline_values = [baseline[m] for m in months]
+    median_values = [period_data[m]["median"] for m in months]
+    upper_values = [period_data[m]["upper"] for m in months]
+    lower_values = [period_data[m]["lower"] for m in months]
+    
+    # Create chart
+    fig = go.Figure()
+    
+    fig.add_trace(go.Scatter(
+        x=months, y=baseline_values,
+        mode='lines+markers', name='Baseline (1971-2000)',
+        line=dict(color='#3498db', width=2)
+    ))
+    
+    fig.add_trace(go.Scatter(
+        x=months, y=median_values,
+        mode='lines+markers', name=f'Projected ({selected_period})',
+        line=dict(color='#e74c3c', width=2)
+    ))
+    
+    fig.add_trace(go.Scatter(
+        x=months, y=upper_values,
+        mode='lines', name='Upper Bound',
+        line=dict(color='#e74c3c', width=1, dash='dash')
+    ))
+    
+    fig.add_trace(go.Scatter(
+        x=months, y=lower_values,
+        mode='lines', name='Lower Bound',
+        line=dict(color='#e74c3c', width=1, dash='dash'),
+        fill='tonexty', fillcolor='rgba(231, 76, 60, 0.1)'
+    ))
+    
+    fig.update_layout(
+        title=f"Monthly Temperature Projections for Mountain Province ({selected_period})",
+        xaxis_title="Month", yaxis_title="Temperature (°C)",
+        height=500, hovermode='x unified'
+    )
+    
+    st.plotly_chart(fig, use_container_width=True)
+    
+    # Summary table
+    st.markdown("#### 📋 Monthly Temperature Data")
+    
+    table_data = []
+    for i, month in enumerate(months):
+        table_data.append({
+            "Month": month,
+            "Baseline (°C)": baseline_values[i],
+            f"{selected_period} Median (°C)": median_values[i],
+            "Change (°C)": median_values[i] - baseline_values[i],
+            "Range (°C)": f"{lower_values[i]:.1f} - {upper_values[i]:.1f}"
+        })
+    
+    st.dataframe(pd.DataFrame(table_data), use_container_width=True, hide_index=True)
+    
+    st.caption("Source: DOST-PAGASA CMIP6-CLIRAM (2024)")
+
+
+def show_cliram_rainfall(cliram_rainfall):
+    """Show CLIRAM 2024 rainfall projections"""
+    
+    st.markdown("#### 🌧️ CLIRAM Rainfall Projections (2024)")
+    st.caption("Monthly rainfall projections with uncertainty ranges")
+    
+    # Period selector
+    periods = ["2021-2050", "2051-2080", "2071-2100"]
+    selected_period = st.selectbox("Select Time Period", periods, key="cliram_rain_period")
+    
+    # Get data
+    period_data = cliram_rainfall[selected_period]
+    baseline = cliram_rainfall["baseline"]
+    
+    months = list(baseline.keys())
+    baseline_values = [baseline[m] for m in months]
+    median_values = [period_data[m]["median"] for m in months]
+    upper_values = [period_data[m]["upper"] for m in months]
+    lower_values = [period_data[m]["lower"] for m in months]
+    
+    # Calculate percentage changes
+    pct_changes = [(median_values[i] - baseline_values[i]) / baseline_values[i] * 100 for i in range(12)]
+    
+    # Create chart
+    fig = go.Figure()
+    
+    fig.add_trace(go.Scatter(
+        x=months, y=baseline_values,
+        mode='lines+markers', name='Baseline (1971-2000)',
+        line=dict(color='#3498db', width=2)
+    ))
+    
+    fig.add_trace(go.Scatter(
+        x=months, y=median_values,
+        mode='lines+markers', name=f'Projected ({selected_period})',
+        line=dict(color='#2ecc71', width=2)
+    ))
+    
+    fig.add_trace(go.Scatter(
+        x=months, y=upper_values,
+        mode='lines', name='Upper Bound',
+        line=dict(color='#2ecc71', width=1, dash='dash')
+    ))
+    
+    fig.add_trace(go.Scatter(
+        x=months, y=lower_values,
+        mode='lines', name='Lower Bound',
+        line=dict(color='#2ecc71', width=1, dash='dash'),
+        fill='tonexty', fillcolor='rgba(46, 204, 113, 0.1)'
+    ))
+    
+    fig.update_layout(
+        title=f"Monthly Rainfall Projections for Mountain Province ({selected_period})",
+        xaxis_title="Month", yaxis_title="Rainfall (mm)",
+        height=500, hovermode='x unified'
+    )
+    
+    st.plotly_chart(fig, use_container_width=True)
+    
+    # Summary table
+    st.markdown("#### 📋 Monthly Rainfall Data")
+    
+    table_data = []
+    for i, month in enumerate(months):
+        table_data.append({
+            "Month": month,
+            "Baseline (mm)": baseline_values[i],
+            f"{selected_period} Median (mm)": median_values[i],
+            "Change (mm)": median_values[i] - baseline_values[i],
+            "Change (%)": f"{pct_changes[i]:+.1f}%",
+            "Range (mm)": f"{lower_values[i]:.0f} - {upper_values[i]:.0f}"
+        })
+    
+    st.dataframe(pd.DataFrame(table_data), use_container_width=True, hide_index=True)
+    
+    # Seasonal summary
+    st.markdown("#### 🌦️ Seasonal Summary")
+    
+    seasons = {
+        "DJF (Dec-Feb)": ["December", "January", "February"],
+        "MAM (Mar-May)": ["March", "April", "May"],
+        "JJA (Jun-Aug)": ["June", "July", "August"],
+        "SON (Sep-Nov)": ["September", "October", "November"]
+    }
+    
+    seasonal_data = []
+    for season_name, season_months in seasons.items():
+        baseline_seasonal = sum([baseline[m] for m in season_months])
+        projected_seasonal = sum([period_data[m]["median"] for m in season_months])
+        pct_change = (projected_seasonal - baseline_seasonal) / baseline_seasonal * 100
+        seasonal_data.append({
+            "Season": season_name,
+            "Baseline (mm)": baseline_seasonal,
+            f"Projected {selected_period} (mm)": projected_seasonal,
+            "Change (%)": f"{pct_change:+.1f}%"
+        })
+    
+    st.dataframe(pd.DataFrame(seasonal_data), use_container_width=True, hide_index=True)
+    
+    st.caption("Source: DOST-PAGASA CMIP6-CLIRAM (2024)")
+
+
+def show_dost_2011_analysis():
+    """Show 2011 DOST analysis (simpler, policy-ready)"""
+    
+    st.markdown("#### 📈 DOST-PAGASA 2011 Analysis")
+    st.caption("Seasonal projections under medium-range emission scenario")
+    
+    # Temperature table
+    st.markdown("### 🌡️ Temperature Projections")
+    
+    temp_data = {
+        "Season": ["DJF", "MAM", "JJA", "SON"],
+        "Baseline (°C)": [22.7, 26.0, 26.1, 24.9],
+        "2020 Increase": [0.9, 0.9, 0.9, 0.9],
+        "2020 Projected": [23.6, 26.9, 27.0, 25.8],
+        "2050 Increase": [1.9, 2.1, 1.9, 1.9],
+        "2050 Projected": [24.6, 28.1, 28.0, 26.8]
+    }
+    
+    df_temp = pd.DataFrame(temp_data)
+    st.dataframe(df_temp, use_container_width=True, hide_index=True)
+    
+    # Rainfall table
+    st.markdown("### 🌧️ Rainfall Projections")
+    
+    rain_data = {
+        "Season": ["DJF", "MAM", "JJA", "SON", "ANNUAL"],
+        "Baseline (mm)": [74.8, 286.8, 1121.1, 699.2, 2181.9],
+        "2020 Change (%)": [-2.7, -7.7, 16.4, 14.9, 5.2],
+        "2050 Change (%)": [1.1, -27.4, 26.6, 8.5, 2.2],
+        "2050 Projected (mm)": [75.6, 208.2, 1419.4, 758.6, 2461.8]
+    }
+    
+    df_rain = pd.DataFrame(rain_data)
+    st.dataframe(df_rain, use_container_width=True, hide_index=True)
+    
+    # Key findings
+    st.markdown("### 🔍 Key Findings for LCCAP")
+    st.markdown("""
+    - **Temperature increase:** +1.9°C to +2.1°C by 2050
+    - **Maximum temperature:** Could reach 34.1°C in MAM by 2050
+    - **Wet season (JJA):** Rainfall increases by 26.6% by 2050 → Higher flood risk
+    - **Dry season (MAM):** Rainfall decreases by 27.4% by 2050 → Higher drought risk
+    - **Annual rainfall:** Slight increase of 2.2% by 2050
+    """)
+    
+    st.caption("Source: DOST-PAGASA, 2011. Climate Change in the Philippines (Medium-Range Emission Scenario)")
 
 def show_temperature_projections():
     """Display temperature projections from 2011 DOST data"""
