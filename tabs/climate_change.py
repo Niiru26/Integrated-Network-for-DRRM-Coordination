@@ -572,8 +572,8 @@ def show_mpcfs_scurve_tracker(component="infrastructure"):
     overall_progress = weighted_actual
     total_actual_cost = sum(item['cost'] for item in work_items)
     
-    # ============================================================
-    # KPI CARDS
+        # ============================================================
+    # KPI CARDS - CORRECTED with your data
     # ============================================================
     
     st.markdown("### 📊 Key Performance Indicators")
@@ -582,21 +582,40 @@ def show_mpcfs_scurve_tracker(component="infrastructure"):
     col1, col2, col3, col4 = st.columns(4)
     
     with col1:
-        st.metric("Overall Progress", f"{overall_progress:.2f}%", delta=f"₱{total_actual_cost:,.0f} utilized")
+        st.metric(
+            "Overall Progress", 
+            f"{overall_progress:.2f}%", 
+            delta=f"₱{total_actual_cost:,.0f} / ₱{CONTRACT_AMOUNT:,.0f}"
+        )
     
     with col2:
+        # CORRECT: Original Plan at Week 80 is 64.31%
         slippage_original = overall_progress - 64.31
-        st.metric("Slippage vs Original Plan", f"{slippage_original:+.2f}%", delta=f"Target at Week 80: 64.31%")
+        st.metric(
+            "Slippage vs Original Plan", 
+            f"{slippage_original:+.2f}%", 
+            delta=f"Target at Week 80: 64.31%",
+            delta_color="inverse" if slippage_original < 0 else "normal"
+        )
     
     with col3:
+        # Revised Plan at Week 80 is 25.75%
         slippage_revised = overall_progress - 25.75
-        st.metric("Slippage vs Revised Plan", f"{slippage_revised:+.2f}%", delta=f"Target at Week 80: 25.75%")
+        st.metric(
+            "Slippage vs Revised Plan", 
+            f"{slippage_revised:+.2f}%", 
+            delta=f"Target at Week 80: 25.75%",
+            delta_color="normal" if slippage_revised >= 0 else "inverse"
+        )
     
     with col4:
-        status = "✅ AHEAD" if slippage_revised > 0 else ("🟡 ON TRACK" if slippage_revised == 0 else "🔴 BEHIND")
+        if slippage_revised > 0:
+            status = "✅ AHEAD"
+        elif slippage_revised == 0:
+            status = "🟡 ON TRACK"
+        else:
+            status = "🔴 BEHIND"
         st.metric("Overall Status", status, delta="As of Week 80 (Mar 31, 2026)")
-    
-    st.markdown("---")
     
     # ============================================================
     # PROGRESS S-CURVE (1st Chart)
