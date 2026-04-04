@@ -632,8 +632,8 @@ def show_mpcfs_scurve_tracker(component="infrastructure"):
             current_week_idx = i
             break
     
-    # ============================================================
-    # KPI CARDS
+        # ============================================================
+    # KPI CARDS - CORRECTED
     # ============================================================
     
     st.markdown("### 📊 Key Performance Indicators")
@@ -649,6 +649,7 @@ def show_mpcfs_scurve_tracker(component="infrastructure"):
         )
     
     with col2:
+        # Original Plan at Week 80 is 64.31%
         slippage_original = overall_progress - 64.31
         st.metric(
             "Slippage vs Original Plan", 
@@ -658,11 +659,12 @@ def show_mpcfs_scurve_tracker(component="infrastructure"):
         )
     
     with col3:
-        slippage_revised = overall_progress - 25.75
+        # Revised Plan at Week 80 is 16.02% (NOT 25.75%)
+        slippage_revised = overall_progress - 16.02
         st.metric(
             "Slippage vs Revised Plan", 
             f"{slippage_revised:+.2f}%", 
-            delta=f"Target at Week 80: 25.75%",
+            delta=f"Target at Week 80: 16.02%",
             delta_color="normal" if slippage_revised >= 0 else "inverse"
         )
     
@@ -674,8 +676,6 @@ def show_mpcfs_scurve_tracker(component="infrastructure"):
         else:
             status = "🔴 BEHIND"
         st.metric("Overall Status", status, delta="As of Week 80 (Mar 31, 2026)")
-    
-    st.markdown("---")
     
     # ============================================================
     # PROGRESS S-CURVE
