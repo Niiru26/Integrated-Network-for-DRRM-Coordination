@@ -243,7 +243,7 @@ def show_mpcfs_dashboard():
         st.markdown(achievement)
 
 
-def show_mpcfs_gantt_updated():
+def show_mpcfs_gantt():
     """Gantt chart with all infrastructure sub-components"""
     
     st.markdown("#### 📋 Project Gantt Chart & Timeline")
