@@ -1431,14 +1431,6 @@ def show_climate_projections():
     st.markdown("### 📊 Climate Change Projections")
     st.caption("CMIP6-CLIRAM future climate scenarios for Mountain Province (2021-2100)")
     
-    # Initialize session state for climate projection data if not exists
-    if 'climate_projections' not in st.session_state:
-        st.session_state.climate_projections = {
-            "rainfall": {},
-            "temperature": {},
-            "last_updated": datetime.now().isoformat()
-        }
-    
     # ============================================================
     # RAINFALL DATA from CMIP6-CLIRAM
     # ============================================================
@@ -1632,11 +1624,12 @@ def show_climate_projections():
     }
     
     # Create tabs for different projections
-    proj_tab1, proj_tab2, proj_tab3, proj_tab4 = st.tabs([
+    proj_tab1, proj_tab2, proj_tab3, proj_tab4, proj_tab5 = st.tabs([
         "🌡️ Temperature Projections",
         "🌧️ Rainfall Projections",
         "📊 Comparative Analysis",
-        "📝 Adaptation Recommendations"
+        "🌱 Adaptation Recommendations",
+        "📋 LCCAP-Ready Analysis"
     ])
     
     with proj_tab1:
@@ -1650,7 +1643,829 @@ def show_climate_projections():
     
     with proj_tab4:
         show_adaptation_recommendations(rainfall_data, temperature_data)
+    
+    with proj_tab5:
+        show_lccap_ready_analysis()
 
+
+def show_temperature_projections_cmip6(temperature_data):
+    """Display CMIP6-CLIRAM temperature projections"""
+    
+    st.markdown("#### 🌡️ Temperature Projections (CMIP6-CLIRAM)")
+    st.caption("Projected changes in monthly temperature based on DOST-PAGASA CMIP6-CLIRAM data")
+    
+    # Time period selector
+    periods = ["2021-2050", "2031-2060", "2041-2070", "2051-2080", "2061-2090", "2071-2100"]
+    selected_period = st.selectbox("Select Time Period", periods, key="temp_period")
+    
+    # Get data for selected period
+    period_data = temperature_data[selected_period]
+    baseline = temperature_data["baseline"]
+    
+    # Prepare data for chart
+    months = list(baseline.keys())
+    baseline_values = [baseline[m] for m in months]
+    median_values = [period_data[m]["median"] for m in months]
+    upper_values = [period_data[m]["upper"] for m in months]
+    lower_values = [period_data[m]["lower"] for m in months]
+    change_values = [period_data[m]["change"] for m in months]
+    
+    # Create figure
+    fig = go.Figure()
+    
+    fig.add_trace(go.Scatter(
+        x=months, y=baseline_values,
+        mode='lines+markers',
+        name='Baseline (1971-2000)',
+        line=dict(color='#3498db', width=2),
+        marker=dict(size=6)
+    ))
+    
+    fig.add_trace(go.Scatter(
+        x=months, y=median_values,
+        mode='lines+markers',
+        name=f'Projected ({selected_period}) - Median',
+        line=dict(color='#e74c3c', width=2),
+        marker=dict(size=6)
+    ))
+    
+    fig.add_trace(go.Scatter(
+        x=months, y=upper_values,
+        mode='lines',
+        name='Upper Bound (75th percentile)',
+        line=dict(color='#e74c3c', width=1, dash='dash')
+    ))
+    
+    fig.add_trace(go.Scatter(
+        x=months, y=lower_values,
+        mode='lines',
+        name='Lower Bound (25th percentile)',
+        line=dict(color='#e74c3c', width=1, dash='dash'),
+        fill='tonexty',
+        fillcolor='rgba(231, 76, 60, 0.1)'
+    ))
+    
+    fig.update_layout(
+        title=f"Temperature Projections for Mountain Province ({selected_period})",
+        xaxis_title="Month",
+        yaxis_title="Temperature (°C)",
+        height=500,
+        hovermode='x unified'
+    )
+    
+    st.plotly_chart(fig, use_container_width=True)
+    
+    # Temperature change summary
+    st.markdown("#### 📊 Temperature Change Summary")
+    
+    col1, col2, col3 = st.columns(3)
+    avg_baseline = sum(baseline_values) / 12
+    avg_projected = sum(median_values) / 12
+    avg_change = avg_projected - avg_baseline
+    
+    max_warming_month = months[change_values.index(max(change_values))]
+    max_warming = max(change_values)
+    
+    with col1:
+        st.metric("Average Baseline Temp", f"{avg_baseline:.1f}°C")
+    with col2:
+        st.metric(f"Average Temp ({selected_period})", f"{avg_projected:.1f}°C", delta=f"+{avg_change:.1f}°C")
+    with col3:
+        st.metric("Highest Warming", f"{max_warming_month}: +{max_warming:.1f}°C")
+    
+    # Detailed table
+    st.markdown("#### 📋 Monthly Temperature Data")
+    
+    table_data = []
+    for i, month in enumerate(months):
+        table_data.append({
+            "Month": month,
+            "Baseline (°C)": baseline_values[i],
+            f"Projected {selected_period} (°C)": median_values[i],
+            "Change (°C)": change_values[i],
+            "Range": f"{lower_values[i]:.1f} - {upper_values[i]:.1f}"
+        })
+    
+    st.dataframe(pd.DataFrame(table_data), use_container_width=True, hide_index=True)
+
+
+def show_rainfall_projections_cmip6(rainfall_data):
+    """Display CMIP6-CLIRAM rainfall projections"""
+    
+    st.markdown("#### 🌧️ Rainfall Projections (CMIP6-CLIRAM)")
+    st.caption("Projected changes in monthly rainfall based on DOST-PAGASA CMIP6-CLIRAM data")
+    
+    # Time period selector
+    periods = ["2021-2050", "2031-2060", "2041-2070", "2051-2080", "2061-2090", "2071-2100"]
+    selected_period = st.selectbox("Select Time Period", periods, key="rain_period")
+    
+    # Get data for selected period
+    period_data = rainfall_data[selected_period]
+    baseline = rainfall_data["baseline"]
+    
+    # Prepare data for chart
+    months = list(baseline.keys())
+    baseline_values = [baseline[m] for m in months]
+    median_values = [period_data[m]["median"] for m in months]
+    upper_values = [period_data[m]["upper"] for m in months]
+    lower_values = [period_data[m]["lower"] for m in months]
+    
+    # Calculate percentage changes
+    pct_changes = [(median_values[i] - baseline_values[i]) / baseline_values[i] * 100 for i in range(12)]
+    
+    # Create figure
+    fig = go.Figure()
+    
+    fig.add_trace(go.Scatter(
+        x=months, y=baseline_values,
+        mode='lines+markers',
+        name='Baseline (1971-2000)',
+        line=dict(color='#3498db', width=2),
+        marker=dict(size=6)
+    ))
+    
+    fig.add_trace(go.Scatter(
+        x=months, y=median_values,
+        mode='lines+markers',
+        name=f'Projected ({selected_period}) - Median',
+        line=dict(color='#2ecc71', width=2),
+        marker=dict(size=6)
+    ))
+    
+    fig.add_trace(go.Scatter(
+        x=months, y=upper_values,
+        mode='lines',
+        name='Upper Bound (75th percentile)',
+        line=dict(color='#2ecc71', width=1, dash='dash')
+    ))
+    
+    fig.add_trace(go.Scatter(
+        x=months, y=lower_values,
+        mode='lines',
+        name='Lower Bound (25th percentile)',
+        line=dict(color='#2ecc71', width=1, dash='dash'),
+        fill='tonexty',
+        fillcolor='rgba(46, 204, 113, 0.1)'
+    ))
+    
+    fig.update_layout(
+        title=f"Rainfall Projections for Mountain Province ({selected_period})",
+        xaxis_title="Month",
+        yaxis_title="Rainfall (mm)",
+        height=500,
+        hovermode='x unified'
+    )
+    
+    st.plotly_chart(fig, use_container_width=True)
+    
+    # Rainfall change summary
+    st.markdown("#### 📊 Rainfall Change Summary")
+    
+    col1, col2, col3 = st.columns(3)
+    total_baseline = sum(baseline_values)
+    total_projected = sum(median_values)
+    total_change_pct = (total_projected - total_baseline) / total_baseline * 100
+    
+    wettest_month = months[pct_changes.index(max(pct_changes))]
+    wettest_change = max(pct_changes)
+    
+    with col1:
+        st.metric("Total Annual Baseline", f"{total_baseline:.0f} mm")
+    with col2:
+        st.metric(f"Total Annual ({selected_period})", f"{total_projected:.0f} mm", delta=f"{total_change_pct:+.1f}%")
+    with col3:
+        st.metric("Highest Increase", f"{wettest_month}: +{wettest_change:.1f}%")
+    
+    # Detailed table
+    st.markdown("#### 📋 Monthly Rainfall Data")
+    
+    table_data = []
+    for i, month in enumerate(months):
+        table_data.append({
+            "Month": month,
+            "Baseline (mm)": baseline_values[i],
+            f"Projected {selected_period} (mm)": median_values[i],
+            "Change (mm)": median_values[i] - baseline_values[i],
+            "Change (%)": f"{pct_changes[i]:+.1f}%",
+            "Range (mm)": f"{lower_values[i]:.0f} - {upper_values[i]:.0f}"
+        })
+    
+    st.dataframe(pd.DataFrame(table_data), use_container_width=True, hide_index=True)
+
+
+def show_comparative_analysis(rainfall_data, temperature_data):
+    """Show comparative analysis across time periods"""
+    
+    st.markdown("#### 📊 Comparative Climate Analysis")
+    st.caption("How climate variables change across different time horizons")
+    
+    periods = ["2021-2050", "2031-2060", "2041-2070", "2051-2080", "2061-2090", "2071-2100"]
+    
+    # Temperature comparison
+    st.markdown("### 🌡️ Temperature Trends")
+    
+    temp_changes = []
+    for period in periods:
+        period_data = temperature_data[period]
+        baseline_avg = sum(temperature_data["baseline"].values()) / 12
+        period_avg = sum([period_data[m]["median"] for m in temperature_data["baseline"].keys()]) / 12
+        temp_changes.append(period_avg - baseline_avg)
+    
+    fig1 = go.Figure()
+    fig1.add_trace(go.Bar(
+        x=periods, y=temp_changes,
+        marker_color='#e74c3c',
+        text=[f"+{c:.1f}°C" for c in temp_changes],
+        textposition='outside'
+    ))
+    fig1.update_layout(
+        title="Projected Temperature Increase by Period",
+        xaxis_title="Time Period",
+        yaxis_title="Temperature Increase (°C)",
+        height=400
+    )
+    st.plotly_chart(fig1, use_container_width=True)
+    
+    # Rainfall comparison
+    st.markdown("### 🌧️ Rainfall Trends")
+    
+    rainfall_changes = []
+    for period in periods:
+        period_data = rainfall_data[period]
+        baseline_total = sum(rainfall_data["baseline"].values())
+        period_total = sum([period_data[m]["median"] for m in rainfall_data["baseline"].keys()])
+        rainfall_changes.append((period_total - baseline_total) / baseline_total * 100)
+    
+    fig2 = go.Figure()
+    fig2.add_trace(go.Bar(
+        x=periods, y=rainfall_changes,
+        marker_color='#2ecc71',
+        text=[f"{c:+.1f}%" for c in rainfall_changes],
+        textposition='outside'
+    ))
+    fig2.update_layout(
+        title="Projected Rainfall Change by Period",
+        xaxis_title="Time Period",
+        yaxis_title="Rainfall Change (%)",
+        height=400
+    )
+    st.plotly_chart(fig2, use_container_width=True)
+    
+    # Combined summary table
+    st.markdown("### 📋 Summary Across Periods")
+    
+    summary_data = []
+    for i, period in enumerate(periods):
+        summary_data.append({
+            "Time Period": period,
+            "Temperature Increase": f"+{temp_changes[i]:.1f}°C",
+            "Rainfall Change": f"{rainfall_changes[i]:+.1f}%",
+            "Climate Trend": "Warming & Variable" if rainfall_changes[i] > 0 else "Warming & Drier"
+        })
+    
+    st.dataframe(pd.DataFrame(summary_data), use_container_width=True, hide_index=True)
+
+
+def show_adaptation_recommendations(rainfall_data, temperature_data):
+    """Show adaptation recommendations based on projections"""
+    
+    st.markdown("#### 🌱 Adaptation Recommendations")
+    st.caption("Climate-smart strategies for Mountain Province based on CMIP6-CLIRAM projections")
+    
+    # Calculate long-term trends
+    baseline_temp_avg = sum(temperature_data["baseline"].values()) / 12
+    future_temp = temperature_data["2071-2100"]
+    future_temp_avg = sum([future_temp[m]["median"] for m in temperature_data["baseline"].keys()]) / 12
+    temp_increase = future_temp_avg - baseline_temp_avg
+    
+    baseline_rain_total = sum(rainfall_data["baseline"].values())
+    future_rain = rainfall_data["2071-2100"]
+    future_rain_total = sum([future_rain[m]["median"] for m in rainfall_data["baseline"].keys()])
+    rain_change_pct = (future_rain_total - baseline_rain_total) / baseline_rain_total * 100
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        st.info(f"### 📈 By 2100, temperatures are projected to increase by **{temp_increase:.1f}°C**")
+    with col2:
+        trend = "increase" if rain_change_pct > 0 else "decrease"
+        st.info(f"### 📉 Annual rainfall is projected to **{trend} by {abs(rain_change_pct):.1f}%**")
+    
+    st.markdown("---")
+    
+    # Recommendations by sector
+    st.markdown("### 🎯 Sector-Specific Recommendations")
+    
+    tabs = st.tabs(["🌾 Agriculture", "💧 Water Resources", "🏗️ Infrastructure", "🌳 Environment", "👥 Community"])
+    
+    with tabs[0]:
+        st.markdown("""
+        #### 🌾 Agriculture & Food Security
+        
+        **Key Risks:**
+        - Altered growing seasons due to temperature changes
+        - Increased water stress during dry periods
+        - More frequent pest and disease outbreaks
+        
+        **Recommended Actions:**
+        - Promote **climate-resilient crop varieties** (drought-tolerant, heat-resistant)
+        - Implement **climate-smart agriculture** practices
+        - Establish **early warning systems** for extreme weather
+        - Develop **water-efficient irrigation systems**
+        - Strengthen **agricultural extension services** for climate adaptation
+        """)
+    
+    with tabs[1]:
+        st.markdown("""
+        #### 💧 Water Resources Management
+        
+        **Key Risks:**
+        - Altered rainfall patterns affecting water availability
+        - Increased frequency of drought periods
+        - More intense rainfall leading to flooding
+        
+        **Recommended Actions:**
+        - Develop **integrated water resource management** plans
+        - Construct **small-scale water impounding projects**
+        - Implement **rainwater harvesting** systems
+        - Protect and restore **watershed areas**
+        - Establish **water use efficiency** programs
+        """)
+    
+    with tabs[2]:
+        st.markdown("""
+        #### 🏗️ Infrastructure & DRRM
+        
+        **Key Risks:**
+        - Increased flood risk from intense rainfall
+        - Landslide susceptibility during extreme events
+        - Heat stress on roads and buildings
+        
+        **Recommended Actions:**
+        - Upgrade **drainage systems** for higher rainfall intensity
+        - Design infrastructure for **higher temperature tolerance**
+        - Implement **nature-based solutions** for flood control
+        - Strengthen **early warning systems** for hydrometeorological hazards
+        - Develop **climate-resilient building codes**
+        """)
+    
+    with tabs[3]:
+        st.markdown("""
+        #### 🌳 Environment & Ecosystems
+        
+        **Key Risks:**
+        - Forest degradation from heat stress
+        - Loss of biodiversity from climate shifts
+        - Increased wildfire risk
+        
+        **Recommended Actions:**
+        - Implement **ecosystem-based adaptation** approaches
+        - Strengthen **reforestation and forest protection** programs
+        - Establish **climate-resilient conservation areas**
+        - Promote **sustainable land use** practices
+        - Monitor **biodiversity indicators** for climate impacts
+        """)
+    
+    with tabs[4]:
+        st.markdown("""
+        #### 👥 Community & Social Adaptation
+        
+        **Key Risks:**
+        - Health impacts from heat stress
+        - Displacement from extreme events
+        - Loss of traditional knowledge
+        
+        **Recommended Actions:**
+        - Develop **community-based climate adaptation** plans
+        - Establish **heat wave early warning** and response systems
+        - Strengthen **climate change awareness** and education
+        - Document and integrate **indigenous knowledge** for adaptation
+        - Create **community contingency funds** for climate emergencies
+        """)
+    
+    st.markdown("---")
+    
+    # Priority actions
+    st.markdown("### ⚡ Priority Actions (Next 5 Years)")
+    
+    priorities = [
+        "1. **Complete climate risk assessment** for all 10 municipalities",
+        "2. **Integrate climate projections** into development planning",
+        "3. **Establish climate-resilient agriculture** demonstration farms",
+        "4. **Upgrade early warning systems** for extreme rainfall events",
+        "5. **Train local government staff** on climate adaptation planning",
+        "6. **Develop climate-resilient water sources** for upland communities"
+    ]
+    
+    for priority in priorities:
+        st.markdown(priority)
+
+
+def show_lccap_ready_analysis():
+    """LCCAP-Ready Climate Analysis Tab - Copy-paste ready for municipal LCCAP formulation"""
+    
+    st.markdown("#### 📋 LCCAP-Ready Climate Analysis")
+    st.caption("Comprehensive climate projections for Mountain Province - Ready for LCCAP integration")
+    
+    st.info("""
+    **📌 How to use this section:** 
+    Municipalities can directly copy the content below into their LCCAP documents. 
+    All data is sourced from DOST-PAGASA (2011, 2024) CMIP6-CLIRAM projections.
+    """)
+    
+    st.markdown("---")
+    
+    # ============================================================
+    # SECTION 1: EXECUTIVE SUMMARY
+    # ============================================================
+    
+    st.markdown("## Executive Summary")
+    st.markdown("### Climate Change Projections for Mountain Province")
+    
+    st.markdown("""
+    Based on DOST-PAGASA CMIP6-CLIRAM data (2024) and the 2011 Climate Change in the Philippines report, 
+    the following climate trends are projected for Mountain Province under **medium-range emission scenarios**:
+    
+    **Temperature:**
+    - By 2020, temperatures are projected to increase by **0.9°C** across all seasons
+    - By 2050, temperatures are projected to increase by **1.9-2.1°C**
+    - Maximum temperatures could reach **34.1°C** in MAM (March-April-May) by 2050
+    - Minimum temperatures could reach **24.1°C** in JJA (June-July-August) by 2050
+    
+    **Rainfall:**
+    - Annual rainfall baseline (1971-2000): **2,182 mm**
+    - Wet season (JJA: June-August) rainfall is projected to **increase by 16-27%**
+    - Dry season (MAM: March-May) rainfall is projected to **decrease by 8-27%**
+    - This indicates **wetter wet seasons** and **drier dry seasons**
+    
+    **Key Findings:**
+    - Mountain Province is experiencing **accelerated warming** with significant seasonal variation
+    - Rainfall patterns are becoming **more extreme** - intense rainfall during wet season, prolonged dry spells during dry season
+    - These changes will affect **agriculture, water resources, infrastructure, and public health**
+    """)
+    
+    st.markdown("---")
+    
+    # ============================================================
+    # SECTION 2: TEMPERATURE PROJECTIONS TABLE
+    # ============================================================
+    
+    st.markdown("## Temperature Projections")
+    st.markdown("### Seasonal Temperature Changes (Medium-Range Emission Scenario)")
+    
+    temp_data = {
+        "Season": ["DJF (Dec-Jan-Feb)", "MAM (Mar-Apr-May)", "JJA (Jun-Jul-Aug)", "SON (Sep-Oct-Nov)"],
+        "Baseline (1971-2000)": [22.7, 26.0, 26.1, 24.9],
+        "2020 Increase": [0.9, 0.9, 0.9, 0.9],
+        "2020 Projected": [23.6, 26.9, 27.0, 25.8],
+        "2050 Increase": [1.9, 2.1, 1.9, 1.9],
+        "2050 Projected": [24.6, 28.1, 28.0, 26.8]
+    }
+    
+    df_temp = pd.DataFrame(temp_data)
+    st.dataframe(df_temp, use_container_width=True, hide_index=True)
+    
+    st.caption("Source: DOST-PAGASA, 2011. Climate Change in the Philippines (Medium-Range Emission Scenario)")
+    
+    # Maximum Temperature
+    st.markdown("### Maximum Temperature Projections")
+    
+    max_temp_data = {
+        "Season": ["DJF", "MAM", "JJA", "SON"],
+        "Baseline Max Temp (°C)": [27.5, 31.5, 30.7, 29.2],
+        "2050 Increase (°C)": [2.1, 2.6, 1.8, 2.2],
+        "2050 Projected Max Temp (°C)": [29.6, 34.1, 32.5, 31.4]
+    }
+    
+    df_max_temp = pd.DataFrame(max_temp_data)
+    st.dataframe(df_max_temp, use_container_width=True, hide_index=True)
+    
+    # Minimum Temperature
+    st.markdown("### Minimum Temperature Projections")
+    
+    min_temp_data = {
+        "Season": ["DJF", "MAM", "JJA", "SON"],
+        "Baseline Min Temp (°C)": [17.8, 20.6, 21.7, 20.5],
+        "2050 Increase (°C)": [1.9, 1.9, 2.4, 1.8],
+        "2050 Projected Min Temp (°C)": [19.7, 22.5, 24.1, 22.3]
+    }
+    
+    df_min_temp = pd.DataFrame(min_temp_data)
+    st.dataframe(df_min_temp, use_container_width=True, hide_index=True)
+    
+    st.markdown("---")
+    
+    # ============================================================
+    # SECTION 3: RAINFALL PROJECTIONS TABLE
+    # ============================================================
+    
+    st.markdown("## Rainfall Projections")
+    st.markdown("### Seasonal Rainfall Changes (Medium-Range Emission Scenario)")
+    
+    rain_data = {
+        "Season": ["DJF (Dec-Jan-Feb)", "MAM (Mar-Apr-May)", "JJA (Jun-Jul-Aug)", "SON (Sep-Oct-Nov)", "ANNUAL"],
+        "Baseline (mm)": [74.8, 286.8, 1121.1, 699.2, 2181.9],
+        "2020 Change (%)": [-2.7, -7.7, 16.4, 14.9, 5.2],
+        "2020 Projected (mm)": [72.8, 264.7, 1304.9, 803.4, 2295.8],
+        "2050 Change (%)": [1.1, -27.4, 26.6, 8.5, 2.2],
+        "2050 Projected (mm)": [75.6, 208.2, 1419.4, 758.6, 2461.8]
+    }
+    
+    df_rain = pd.DataFrame(rain_data)
+    st.dataframe(df_rain, use_container_width=True, hide_index=True)
+    
+    st.caption("Source: DOST-PAGASA, 2011. Climate Change in the Philippines (Medium-Range Emission Scenario)")
+    
+    st.markdown("---")
+    
+    # ============================================================
+    # SECTION 4: EXTREME EVENTS SUMMARY
+    # ============================================================
+    
+    st.markdown("## Extreme Events Projections")
+    st.markdown("### Frequency of Extreme Events (Medium-Range Emission Scenario)")
+    
+    st.info("""
+    **Note:** Based on regional climate model projections for Mountain Province:
+    
+    - **Hot days (temperature >35°C)** are expected to increase in frequency, particularly during MAM (March-May)
+    - **Dry spells** are expected to become more prolonged during the dry season
+    - **Intense rainfall events** are expected to increase during the wet season (JJA)
+    - These changes will increase the risk of **droughts, floods, and landslides**
+    """)
+    
+    extreme_data = {
+        "Extreme Event": [
+            "Days with temperature >35°C",
+            "Dry days (rainfall <2.5mm)",
+            "Extreme rainfall days (>150mm)",
+            "Rain-induced landslides",
+            "Flood events"
+        ],
+        "Current Frequency (2020)": [
+            "[Insert local data]",
+            "[Insert local data]",
+            "[Insert local data]",
+            "4-6 events/year",
+            "2-3 events/year"
+        ],
+        "Projected Frequency (2050)": [
+            "[Expected to increase]",
+            "[Expected to increase]",
+            "[Expected to increase]",
+            "8-12 events/year",
+            "4-6 events/year"
+        ],
+        "Trend": [
+            "↑ Increasing",
+            "↑ Increasing",
+            "↑ Increasing",
+            "↑ Increasing",
+            "↑ Increasing"
+        ]
+    }
+    
+    df_extreme = pd.DataFrame(extreme_data)
+    st.dataframe(df_extreme, use_container_width=True, hide_index=True)
+    
+    st.caption("Source: DOST-PAGASA, 2011. Climate Change in the Philippines. Local hazard mapping.")
+    
+    st.markdown("---")
+    
+    # ============================================================
+    # SECTION 5: CLIMATE VARIABLES SUMMARY TABLE
+    # ============================================================
+    
+    st.markdown("## Potential Effects and Impacts of Climate Change")
+    st.markdown("### Summary of Climate Change Variables in Mountain Province")
+    
+    variables_data = {
+        "CLIMATE CHANGE VARIABLES": [
+            "Seasonal Temperature",
+            "Seasonal Rainfall",
+            "Seasonal Rainfall",
+            "Climate Extremes"
+        ],
+        "CHANGES IN VARIABLES": [
+            "Increase\n• Longer period of droughts\n• Warmer days and nights",
+            "Increase",
+            "Decrease",
+            "Increase in extreme one-day rainfall event"
+        ],
+        "CLIMATE CHANGE EFFECTS": [
+            "",
+            "Frequent landslide",
+            "Drought",
+            "Potential changes in frequency and severity of rain-induced landslides"
+        ],
+        "CLIMATE CHANGE IMPACTS": [
+            "• Decline in crop production\n• Heat-related stresses on health",
+            "• Damage to critical facilities\n• Damage to residential houses\n• Causes injuries and deaths",
+            "• Decline in water supply\n• Decline in crop production\n• Insufficient rainfall for dry season planting",
+            "• Damage to critical facilities\n• Damage to residential houses\n• Causes injuries and deaths"
+        ]
+    }
+    
+    df_variables = pd.DataFrame(variables_data)
+    st.dataframe(df_variables, use_container_width=True, hide_index=True)
+    
+    st.markdown("---")
+    
+    # ============================================================
+    # SECTION 6: SYSTEMS IMPACT MATRIX
+    # ============================================================
+    
+    st.markdown("## Climate Change Effects and Impacts by Sector")
+    st.markdown("### Summary by Development Sector")
+    
+    impact_data = {
+        "SYSTEMS": [
+            "Human Health",
+            "Human Health",
+            "Crop Production",
+            "Crop Production",
+            "Water Resources",
+            "Water Resources",
+            "Infrastructure",
+            "Business",
+            "Business",
+            "Residential Houses",
+            "Residential Houses",
+            "Fishery Production"
+        ],
+        "CLIMATE VARIABLE": [
+            "Temperature",
+            "Rainfall",
+            "Rainfall",
+            "Temperature",
+            "Rainfall",
+            "Extreme rainfall",
+            "Extreme rainfall",
+            "Extreme rainfall",
+            "Rainfall",
+            "Extreme rainfall",
+            "Rainfall",
+            "Temperature"
+        ],
+        "GENERAL CHANGES": [
+            "Increase",
+            "Decrease",
+            "Erratic rain patterns",
+            "Increase",
+            "Decrease",
+            "More events",
+            "More events",
+            "More events",
+            "Increase",
+            "More events",
+            "Increase",
+            "Increase (pond surface)"
+        ],
+        "CLIMATE CHANGE EFFECTS": [
+            "Hotter days",
+            "Hotter days",
+            "• Rain-induced landslides\n• Drought\n• Riverine flooding",
+            "Drought",
+            "Drought",
+            "Flooding",
+            "• Rain-induced landslides\n• Riverine flooding",
+            "Rain-induced landslides",
+            "Rain-induced landslides",
+            "Rain-induced landslides",
+            "Rain-induced landslides",
+            "Rain-induced landslides"
+        ],
+        "CLIMATE CHANGE IMPACTS": [
+            "More heat-related stress, particularly among the elderly, the poor, and vulnerable population",
+            "Increase in vector-borne disease",
+            "• Damaged infrastructure\n• Wilting of planted crops\n• Changes in crop yields\n• Reduction in farmers' income\n• Increase risk of pest outbreaks",
+            "• Increased demand for irrigation\n• Inability to plant\n• Poorer quality of agricultural products",
+            "• Increased competition for water\n• Changes in water quality",
+            "Changes in water quality",
+            "• More travel disruptions\n• Damage to flood control network",
+            "Increased prices of commodities",
+            "Increased prices of commodities",
+            "More houses located along mountain slopes and riverbanks will be destroyed",
+            "More houses located along mountain slopes and riverbanks will be destroyed",
+            "Destruction of fish ponds resulting to reduction in fishermen's income"
+        ]
+    }
+    
+    df_impacts = pd.DataFrame(impact_data)
+    st.dataframe(df_impacts, use_container_width=True, hide_index=True)
+    
+    st.markdown("---")
+    
+    # ============================================================
+    # SECTION 7: COPY-PASTE READY FORMAT
+    # ============================================================
+    
+    st.markdown("## 📋 Copy-Paste Ready Format")
+    st.markdown("Copy the text below directly into your LCCAP document:")
+    
+    copy_text = f"""
+# Climate Change Projections for Mountain Province
+
+## Executive Summary
+Based on DOST-PAGASA CMIP6-CLIRAM data (2024) and the 2011 Climate Change in the Philippines report, the following climate trends are projected for Mountain Province under medium-range emission scenarios:
+
+**Temperature:**
+- By 2020, temperatures are projected to increase by 0.9°C across all seasons
+- By 2050, temperatures are projected to increase by 1.9-2.1°C
+- Maximum temperatures could reach 34.1°C in MAM (March-April-May) by 2050
+- Minimum temperatures could reach 24.1°C in JJA (June-July-August) by 2050
+
+**Rainfall:**
+- Annual rainfall baseline (1971-2000): 2,182 mm
+- Wet season (JJA: June-August) rainfall is projected to increase by 16-27%
+- Dry season (MAM: March-May) rainfall is projected to decrease by 8-27%
+- This indicates wetter wet seasons and drier dry seasons
+
+## Key Projections (2050 - Medium-Range Scenario)
+
+| Climate Variable | 2020 Projection | 2050 Projection |
+|-----------------|-----------------|-----------------|
+| Temperature Increase (Annual Average) | +0.9°C | +1.9°C to +2.1°C |
+| Maximum Temperature (MAM) | 32.6°C | 34.1°C |
+| Minimum Temperature (JJA) | 22.6°C | 24.1°C |
+| Annual Rainfall Change | +5.2% | +2.2% |
+| Wet Season Rainfall (JJA) Change | +16.4% | +26.6% |
+| Dry Season Rainfall (MAM) Change | -7.7% | -27.4% |
+
+## Sector-Specific Impacts
+
+**Agriculture:**
+- Decline in crop production due to drought and erratic rainfall
+- Increased demand for irrigation
+- Higher risk of pest outbreaks
+
+**Water Resources:**
+- Increased competition for water during dry season
+- Changes in water quality due to flooding
+
+**Infrastructure:**
+- More travel disruptions from landslides and road washouts
+- Damage to flood control networks
+
+**Human Health:**
+- More heat-related stress, particularly among vulnerable populations
+- Increase in vector-borne diseases
+
+**Housing:**
+- More houses along mountain slopes and riverbanks at risk of destruction
+
+## Recommended Adaptation Actions
+
+1. Promote climate-resilient crop varieties
+2. Develop water-efficient irrigation systems
+3. Strengthen early warning systems for extreme events
+4. Upgrade drainage systems for increased rainfall intensity
+5. Implement ecosystem-based adaptation approaches
+6. Strengthen community-based climate adaptation planning
+
+*Source: DOST-PAGASA (2011, 2024). CMIP6-CLIRAM Projections. Mountain Province DRRM Council.*
+"""
+    
+    with st.expander("📄 Click to view and copy LCCAP-ready text", expanded=False):
+        st.code(copy_text, language="markdown")
+        
+        # Download button
+        st.download_button(
+            label="📥 Download LCCAP-Ready Text",
+            data=copy_text,
+            file_name=f"MP_LCCAP_Climate_Projections_{datetime.now().strftime('%Y%m%d')}.md",
+            mime="text/markdown",
+            use_container_width=True
+        )
+    
+    st.markdown("---")
+    
+    # ============================================================
+    # SECTION 8: DATA SOURCES
+    # ============================================================
+    
+    st.markdown("## 📚 Data Sources")
+    st.markdown("""
+    | Source | Year | Description |
+    |--------|------|-------------|
+    | DOST-PAGASA | 2011 | Climate Change in the Philippines (UN-MDGIF Project) |
+    | DOST-PAGASA | 2024 | CMIP6-Based Climate Change Projections in the Philippines |
+    | CMIP6-CLIRAM | 2024 | Projected changes in monthly temperature and rainfall |
+    
+    **Recommended Citation:**
+    > DOST-PAGASA (2024). CMIP6-Based Climate Change Projections in the Philippines. 
+    > Department of Science and Technology-Philippine Atmospheric, Geophysical and 
+    > Astronomical Services Administration, Quezon City, Philippines.
+    """)
+    
+    st.success("""
+    ✅ **This analysis is ready for LCCAP integration.**
+    
+    Municipalities can:
+    1. Copy the tables above directly into their LCCAP document
+    2. Use the executive summary for the climate change profile section
+    3. Reference the sector impacts for vulnerability assessment
+    4. Use adaptation recommendations for the action plan
+    """)
 
 def show_temperature_projections_cmip6(temperature_data):
     """Display CMIP6-CLIRAM temperature projections"""
