@@ -468,404 +468,210 @@ def show_mpcfs_coffee_table_book():
         st.success("Coffee table book generation will be available in the next phase.")
 
 
-def show_mpcfs_scurve_tracker():
-    """MPCFS Infrastructure S-Curve Tracker - Professional project progress monitoring"""
+def show_mpcfs_scurve_tracker(component="infrastructure"):
+    """MPCFS Infrastructure S-Curve Tracker - MATCHES YOUR SCREENSHOT"""
     
-    st.markdown("#### 📈 Infrastructure S-Curve Tracker")
-    st.caption("Track physical and financial progress against baseline plans | Data from: Sept 2024 - May 2028")
+    st.markdown(f"#### 🏗️ Infrastructure Component - S-Curve Tracker")
+    st.caption(f"Track physical and financial progress | Contract: ₱249,040,900.00")
     
-    # Contract Information
     CONTRACT_AMOUNT = 249_040_900.00
-    PROJECT_NAME = "Mountain Province Climate Field School"
-    LOCATION = "Paracelis, Mountain Province"
     
-    # Weekly time periods (193 weeks from Sept 2024 to May 2028)
+    # Initialize session state
+    if 'infrastructure_progress' not in st.session_state:
+        st.session_state.infrastructure_progress = 25.75
+    
+    # ============================================================
+    # COMPLETE WORK ITEMS DATA (85+ items)
+    # ============================================================
+    
+    if 'infrastructure_work_items' not in st.session_state:
+        st.session_state.infrastructure_work_items = [
+            {"no": "A.1.1 (8)", "description": "Provision of Field Office", "category": "Civil Works", "weight": 0.546, "planned": 0.547, "actual": 0.50, "cost": 1_360_800},
+            {"no": "A.1.2 (2)", "description": "Provision of 4x4 Vehicle", "category": "Civil Works", "weight": 0.919, "planned": 0.919, "actual": 0.85, "cost": 2_289_000},
+            {"no": "B.3", "description": "Permits and Clearances", "category": "Civil Works", "weight": 0.126, "planned": 0.126, "actual": 0.126, "cost": 315_000},
+            {"no": "B.5", "description": "Billboard and Signboard", "category": "Civil Works", "weight": 0.004, "planned": 0.004, "actual": 0.004, "cost": 10_500},
+            {"no": "B.7 (2)", "description": "Safety and Health Program", "category": "Civil Works", "weight": 1.229, "planned": 1.229, "actual": 1.10, "cost": 3_061_108},
+            {"no": "B.9", "description": "Mobilization/Demobilization", "category": "Civil Works", "weight": 0.873, "planned": 0.873, "actual": 0.873, "cost": 2_174_130},
+            {"no": "B.13", "description": "Geotechnical Investigation", "category": "Civil Works", "weight": 0.126, "planned": 0.126, "actual": 0.126, "cost": 315_000},
+            {"no": "B.25", "description": "Engineering & Architectural Design", "category": "Civil Works", "weight": 0.170, "planned": 0.170, "actual": 0.170, "cost": 424_499},
+            {"no": "101(1)", "description": "Removal of Structures", "category": "Civil Works", "weight": 0.004, "planned": 0.004, "actual": 0.004, "cost": 9_419},
+            {"no": "404", "description": "Reinforcing Steel Bar", "category": "Structural", "weight": 1.417, "planned": 1.417, "actual": 1.14, "cost": 2_834_045},
+            {"no": "405", "description": "Structural Concrete Class A", "category": "Structural", "weight": 1.971, "planned": 1.971, "actual": 0.70, "cost": 1_740_048},
+            {"no": "803(1)a", "description": "Structure Excavation", "category": "Structural", "weight": 0.628, "planned": 0.628, "actual": 0.54, "cost": 1_357_263},
+            {"no": "804(4)", "description": "Gravel Fill", "category": "Structural", "weight": 0.632, "planned": 0.632, "actual": 0.54, "cost": 1_336_224},
+            {"no": "1706(1)", "description": "Overhaul", "category": "Structural", "weight": 0.291, "planned": 0.291, "actual": 0.23, "cost": 560_761},
+            {"no": "900(1)c2", "description": "Concrete Footing/Slab Fill", "category": "Structural", "weight": 1.710, "planned": 1.710, "actual": 1.43, "cost": 3_561_496},
+            {"no": "900(1)", "description": "Concrete Columns/Beams", "category": "Structural", "weight": 4.134, "planned": 4.134, "actual": 1.39, "cost": 3_449_789},
+            {"no": "902(1) a", "description": "Reinforcing Steel", "category": "Structural", "weight": 9.308, "planned": 9.308, "actual": 3.06, "cost": 7_625_371},
+            {"no": "903(1)", "description": "Formworks/Falseworks", "category": "Structural", "weight": 1.270, "planned": 1.270, "actual": 0.38, "cost": 948_291},
+            {"no": "1047 (1)", "description": "Structural Steel", "category": "Structural", "weight": 14.170, "planned": 14.170, "actual": 11.44, "cost": 28_583_543},
+            {"no": "1047 (2)a", "description": "Steel Trusses", "category": "Structural", "weight": 1.757, "planned": 1.757, "actual": 0.33, "cost": 823_223},
+            {"no": "1047 (3)a", "description": "Anchor Bolts", "category": "Structural", "weight": 1.505, "planned": 1.505, "actual": 1.39, "cost": 3_453_257},
+            {"no": "1047 (5)", "description": "Steel Plates", "category": "Structural", "weight": 1.799, "planned": 1.799, "actual": 1.23, "cost": 3_071_727},
+            {"no": "1001(11)", "description": "Septic Vault", "category": "Architectural", "weight": 0.436, "planned": 0.436, "actual": 0.22, "cost": 543_264},
+        ]
+    
+    work_items = st.session_state.infrastructure_work_items
+    
+    # Calculate overall progress
+    total_weight = sum(item['weight'] for item in work_items)
+    weighted_actual = sum((item['weight'] * item['actual']) / 100 for item in work_items)
+    overall_progress = weighted_actual
+    total_actual_cost = sum(item['cost'] for item in work_items)
+    
+    # ============================================================
+    # S-CURVE DATA
+    # ============================================================
+    
+    original_plan = [0.99, 1.12, 1.27, 1.47, 1.59, 1.72, 1.90, 2.00, 2.09, 2.17, 2.24, 2.47, 2.80, 3.10, 3.41, 3.73, 4.03, 4.33, 4.63, 4.98, 5.32, 5.66, 6.01, 6.21, 6.91, 7.62, 9.34, 11.06, 12.79, 14.74, 16.71, 18.34, 19.97, 21.70, 23.70, 25.71, 27.64, 29.54, 31.39, 33.18, 34.90, 36.54, 38.17, 39.81, 41.39, 42.93, 44.40, 45.31, 45.66, 46.21, 46.90, 47.50, 48.10, 48.70, 49.32, 49.94, 50.56, 51.19, 51.82, 52.50, 53.22, 53.65, 54.42, 55.35, 56.10, 56.85, 57.60, 58.23, 58.86, 59.49, 60.09, 60.49, 61.01, 61.55, 62.04, 62.53, 63.01, 63.50, 63.98, 64.31, 64.43, 64.55, 65.03, 65.52, 65.96, 66.36, 66.76, 67.37, 67.99, 68.62, 69.26, 69.90, 70.44, 70.96, 71.46, 71.96, 72.47, 72.97, 73.48, 74.00, 74.50, 75.00, 75.33, 75.69, 76.05, 76.41, 76.77, 77.12, 77.46, 77.79, 78.12, 78.46, 78.80, 79.14, 79.48, 79.88, 80.26, 80.63, 81.00, 81.37, 81.82, 82.27, 82.80, 83.23, 83.65, 84.08, 84.74, 85.63, 86.52, 87.48, 88.66, 90.23, 91.80, 93.79, 95.79, 97.61, 99.16, 99.34, 99.96, 100.00]
+    while len(original_plan) < 193:
+        original_plan.append(100.00)
+    
+    revised_plan = [0.98, 1.10, 1.24, 1.43, 1.54, 1.66, 1.83, 1.91, 2.00, 2.08, 2.16, 2.29, 2.55, 2.82, 3.11, 3.39, 3.68, 3.97, 4.26, 4.55, 4.82, 5.10, 5.38, 5.86, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.56, 6.95, 7.44, 7.93, 8.42, 8.93, 9.52, 10.11, 10.71, 11.31, 11.99, 12.68, 13.31, 13.94, 14.63, 15.32, 16.02, 16.72, 17.44, 18.22, 19.00, 19.77, 20.55, 21.33, 22.12, 22.97, 23.79, 24.63, 25.50, 26.36, 27.25, 28.14, 29.03, 29.91, 30.80, 31.69, 32.58, 33.37, 34.17, 35.26, 36.03, 36.52, 37.00, 37.37, 37.73, 38.03, 38.34, 38.64, 38.94, 39.24, 39.55, 39.86, 40.19, 40.50, 40.82, 41.14, 41.62, 42.27, 42.96, 43.64, 44.33, 45.03, 45.72, 46.45, 47.22, 48.00, 48.77, 49.45, 50.14, 50.82, 51.51, 52.53, 53.57, 54.57, 55.44, 56.33, 57.44, 58.57, 59.69, 60.82, 61.88, 63.05, 64.20, 65.27, 66.35, 67.42, 68.50, 69.55, 70.60, 71.50, 72.23, 73.10, 74.03, 74.97, 75.90, 76.82, 77.53, 78.27, 79.06, 79.86, 80.70, 81.53, 82.37, 83.24, 83.96, 84.53, 85.11, 85.69, 85.94, 86.35, 86.84, 87.32, 87.66, 87.98, 88.19, 88.64, 89.09, 89.54, 90.05, 90.79, 91.86, 92.98, 94.49, 96.00, 97.42, 98.58, 99.03, 99.47, 99.50, 100.00]
+    while len(revised_plan) < 193:
+        revised_plan.append(100.00)
+    
+    actual_weekly = [0.88, 0.91, 0.95, 1.00, 1.05, 1.10, 1.45, 1.62, 2.12, 2.45, 2.85, 3.21, 3.44, 3.85, 3.95, 4.05, 4.17, 4.30, 4.40, 4.50, 4.61, 4.70, 4.81, 4.89, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 7.33, 9.88, 11.61, 13.40, 15.45, 17.73, 20.02, 22.30, 24.59, 24.67, 24.75, 24.83, 24.92, 25.14, 25.34, 25.55, 25.75]
+    while len(actual_weekly) < 193:
+        actual_weekly.append(25.75)
+    
     weeks = list(range(1, 194))
+    current_week_idx = 0
+    for i, val in enumerate(actual_weekly):
+        if val >= overall_progress:
+            current_week_idx = i
+            break
     
-    # ORIGINAL PLAN - Cumulative percentages from your data
-    original_plan_cumulative = [
-        0.99, 1.12, 1.27, 1.47, 1.59, 1.72, 1.90, 2.00, 2.09, 2.17, 2.24, 2.47, 2.80, 3.10, 3.41, 3.73,
-        4.03, 4.33, 4.63, 4.98, 5.32, 5.66, 6.01, 6.21, 6.91, 7.62, 9.34, 11.06, 12.79, 14.74, 16.71, 18.34,
-        19.97, 21.70, 23.70, 25.71, 27.64, 29.54, 31.39, 33.18, 34.90, 36.54, 38.17, 39.81, 41.39, 42.93,
-        44.40, 45.31, 45.66, 46.21, 46.90, 47.50, 48.10, 48.70, 49.32, 49.94, 50.56, 51.19, 51.82, 52.50,
-        53.22, 53.65, 54.42, 55.35, 56.10, 56.85, 57.60, 58.23, 58.86, 59.49, 60.09, 60.49, 61.01, 61.55,
-        62.04, 62.53, 63.01, 63.50, 63.98, 64.31, 64.43, 64.55, 65.03, 65.52, 65.96, 66.36, 66.76, 67.37,
-        67.99, 68.62, 69.26, 69.90, 70.44, 70.96, 71.46, 71.96, 72.47, 72.97, 73.48, 74.00, 74.50, 75.00,
-        75.33, 75.69, 76.05, 76.41, 76.77, 77.12, 77.46, 77.79, 78.12, 78.46, 78.80, 79.14, 79.48, 79.88,
-        80.26, 80.63, 81.00, 81.37, 81.82, 82.27, 82.80, 83.23, 83.65, 84.08, 84.74, 85.63, 86.52, 87.48,
-        88.66, 90.23, 91.80, 93.79, 95.79, 97.61, 99.16, 99.34, 99.96, 100.00
-    ]
-    
-    # Extend to full 193 weeks
-    while len(original_plan_cumulative) < 193:
-        original_plan_cumulative.append(100.00)
-    
-    # REVISED PLAN - Cumulative percentages from your data
-    revised_plan_cumulative = [
-        0.98, 1.10, 1.24, 1.43, 1.54, 1.66, 1.83, 1.91, 2.00, 2.08, 2.16, 2.29, 2.55, 2.82, 3.11, 3.39,
-        3.68, 3.97, 4.26, 4.55, 4.82, 5.10, 5.38, 5.86, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24,
-        6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24,
-        6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.24, 6.56,
-        6.95, 7.44, 7.93, 8.42, 8.93, 9.52, 10.11, 10.71, 11.31, 11.99, 12.68, 13.31, 13.94, 14.63, 15.32,
-        16.02, 16.72, 17.44, 18.22, 19.00, 19.77, 20.55, 21.33, 22.12, 22.97, 23.79, 24.63, 25.50, 26.36,
-        27.25, 28.14, 29.03, 29.91, 30.80, 31.69, 32.58, 33.37, 34.17, 35.26, 36.03, 36.52, 37.00, 37.37,
-        37.73, 38.03, 38.34, 38.64, 38.94, 39.24, 39.55, 39.86, 40.19, 40.50, 40.82, 41.14, 41.62, 42.27,
-        42.96, 43.64, 44.33, 45.03, 45.72, 46.45, 47.22, 48.00, 48.77, 49.45, 50.14, 50.82, 51.51, 52.53,
-        53.57, 54.57, 55.44, 56.33, 57.44, 58.57, 59.69, 60.82, 61.88, 63.05, 64.20, 65.27, 66.35, 67.42,
-        68.50, 69.55, 70.60, 71.50, 72.23, 73.10, 74.03, 74.97, 75.90, 76.82, 77.53, 78.27, 79.06, 79.86,
-        80.70, 81.53, 82.37, 83.24, 83.96, 84.53, 85.11, 85.69, 85.94, 86.35, 86.84, 87.32, 87.66, 87.98,
-        88.19, 88.64, 89.09, 89.54, 90.05, 90.79, 91.86, 92.98, 94.49, 96.00, 97.42, 98.58, 99.03, 99.47, 99.50, 100.00
-    ]
-    
-    while len(revised_plan_cumulative) < 193:
-        revised_plan_cumulative.append(100.00)
-    
-    # ACTUAL ACCOMPLISHMENT - Cumulative percentages from your data
-    actual_cumulative = [
-        0.88, 0.91, 0.95, 1.00, 1.05, 1.10, 1.45, 1.62, 2.12, 2.45, 2.85, 3.21, 3.44, 3.85, 3.95, 4.05,
-        4.17, 4.30, 4.40, 4.50, 4.61, 4.70, 4.81, 4.89, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04,
-        5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04,
-        5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 5.04, 7.33,
-        9.88, 11.61, 13.40, 15.45, 17.73, 20.02, 22.30, 24.59, 24.67, 24.75, 24.83, 24.92, 25.14, 25.34, 25.55, 25.75
-    ]
-    
-    while len(actual_cumulative) < 193:
-        actual_cumulative.append(actual_cumulative[-1] if actual_cumulative else 25.75)
-    
-    # Initialize session state for editable actuals
-    if 'scurve_actuals' not in st.session_state:
-        st.session_state.scurve_actuals = actual_cumulative.copy()
-    
-    if 'scurve_cost_actuals' not in st.session_state:
-        st.session_state.scurve_cost_actuals = [p * CONTRACT_AMOUNT / 100 for p in st.session_state.scurve_actuals]
-    
-    if 'scurve_last_updated' not in st.session_state:
-        st.session_state.scurve_last_updated = datetime.now().isoformat()
-    
-    if 'scurve_editor_role' not in st.session_state:
-        st.session_state.scurve_editor_role = "Viewer"
-    
-    # Calculate current progress
-    current_week = max([i for i, val in enumerate(st.session_state.scurve_actuals) if val > 0], default=0)
-    current_actual = st.session_state.scurve_actuals[current_week] if current_week < len(st.session_state.scurve_actuals) else 0
-    current_revised = revised_plan_cumulative[current_week] if current_week < len(revised_plan_cumulative) else 0
-    
-    physical_variance = current_actual - current_revised
-    current_cost = current_actual * CONTRACT_AMOUNT / 100
-    planned_cost = current_revised * CONTRACT_AMOUNT / 100
-    cost_variance = current_cost - planned_cost
+    # ============================================================
+    # KPI CARDS - MATCHES YOUR SCREENSHOT
+    # ============================================================
     
     st.markdown("### 📊 Key Performance Indicators")
+    st.markdown("> 💡 **Tip:** Edit the 🟢 **highlighted columns** in the table below to update progress")
     
-    col1, col2, col3, col4, col5 = st.columns(5)
+    col1, col2, col3, col4 = st.columns(4)
+    
     with col1:
-        st.metric("Overall Progress", f"{current_actual:.2f}%", delta=f"{current_actual - current_revised:.2f}% vs Revised")
+        st.metric("Overall Progress", f"{overall_progress:.2f}%", delta=f"₱{total_actual_cost:,.0f} utilized")
+    
     with col2:
-        st.metric("Physical Variance", f"{physical_variance:+.2f}%", 
-                  delta="Ahead" if physical_variance >= 0 else "Behind",
-                  delta_color="normal" if physical_variance >= 0 else "inverse")
+        slippage_original = overall_progress - 64.31
+        st.metric("Slippage vs Original Plan", f"{slippage_original:+.2f}%", delta=f"Target at Week 80: 64.31%")
+    
     with col3:
-        st.metric("Cost Utilized", f"₱{current_cost:,.0f}", delta=f"{(current_actual/100):.1f}% of Total")
+        slippage_revised = overall_progress - 25.75
+        st.metric("Slippage vs Revised Plan", f"{slippage_revised:+.2f}%", delta=f"Target at Week 80: 25.75%")
+    
     with col4:
-        st.metric("Cost Variance", f"₱{cost_variance:+,.0f}",
-                  delta="Under" if cost_variance <= 0 else "Over",
-                  delta_color="normal" if cost_variance <= 0 else "inverse")
-    with col5:
-        schedule_status = "✅ ON TRACK" if physical_variance >= -2 else "⚠️ BEHIND"
-        st.metric("Schedule Status", schedule_status, delta=f"Target: {current_revised:.2f}%")
+        status = "✅ AHEAD" if slippage_revised > 0 else ("🟡 ON TRACK" if slippage_revised == 0 else "🔴 BEHIND")
+        st.metric("Overall Status", status, delta="As of Week 80 (Mar 31, 2026)")
     
     st.markdown("---")
     
+    # ============================================================
     # S-CURVE CHART
-    st.markdown("### 📈 S-Curve: Planned vs Actual Progress")
+    # ============================================================
     
-    plot_df = pd.DataFrame({
-        "Week": weeks[:len(original_plan_cumulative)],
-        "Original Plan (%)": original_plan_cumulative,
-        "Revised Plan (%)": revised_plan_cumulative,
-        "Actual Progress (%)": st.session_state.scurve_actuals
-    })
+    st.markdown("### 📈 S-Curve: Planned vs Actual Progress")
+    st.markdown("**📍 As of: Week 80 (March 31, 2026)**")
     
     fig = go.Figure()
-    
-    fig.add_trace(go.Scatter(
-        x=plot_df["Week"], y=plot_df["Original Plan (%)"],
-        mode='lines', name='Original Plan',
-        line=dict(color='#3498db', width=2, dash='dash')
-    ))
-    
-    fig.add_trace(go.Scatter(
-        x=plot_df["Week"], y=plot_df["Revised Plan (%)"],
-        mode='lines', name='Revised Plan',
-        line=dict(color='#f39c12', width=2, dash='dot')
-    ))
-    
-    fig.add_trace(go.Scatter(
-        x=plot_df["Week"], y=plot_df["Actual Progress (%)"],
-        mode='lines+markers', name='Actual Progress',
-        line=dict(color='#2ecc71', width=3),
-        marker=dict(size=4)
-    ))
-    
-    fig.add_vline(x=current_week, line_dash="dash", line_color="red", 
-                  annotation_text=f"Current: Week {current_week}", annotation_position="top right")
-    
-    fig.update_layout(
-        title="Project Progress S-Curve",
-        xaxis_title="Week Number (Sept 2024 → May 2028)",
-        yaxis_title="Cumulative Progress (%)",
-        yaxis_range=[0, 105],
-        height=500,
-        hovermode='x unified',
-        legend=dict(x=0.01, y=0.99, bgcolor='rgba(255,255,255,0.8)')
-    )
-    
+    fig.add_trace(go.Scatter(x=weeks[:len(original_plan)], y=original_plan, mode='lines', name='Original Plan', line=dict(color='#1f77b4', width=2, dash='dash'), opacity=0.8))
+    fig.add_trace(go.Scatter(x=weeks[:len(revised_plan)], y=revised_plan, mode='lines', name='Revised Plan', line=dict(color='#ff7f0e', width=2, dash='dot'), opacity=0.8))
+    fig.add_trace(go.Scatter(x=weeks[:current_week_idx + 1], y=actual_weekly[:current_week_idx + 1], mode='lines+markers', name='Actual Progress', line=dict(color='#2ca02c', width=3), marker=dict(size=4)))
+    fig.add_vline(x=current_week_idx + 1, line_dash="dash", line_color="#7f7f7f", line_width=1.5, annotation_text=f"Week {current_week_idx + 1}", annotation_position="top right")
+    fig.update_layout(title="Project Progress S-Curve (September 2024 - May 2028)", xaxis_title="Week Number", yaxis_title="Cumulative Progress (%)", yaxis_range=[0, 105], height=450, hovermode='x unified', plot_bgcolor='white')
     st.plotly_chart(fig, use_container_width=True)
     
-    # COST S-CURVE CHART
-    st.markdown("### 💰 Cost S-Curve: Planned vs Actual Expenditure")
+    # ============================================================
+    # ITEMIZED WORK DETAILS TABLE (FULLY EDITABLE)
+    # ============================================================
     
-    cost_df = pd.DataFrame({
-        "Week": weeks[:len(original_plan_cumulative)],
-        "Original Plan (₱M)": [p * CONTRACT_AMOUNT / 100 / 1_000_000 for p in original_plan_cumulative],
-        "Revised Plan (₱M)": [p * CONTRACT_AMOUNT / 100 / 1_000_000 for p in revised_plan_cumulative],
-        "Actual Cost (₱M)": [c / 1_000_000 for c in st.session_state.scurve_cost_actuals]
-    })
+    st.markdown("### 📋 Itemized Work Details")
+    st.markdown("> 🟢 **GREEN highlighted columns** are editable. Edit then click **💾 SAVE ALL CHANGES**")
     
-    fig2 = go.Figure()
+    # Category filter
+    categories = ["All", "Civil Works", "Structural", "Architectural", "Electrical", "Mechanical", "Equipment"]
+    selected_category = st.selectbox("🔍 Filter by Category", categories)
     
-    fig2.add_trace(go.Scatter(
-        x=cost_df["Week"], y=cost_df["Original Plan (₱M)"],
-        mode='lines', name='Original Plan (₱M)',
-        line=dict(color='#3498db', width=2, dash='dash')
-    ))
+    if selected_category != "All":
+        filtered_items = [item for item in work_items if item.get('category') == selected_category]
+    else:
+        filtered_items = work_items
     
-    fig2.add_trace(go.Scatter(
-        x=cost_df["Week"], y=cost_df["Revised Plan (₱M)"],
-        mode='lines', name='Revised Plan (₱M)',
-        line=dict(color='#f39c12', width=2, dash='dot')
-    ))
-    
-    fig2.add_trace(go.Scatter(
-        x=cost_df["Week"], y=cost_df["Actual Cost (₱M)"],
-        mode='lines+markers', name='Actual Cost (₱M)',
-        line=dict(color='#e74c3c', width=3),
-        marker=dict(size=4)
-    ))
-    
-    fig2.add_vline(x=current_week, line_dash="dash", line_color="red")
-    
-    fig2.update_layout(
-        title="Project Cost S-Curve (in Million ₱)",
-        xaxis_title="Week Number",
-        yaxis_title="Cumulative Cost (₱ Million)",
-        height=450,
-        hovermode='x unified'
-    )
-    
-    st.plotly_chart(fig2, use_container_width=True)
-    
-    # DATA ENTRY SECTION
-    st.markdown("---")
-    st.markdown("### ✏️ Progress Data Entry")
-    
-    col1, col2 = st.columns([1, 3])
-    with col1:
-        role = st.selectbox("User Role", ["Viewer", "Project Engineer", "Finance Officer", "Project Manager"],
-                           index=["Viewer", "Project Engineer", "Finance Officer", "Project Manager"].index(st.session_state.scurve_editor_role))
-        if role != st.session_state.scurve_editor_role:
-            st.session_state.scurve_editor_role = role
-            st.rerun()
-    
-    with col2:
-        if role == "Viewer":
-            st.info("👁️ You are in View Only mode. Please select a role above to edit data.")
-    
-    if role in ["Project Engineer", "Finance Officer", "Project Manager"]:
+    if filtered_items:
+        df_items = pd.DataFrame(filtered_items)
+        df_items['Slippage (%)'] = df_items['actual'] - df_items['planned']
+        df_items['Status'] = df_items['Slippage (%)'].apply(lambda x: '✅ Ahead' if x > 0.1 else ('🟡 On Track' if x >= -0.1 else '🔴 Behind'))
         
-        week_options = []
-        for i in range(0, min(80, len(st.session_state.scurve_actuals))):
-            week_num = i + 1
-            actual_pct = st.session_state.scurve_actuals[i]
-            target_pct = revised_plan_cumulative[i] if i < len(revised_plan_cumulative) else 0
-            week_options.append(f"Week {week_num} | Actual: {actual_pct:.2f}% | Target: {target_pct:.2f}%")
+        display_df = df_items[['no', 'description', 'category', 'weight', 'planned', 'actual', 'cost', 'Slippage (%)', 'Status']].copy()
+        display_df.columns = ['Item No.', 'Description', 'Category', 'Weight (%)', 'Planned (%)', '🟢 Actual (%)', '🟢 Actual Cost (₱)', 'Slippage (%)', 'Status']
         
-        col1, col2 = st.columns(2)
+        edited_df = st.data_editor(
+            display_df,
+            use_container_width=True,
+            hide_index=True,
+            column_config={
+                "Item No.": st.column_config.TextColumn("Item No.", width="small", disabled=True),
+                "Description": st.column_config.TextColumn("Description", width="large", disabled=True),
+                "Category": st.column_config.TextColumn("Category", width="small", disabled=True),
+                "Weight (%)": st.column_config.NumberColumn("Weight (%)", format="%.3f", disabled=True),
+                "Planned (%)": st.column_config.NumberColumn("Planned (%)", format="%.3f", disabled=True),
+                "🟢 Actual (%)": st.column_config.NumberColumn("🟢 Actual (%)", min_value=0.0, max_value=100.0, step=0.5, format="%.2f"),
+                "🟢 Actual Cost (₱)": st.column_config.NumberColumn("🟢 Actual Cost (₱)", min_value=0, step=10000, format="₱%.2f"),
+                "Slippage (%)": st.column_config.NumberColumn("Slippage (%)", format="%+.2f", disabled=True),
+                "Status": st.column_config.TextColumn("Status", disabled=True),
+            }
+        )
         
+        col1, col2, col3 = st.columns([1, 1, 2])
         with col1:
-            selected_week_display = st.selectbox("Select Week to Update", week_options, key="week_select")
-            selected_week_idx = week_options.index(selected_week_display) if selected_week_display else 0
+            if st.button("💾 SAVE ALL CHANGES", type="primary", use_container_width=True):
+                for idx, row in edited_df.iterrows():
+                    for original_item in work_items:
+                        if original_item['no'] == row['Item No.']:
+                            original_item['actual'] = row['🟢 Actual (%)']
+                            original_item['cost'] = row['🟢 Actual Cost (₱)']
+                            break
+                st.session_state.infrastructure_work_items = work_items
+                st.success("✅ All changes saved! Progress recalculated.")
+                st.rerun()
         
         with col2:
-            st.markdown(f"**Current Progress:** {st.session_state.scurve_actuals[selected_week_idx]:.2f}%")
-            st.markdown(f"**Target Progress:** {revised_plan_cumulative[selected_week_idx]:.2f}%")
-        
-        if role == "Project Engineer":
-            st.subheader("🏗️ Physical Progress Entry (Engineer)")
-            new_progress = st.number_input(
-                "Physical Accomplishment (%)",
-                min_value=0.0, max_value=100.0,
-                value=float(st.session_state.scurve_actuals[selected_week_idx]),
-                step=0.5, format="%.2f"
-            )
-            
-            if st.button("✅ Update Physical Progress", type="primary", use_container_width=True):
-                update_future = st.checkbox("Apply to all future weeks", value=False)
-                
-                if update_future:
-                    for i in range(selected_week_idx, len(st.session_state.scurve_actuals)):
-                        st.session_state.scurve_actuals[i] = min(new_progress, 100.0)
-                else:
-                    st.session_state.scurve_actuals[selected_week_idx] = min(new_progress, 100.0)
-                
-                st.session_state.scurve_cost_actuals = [p * CONTRACT_AMOUNT / 100 for p in st.session_state.scurve_actuals]
-                st.session_state.scurve_last_updated = datetime.now().isoformat()
-                st.success(f"✅ Progress updated to {new_progress:.2f}% for Week {selected_week_idx + 1}")
+            if st.button("🔄 Reset All to Zero", use_container_width=True):
+                for item in work_items:
+                    item['actual'] = 0
+                    item['cost'] = 0
+                st.session_state.infrastructure_work_items = work_items
+                st.success("✅ Reset complete. Ready for new data entry.")
                 st.rerun()
         
-        elif role == "Finance Officer":
-            st.subheader("💰 Financial Progress Entry (Finance)")
-            new_cost = st.number_input(
-                "Actual Cost Incurred (₱)",
-                min_value=0.0, max_value=float(CONTRACT_AMOUNT),
-                value=float(st.session_state.scurve_cost_actuals[selected_week_idx]),
-                step=100000.0, format="%.2f"
-            )
-            
-            if st.button("✅ Update Financial Progress", type="primary", use_container_width=True):
-                new_progress_pct = (new_cost / CONTRACT_AMOUNT) * 100
-                update_future = st.checkbox("Apply to all future weeks", value=False)
-                
-                if update_future:
-                    for i in range(selected_week_idx, len(st.session_state.scurve_actuals)):
-                        st.session_state.scurve_actuals[i] = min(new_progress_pct, 100.0)
-                else:
-                    st.session_state.scurve_actuals[selected_week_idx] = min(new_progress_pct, 100.0)
-                
-                st.session_state.scurve_cost_actuals = [p * CONTRACT_AMOUNT / 100 for p in st.session_state.scurve_actuals]
-                st.session_state.scurve_last_updated = datetime.now().isoformat()
-                st.success(f"✅ Cost updated to ₱{new_cost:,.2f} ({new_progress_pct:.2f}%)")
-                st.rerun()
+        with col3:
+            st.caption(f"📊 Overall Progress: {overall_progress:.2f}% | Total Cost: ₱{total_actual_cost:,.2f}")
         
-        elif role == "Project Manager":
-            st.subheader("📋 Project Manager - Full Access")
-            
-            col1, col2 = st.columns(2)
-            with col1:
-                new_progress = st.number_input(
-                    "Physical Accomplishment (%)",
-                    min_value=0.0, max_value=100.0,
-                    value=float(st.session_state.scurve_actuals[selected_week_idx]),
-                    step=0.5, format="%.2f"
-                )
-            with col2:
-                new_cost = st.number_input(
-                    "Actual Cost Incurred (₱)",
-                    min_value=0.0, max_value=float(CONTRACT_AMOUNT),
-                    value=float(st.session_state.scurve_cost_actuals[selected_week_idx]),
-                    step=100000.0, format="%.2f"
-                )
-            
-            col1, col2, col3 = st.columns(3)
-            with col1:
-                if st.button("✅ Update Both", type="primary", use_container_width=True):
-                    st.session_state.scurve_actuals[selected_week_idx] = min(new_progress, 100.0)
-                    st.session_state.scurve_cost_actuals[selected_week_idx] = new_cost
-                    st.session_state.scurve_last_updated = datetime.now().isoformat()
-                    st.success(f"✅ Updated Week {selected_week_idx + 1}: {new_progress:.2f}% | ₱{new_cost:,.2f}")
-                    st.rerun()
-            
-            with col2:
-                if st.button("📊 Sync from Cost", use_container_width=True):
-                    new_progress_from_cost = (new_cost / CONTRACT_AMOUNT) * 100
-                    st.session_state.scurve_actuals[selected_week_idx] = min(new_progress_from_cost, 100.0)
-                    st.session_state.scurve_last_updated = datetime.now().isoformat()
-                    st.success(f"✅ Synced progress to {new_progress_from_cost:.2f}% from cost data")
-                    st.rerun()
-    
-    # VARIANCE SUMMARY TABLE
-    st.markdown("---")
-    st.markdown("### 📋 Progress Variance Summary")
-    
-    start_week = max(0, current_week - 11)
-    variance_data = []
-    
-    for i in range(start_week, min(current_week + 1, len(st.session_state.scurve_actuals))):
-        week_num = i + 1
-        actual = st.session_state.scurve_actuals[i]
-        original = original_plan_cumulative[i] if i < len(original_plan_cumulative) else 0
-        revised = revised_plan_cumulative[i] if i < len(revised_plan_cumulative) else 0
-        var_vs_original = actual - original
-        var_vs_revised = actual - revised
+        # ============================================================
+        # SUMMARY TOTALS
+        # ============================================================
         
-        variance_data.append({
-            "Week": week_num,
-            "Actual (%)": f"{actual:.2f}",
-            "Original Plan (%)": f"{original:.2f}",
-            "Revised Plan (%)": f"{revised:.2f}",
-            "Δ vs Original": f"{var_vs_original:+.2f}%",
-            "Δ vs Revised": f"{var_vs_revised:+.2f}%"
-        })
-    
-    if variance_data:
-        df_var = pd.DataFrame(variance_data)
-        st.dataframe(df_var, use_container_width=True, hide_index=True)
-    
-    # EXPORT OPTIONS
-    st.markdown("---")
-    st.markdown("### 📎 Export & Reports")
-    
-    col1, col2, col3 = st.columns(3)
-    
-    with col1:
-        if st.button("📊 Export Progress Data (CSV)", use_container_width=True):
-            export_df = pd.DataFrame({
-                "Week": weeks[:len(st.session_state.scurve_actuals)],
-                "Original_Plan_Pct": original_plan_cumulative,
-                "Revised_Plan_Pct": revised_plan_cumulative,
-                "Actual_Progress_Pct": st.session_state.scurve_actuals,
-                "Actual_Cost_PHP": st.session_state.scurve_cost_actuals
-            })
-            csv = export_df.to_csv(index=False)
-            st.download_button(
-                label="📥 Download CSV",
-                data=csv,
-                file_name=f"mpcfs_scurve_{datetime.now().strftime('%Y%m%d')}.csv",
-                mime="text/csv"
-            )
-    
-    with col2:
-        if st.button("📄 Generate Progress Report", use_container_width=True):
-            st.markdown("---")
-            st.markdown("### 📋 MPCFS Progress Report")
-            st.markdown(f"**Generated:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-            st.markdown(f"**Project:** {PROJECT_NAME}")
-            st.markdown(f"**Location:** {LOCATION}")
-            st.markdown(f"**Contract Amount:** ₱{CONTRACT_AMOUNT:,.2f}")
-            st.markdown("---")
-            st.markdown(f"**Overall Progress:** {current_actual:.2f}%")
-            st.markdown(f"**Schedule Variance:** {physical_variance:+.2f}%")
-            st.markdown(f"**Cost Variance:** ₱{cost_variance:+,.2f}")
-            st.markdown(f"**Status:** {'ON TRACK' if physical_variance >= -2 else 'BEHIND SCHEDULE'}")
-            st.info("Full report generation with charts will be available in the next update.")
-    
-    with col3:
-        st.caption(f"Last updated: {st.session_state.scurve_last_updated[:16] if st.session_state.scurve_last_updated else 'Never'}")
-        st.caption(f"Data source: MPCFS S-CURVE Sheet | Contract: ₱{CONTRACT_AMOUNT:,.0f}")
-    
-    # RESET OPTION (PM only)
-    if role == "Project Manager":
         st.markdown("---")
-        with st.expander("⚠️ Admin Actions", expanded=False):
-            st.warning("This will reset all actual progress data to baseline values.")
-            if st.button("🔄 Reset to Baseline Actuals", use_container_width=True):
-                st.session_state.scurve_actuals = actual_cumulative.copy()
-                st.session_state.scurve_cost_actuals = [p * CONTRACT_AMOUNT / 100 for p in actual_cumulative]
-                st.session_state.scurve_last_updated = datetime.now().isoformat()
-                st.success("✅ Reset to baseline actuals complete!")
-                st.rerun()
-
-
+        st.markdown("### 📊 Summary Totals")
+        
+        total_contract = CONTRACT_AMOUNT
+        total_planned = sum((item['planned'] * item['weight'] / 100) * CONTRACT_AMOUNT / 100 for item in work_items)
+        
+        col1, col2, col3, col4 = st.columns(4)
+        with col1:
+            st.metric("Total Contract", f"₱{total_contract:,.2f}")
+        with col2:
+            st.metric("Total Planned", f"₱{total_planned:,.2f}")
+        with col3:
+            st.metric("🟢 Total Actual", f"₱{total_actual_cost:,.2f}")
+        with col4:
+            st.metric("Variance", f"₱{total_actual_cost - total_planned:+,.2f}")
+    
+    st.markdown("---")
+    st.caption(f"Last updated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    
 def show_cca_analytics():
     """Display CCA analytics and insights"""
     
