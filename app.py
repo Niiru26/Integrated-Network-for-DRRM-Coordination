@@ -216,10 +216,3 @@ elif choice == "⚙️ SETTINGS":
 else:
     st.info("Tab coming soon!")
 
-import streamlit as st
-
-def show():
-    st.markdown("# 📊 DRRM Intelligence")
-    st.caption("Disaster Risk Reduction and Management Intelligence Dashboard")
-    
-    # Your existing DRRM code here...
