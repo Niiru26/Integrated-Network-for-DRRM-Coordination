@@ -1231,20 +1231,32 @@ def show_mpcfs_master_dashboard():
         st.markdown("- Establish research protocols")
         
 def show_mpcfs_scurve_tracker():
-    """MPCFS Infrastructure S-Curve Tracker - COMPLETE with small Edit button and all categories"""
+    """MPCFS Infrastructure S-Curve Tracker"""
     
     st.markdown("#### 🏗️ Infrastructure Component - S-Curve Tracker")
     st.caption("Track physical and financial progress | Contract: ₱249,040,900.00")
     
+    # ============================================================
+    # STEP 1: DEFINE ALL CONSTANTS FIRST
+    # ============================================================
     CONTRACT_AMOUNT = 249_040_900.00
     PREFIX = "infrastructure_"
     
+    TOTAL_CONTRACT = 249_040_900.00
+    TOTAL_PLANNED = 39_800_688.78
+    TOTAL_ACTUAL = 64_198_219.78
+    
+    OVERALL_PROGRESS = 25.75
+    ORIGINAL_PLAN_TARGET = 64.31
+    REVISED_PLAN_TARGET = 16.02
+    
+    slippage_vs_original = OVERALL_PROGRESS - ORIGINAL_PLAN_TARGET
+    slippage_vs_revised = OVERALL_PROGRESS - REVISED_PLAN_TARGET
+    
     # ============================================================
-    # FIX: INITIALIZE SESSION STATE FOR DEPLOYMENT
+    # STEP 2: INITIALIZE SESSION STATE (USING THE CONSTANTS)
     # ============================================================
-    # This prevents the "KeyError" on first load in Streamlit Cloud
     if f'{PREFIX}cost' not in st.session_state:
-        # Create a list of zeros for 12 months (default)
         st.session_state[f'{PREFIX}cost'] = [0] * 12
     
     if f'{PREFIX}months' not in st.session_state:
@@ -1255,22 +1267,10 @@ def show_mpcfs_scurve_tracker():
     
     if f'{PREFIX}actual_start' not in st.session_state:
         st.session_state[f'{PREFIX}actual_start'] = TOTAL_ACTUAL
-    # ============================================================
     
     # ============================================================
-    # HARDCODED TOTALS (from your Excel - ensures 25.75% accuracy)
+    # STEP 3: REST OF YOUR FUNCTION CONTINUES HERE
     # ============================================================
-    TOTAL_CONTRACT = 249_040_900.00
-    TOTAL_PLANNED = 39_800_688.78
-    TOTAL_ACTUAL = 64_198_219.78
-    
-    # HARDCODED KPI VALUES (from your Excel - NOT calculated)
-    OVERALL_PROGRESS = 25.75  # Fixed at 25.75%
-    ORIGINAL_PLAN_TARGET = 64.31
-    REVISED_PLAN_TARGET = 16.02
-    
-    slippage_vs_original = OVERALL_PROGRESS - ORIGINAL_PLAN_TARGET  # -38.56%
-    slippage_vs_revised = OVERALL_PROGRESS - REVISED_PLAN_TARGET    # +9.73%
     
     # ============================================================
     # COMPLETE WORK ITEMS DATA (with proper categories)
