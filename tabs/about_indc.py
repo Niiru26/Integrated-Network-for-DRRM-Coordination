@@ -267,7 +267,7 @@ def show_evolution_timeline():
     """)
     
     st.markdown("""
-    In summary, the evolution from **3D PRISM -> ADST -> INDC** represents a strategic transformation from 
+    The evolution from **3D PRISM -> ADST -> INDC** represents a strategic transformation from 
     **risk visualization -> decision support -> governance integration -> full system coordination**. 
     This trajectory positions **Mountain Province** at the forefront of anticipatory, data-driven, and integrated 
     disaster risk governance, capable of transforming fragmented information into timely action, and risk into resilience.
@@ -294,7 +294,7 @@ def show_evolution_timeline():
     st.markdown("---")
     st.markdown("### 📌 The INDC Platform: More Than Just a Database")
     st.markdown("""
-    The INDC is not merely a database—it is a **comprehensive climate and disaster risk governance platform**. 
+    The INDC is not merely a database, it is a **comprehensive climate and disaster risk governance platform**. 
     It represents the realization of the **Input-Process-Output framework**, transforming raw data into life-saving 
     decisions. From geospatial intelligence to predictive analytics, from plan management to performance tracking, 
     from document automation to multi-user collaboration—INDC is the province's command center for building resilience.

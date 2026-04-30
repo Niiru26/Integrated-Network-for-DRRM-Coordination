@@ -5,6 +5,7 @@ Main Application Entry Point
 
 import streamlit as st
 import pandas as pd
+from tabs.declaration_advisor import show as show_declaration_advisor
 from tabs.drrm_intelligence import show as show_drrm
 from utils.database import init_session_state
 from tabs.plan_management import show as show_plan_management
@@ -30,6 +31,17 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded"
 )
+# ===== GLOBAL CSS FOR SCROLL BEHAVIOR =====
+st.markdown("""
+<style>
+    .stApp [data-testid="stVerticalBlock"] {
+        scroll-behavior: smooth;
+    }
+    .stApp {
+        scroll-behavior: smooth;
+    }
+</style>
+""", unsafe_allow_html=True)
 
 # Initialize session state
 init_session_state()
@@ -87,6 +99,7 @@ with st.sidebar:
         "📚 TRAININGS": "trainings",
         "💰 LDRRMF UTILIZATION": "ldrrmf",
         "📡 SITUATION REPORT": "situation_report",
+        "⚖️ DECLARATION ADVISOR": "declaration_advisor",  # <-- ADD THIS LINE
         "📄 DOCUMENT STUDIO": "document_studio",
         "📁 KNOWLEDGE REPOSITORY": "knowledge_repository",
         "🗺️ GEOSPATIAL LIBRARY": "geospatial_library",
@@ -180,6 +193,9 @@ elif choice == "💰 LDRRMF UTILIZATION":
 
 elif choice == "📡 SITUATION REPORT":
     show_situation_report()
+
+elif choice == "⚖️ DECLARATION ADVISOR":  # <-- ADD THIS BLOCK
+    show_declaration_advisor()
 
 elif choice == "🗺️ GEOSPATIAL LIBRARY":
     show_geospatial_library()

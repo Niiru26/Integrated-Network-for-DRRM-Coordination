@@ -872,516 +872,262 @@ def show_provincial_sitrep_form():
     st.markdown(f"{st.session_state.from_title}")
     st.markdown("---")
 
-    # ===== 8-TAB TITLE GENERATOR =====
+    # ===== ENHANCED SUBJECT LINE GENERATOR =====
     st.markdown("**SUBJECT:**")
     
-    # =========================================================================
-    # INITIALIZE SESSION STATE
-    # =========================================================================
-    
-    if "selected_hazard" not in st.session_state:
-        st.session_state.selected_hazard = ""
+    # Initialize session state for subject
     if "sitrep_num" not in st.session_state:
         st.session_state.sitrep_num = 1
-    if "selected_phase" not in st.session_state:
-        st.session_state.selected_phase = "Monitoring"
-    if "location" not in st.session_state:
-        st.session_state.location = ""
+    if "generated_subject" not in st.session_state:
+        st.session_state.generated_subject = ""
+    if "incident_name" not in st.session_state:
+        st.session_state.incident_name = ""
+    if "incident_location" not in st.session_state:
+        st.session_state.incident_location = ""
+    if "operational_phase" not in st.session_state:
+        st.session_state.operational_phase = ""
+    if "selected_hazard_types" not in st.session_state:
+        st.session_state.selected_hazard_types = []
     
-    # =========================================================================
-    # OPERATIONAL PHASES (Common for ALL tabs)
-    # =========================================================================
+    # ===== Row 1: SITREP Number =====
+    col1, col2 = st.columns([1, 3])
+    with col1:
+        sitrep_number = st.number_input(
+            "SITREP #",
+            min_value=1,
+            value=st.session_state.sitrep_num,
+            step=1,
+            key="sitrep_num_input",
+            help="Sequential number. Starts at 1, continues until Terminal Report"
+        )
     
-    operational_phases = [
-        "Monitoring",
-        "Preparedness",
-        "Incident / Effects Monitoring",
-        "Impact Assessment",
-        "Terminal Reporting"
+    # ===== Row 2: Incident Type =====
+    st.markdown("**Incident Type (Select all that apply):**")
+    st.caption("Select one or more hazard types. This will sync with DRRM Intelligence classification.")
+    
+    # Define hazard categories
+    hydrometeorological_hazards = [
+        "Tropical Depression", "Tropical Storm", "Severe Tropical Storm",
+        "Typhoon", "Super Typhoon", "Southwest Monsoon (Habagat)",
+        "Northeast Monsoon (Amihan)", "Low Pressure Area (LPA)",
+        "Shear Line", "Intertropical Convergence Zone (ITCZ)",
+        "Thunderstorm", "Flood/Flashflood", "Landslide",
+        "Storm Surge", "La Niña", "El Niño"
     ]
     
-    # Phase descriptions
-    phase_descriptions = {
-        "Monitoring": "Early stage - tracking, advisories, forecasts, initial reports",
-        "Preparedness": "Pre-impact actions, anticipatory measures, prepositioning",
-        "Incident / Effects Monitoring": "During impact or immediate aftermath, tracking ongoing situation",
-        "Impact Assessment": "Validated damages, casualties, needs assessment",
-        "Terminal Reporting": "End of operations, final consolidation, lessons learned"
-    }
+    geological_hazards = [
+        "Earthquake", "Earthquake-Induced Landslide",
+        "Volcanic Eruption", "Ground Fissure", "Liquefaction"
+    ]
     
-    # =========================================================================
-    # WORDING FAMILIES (Title Templates)
-    # =========================================================================
+    other_hazards = [
+        "Structural Fire", "Forest/Grass Fire", "Vehicular Accident",
+        "Aviation Accident", "Armed Conflict", "Missing Person",
+        "Found Cadaver", "Drowning", "Medical Emergency",
+        "Attempted Suicide", "Shooting Incident", "Stabbing Incident",
+        "Chemical Spill", "Infrastructure Collapse", "Power Outage",
+        "Water Shortage", "Disease Outbreak"
+    ]
     
-    # Family A: Weather / Slow-onset
-    templates_slow_onset = {
-        "Monitoring": "Monitoring of {hazard}",
-        "Preparedness": "Preparedness for the Possible Effects of {hazard}",
-        "Incident / Effects Monitoring": "Monitoring of the Effects of {hazard}",
-        "Impact Assessment": "Impact Assessment of {hazard}",
-        "Terminal Reporting": "Terminal Report on the Effects and Impacts of {hazard}"
-    }
+    # Display Hydrometeorological Hazards
+    with st.expander("🌊 HYDROMETEOROLOGICAL HAZARDS", expanded=True):
+        cols = st.columns(3)
+        for idx, hazard in enumerate(hydrometeorological_hazards):
+            with cols[idx % 3]:
+                is_selected = hazard in st.session_state.selected_hazard_types
+                if st.checkbox(hazard, value=is_selected, key=f"hazard_hydro_{idx}"):
+                    if hazard not in st.session_state.selected_hazard_types:
+                        st.session_state.selected_hazard_types.append(hazard)
+                else:
+                    if hazard in st.session_state.selected_hazard_types:
+                        st.session_state.selected_hazard_types.remove(hazard)
     
-    # Family B: Sudden-onset
-    templates_sudden_onset = {
-        "Monitoring": "Monitoring of {hazard}",
-        "Preparedness": "Preparedness Measures for Possible {hazard_base} Incidents",
-        "Incident / Effects Monitoring": "Monitoring of {hazard} and Response Actions",
-        "Impact Assessment": "Impact Assessment of {hazard}",
-        "Terminal Reporting": "Terminal Report on {hazard}"
-    }
+    # Display Geological Hazards
+    with st.expander("🌋 GEOLOGICAL HAZARDS", expanded=True):
+        cols = st.columns(3)
+        for idx, hazard in enumerate(geological_hazards):
+            with cols[idx % 3]:
+                is_selected = hazard in st.session_state.selected_hazard_types
+                if st.checkbox(hazard, value=is_selected, key=f"hazard_geo_{idx}"):
+                    if hazard not in st.session_state.selected_hazard_types:
+                        st.session_state.selected_hazard_types.append(hazard)
+                else:
+                    if hazard in st.session_state.selected_hazard_types:
+                        st.session_state.selected_hazard_types.remove(hazard)
     
-    # Family C: Search / Investigation
-    templates_search = {
-        "Monitoring": "Monitoring of {hazard}",
-        "Preparedness": "Preparedness Measures for Possible Related Incidents",
-        "Incident / Effects Monitoring": "Incident Monitoring and Coordination for {hazard}",
-        "Impact Assessment": "Assessment of Effects and Operational Requirements for {hazard}",
-        "Terminal Reporting": "Terminal Report on {hazard}"
-    }
+    # Display Other Hazards
+    with st.expander("📋 OTHER HAZARDS / INCIDENTS", expanded=True):
+        cols = st.columns(3)
+        for idx, hazard in enumerate(other_hazards):
+            with cols[idx % 3]:
+                is_selected = hazard in st.session_state.selected_hazard_types
+                if st.checkbox(hazard, value=is_selected, key=f"hazard_other_{idx}"):
+                    if hazard not in st.session_state.selected_hazard_types:
+                        st.session_state.selected_hazard_types.append(hazard)
+                else:
+                    if hazard in st.session_state.selected_hazard_types:
+                        st.session_state.selected_hazard_types.remove(hazard)
     
-    # =========================================================================
-    # HAZARD LISTS BY CATEGORY
-    # =========================================================================
+    # Display selected hazards summary
+    if st.session_state.selected_hazard_types:
+        st.info(f"**Selected Hazard Types:** {', '.join(st.session_state.selected_hazard_types)}")
+    else:
+        st.warning("⚠️ No hazard type selected. Please select at least one.")
     
-    # Tab 0: Hydrometeorological
-    hydrometeorological_hazards = {
-        "Atmospheric Disturbances": ["🌧️ ITCZ", "🌀 LPA", "💨 Monsoon", "⚡ Shear Line"],
-        "Tropical Cyclones": ["⛈️ Thunderstorm", "🌪️ Tropical Depression", "🌪️ Tropical Storm", "🌪️ Severe Tropical Storm"],
-        "Typhoons": ["🌪️ Typhoon", "🌪️ Super Typhoon"],
-        "Flooding": ["🌊 Riverine Flood", "💧 Flash Flood"],
-        "Other Hazards": ["🏜️ Drought", "🔥 Heatwave"]
-    }
+    st.markdown("---")
     
-    # Tab 1: Geological
-    geological_hazards = {
-        "Earthquake-Related": ["🌋 Earthquake", "🌋 Strong Aftershock", "🌋 Earthquake Swarm"],
-        "Ground Movement": ["🏔️ Landslide", "🪨 Rockfall", "⛰️ Debris Flow", "📉 Ground Subsidence"],
-        "Volcanic": ["🌋 Volcanic Eruption", "🌫️ Volcanic Ashfall", "💨 Lahar Flow"],
-        "Other Geological": ["⚡ Ground Rupture", "💧 Liquefaction", "📈 Slope Movement"]
-    }
+    # ===== Row 3: Incident Name =====
+    st.markdown("**Incident Name:**")
+    st.caption("Be specific. For typhoons, use the PAGASA name. For other incidents, describe briefly.")
     
-    # Tab 2: Fire Incident
-    fire_hazards = {
-        "Structural Fires": ["🏠 Residential House Fire", "🏢 Commercial Building Fire"],
-        "Wildfires": ["🌲 Forest Fire", "🌿 Grass Fire", "🔥 Bush Fire"],
-        "Other Fires": ["🚗 Vehicle Fire", "⚡ Electrical Fire", "💥 Explosion"]
-    }
-    
-    # Tab 3: Technological / Human-Induced
-    technological_hazards = {
-        "Transportation": ["✈️ Aviation Accident", "🚗 Vehicular Accident"],
-        "Industrial": ["🏭 Industrial Accident", "☢️ Chemical Spill", "💨 Gas Leak"],
-        "Infrastructure": ["🏗️ Infrastructure Collapse", "🌉 Bridge Collapse", "🏢 Building Collapse"],
-        "Other": ["💣 Bomb Threat", "📡 Communication Outage", "⚡ Power Grid Failure"]
-    }
-    
-    # Tab 4: Public Safety / Security
-    public_safety_hazards = {
-        "Violent Incidents": ["🔫 Shooting Incident", "🔪 Stabbing Incident", "⚔️ Armed Confrontation"],
-        "Civil Unrest": ["📢 Riot", "🚫 Barricade", "🏛️ Hostage Situation"],
-        "Other Security": ["💰 Robbery", "🏪 Looting", "🚨 Security Threat"]
-    }
-    
-    # Tab 5: Health / Medical
-    health_hazards = {
-        "Disease Outbreaks": ["🦠 Disease Outbreak", "🤧 Influenza Outbreak", "🍲 Food Poisoning"],
-        "Medical / Trauma": ["📉 Fall Incident", "🔪 Attempted Suicide"],
-        "Other Health": ["🧪 Chemical Exposure", "☢️ Radiation Exposure", "🐍 Venomous Bite"]
-    }
-    
-    # Tab 6: Lifeline / Service Disruption
-    lifeline_hazards = {
-        "Utilities": ["💡 Power Outage", "💧 Water Shortage", "📡 Communication Outage"],
-        "Transportation": ["🚫 Road Closure", "🌉 Bridge Damage", "🚇 Transport Disruption"],
-        "Other Services": ["🗑️ Waste Collection Disruption", "🏥 Hospital Overload", "🏫 School Closure"]
-    }
-    
-    # Tab 7: Search / Missing Person
-    search_hazards = {
-        "Missing Persons": ["🔍 Missing Person", "👤 Missing Child", "👵 Missing Elderly"],
-        "Search and Rescue Operations": ["🏔️ Mountain Search", "🌊 Water Search", "🌲 Forest Search"],
-        "Recovery Operations": ["⚰️ Body Recovery", "🚗 Vehicle Recovery", "🏠 Structure Collapse Recovery"]
-    }
-    
-    # =========================================================================
-    # HAZARD FULL NAMES MAPPING
-    # =========================================================================
-    
-    hazard_full_names = {
-        # Hydrometeorological
-        "🌧️ ITCZ": "Intertropical Convergence Zone (ITCZ)",
-        "🌀 LPA": "Low Pressure Area (LPA)",
-        "💨 Monsoon": "Monsoon (Southwest/Northeast)",
-        "⚡ Shear Line": "Shear Line",
-        "⛈️ Thunderstorm": "Severe Thunderstorm",
-        "🌪️ Tropical Depression": "Tropical Depression",
-        "🌪️ Tropical Storm": "Tropical Storm",
-        "🌪️ Severe Tropical Storm": "Severe Tropical Storm",
-        "🌪️ Typhoon": "Typhoon",
-        "🌪️ Super Typhoon": "Super Typhoon",
-        "🌊 Riverine Flood": "Riverine/Fluvial Flood",
-        "💧 Flash Flood": "Flash Flood",
-        "🏜️ Drought": "Prolonged Drought",
-        "🔥 Heatwave": "Extreme Heatwave",
-        
-        # Geological
-        "🌋 Earthquake": "Earthquake",
-        "🌋 Strong Aftershock": "Strong Aftershock",
-        "🌋 Earthquake Swarm": "Earthquake Swarm",
-        "🏔️ Landslide": "Rain-Induced Landslide",
-        "🪨 Rockfall": "Rockfall",
-        "⛰️ Debris Flow": "Debris Flow",
-        "📉 Ground Subsidence": "Ground Subsidence",
-        "🌋 Volcanic Eruption": "Volcanic Eruption",
-        "🌫️ Volcanic Ashfall": "Volcanic Ashfall",
-        "💨 Lahar Flow": "Lahar Flow",
-        "⚡ Ground Rupture": "Ground Rupture",
-        "💧 Liquefaction": "Liquefaction",
-        "📈 Slope Movement": "Slope Movement",
-        
-        # Fire
-        "🏠 Residential House Fire": "Residential House Fire",
-        "🏢 Commercial Building Fire": "Commercial Building Fire",
-        "🌲 Forest Fire": "Forest Fire",
-        "🌿 Grass Fire": "Grass Fire",
-        "🔥 Bush Fire": "Bush Fire",
-        "🚗 Vehicle Fire": "Vehicle Fire",
-        "⚡ Electrical Fire": "Electrical Fire",
-        "💥 Explosion": "Explosion",
-        
-        # Technological
-        "✈️ Aviation Accident": "Aviation Accident",
-        "🚗 Vehicular Accident": "Vehicular Accident",
-        "🏭 Industrial Accident": "Industrial Accident",
-        "☢️ Chemical Spill": "Chemical Spill",
-        "💨 Gas Leak": "Gas Leak",
-        "🏗️ Infrastructure Collapse": "Infrastructure Collapse",
-        "🌉 Bridge Collapse": "Bridge Collapse",
-        "🏢 Building Collapse": "Building Collapse",
-        "💣 Bomb Threat": "Bomb Threat",
-        "📡 Communication Outage": "Communication Outage",
-        "⚡ Power Grid Failure": "Power Grid Failure",
-        
-        # Public Safety
-        "🔫 Shooting Incident": "Shooting Incident",
-        "🔪 Stabbing Incident": "Stabbing Incident",
-        "⚔️ Armed Confrontation": "Armed Confrontation",
-        "📢 Riot": "Civil Riot",
-        "🚫 Barricade": "Barricade Situation",
-        "🏛️ Hostage Situation": "Hostage Situation",
-        "💰 Robbery": "Armed Robbery",
-        "🏪 Looting": "Looting Incident",
-        "🚨 Security Threat": "General Security Threat",
-        
-        # Health
-        "🦠 Disease Outbreak": "Disease Outbreak",
-        "🤧 Influenza Outbreak": "Influenza Outbreak",
-        "🍲 Food Poisoning": "Mass Food Poisoning",
-        "📉 Fall Incident": "Fall Incident",
-        "🔪 Attempted Suicide": "Attempted Suicide",
-        "🧪 Chemical Exposure": "Chemical Exposure",
-        "☢️ Radiation Exposure": "Radiation Exposure",
-        "🐍 Venomous Bite": "Venomous Animal Bite",
-        
-        # Lifeline
-        "💡 Power Outage": "Widespread Power Outage",
-        "💧 Water Shortage": "Water Shortage",
-        "📡 Communication Outage": "Telecommunication Outage",
-        "🚫 Road Closure": "Major Road Closure",
-        "🌉 Bridge Damage": "Bridge Damage",
-        "🚇 Transport Disruption": "Public Transport Disruption",
-        "🗑️ Waste Collection Disruption": "Waste Collection Disruption",
-        "🏥 Hospital Overload": "Hospital Capacity Overload",
-        "🏫 School Closure": "Mass School Closure",
-        
-        # Search
-        "🔍 Missing Person": "Missing Person",
-        "👤 Missing Child": "Missing Child",
-        "👵 Missing Elderly": "Missing Elderly Person",
-        "🏔️ Mountain Search": "Mountain Search Operation",
-        "🌊 Water Search": "Water Search Operation",
-        "🌲 Forest Search": "Forest Search Operation",
-        "⚰️ Body Recovery": "Body Recovery Operation",
-        "🚗 Vehicle Recovery": "Vehicle Recovery Operation",
-        "🏠 Structure Collapse Recovery": "Structure Collapse Recovery"
-    }
-    
-    # =========================================================================
-    # HELPER FUNCTIONS
-    # =========================================================================
-    
-    def set_hazard(hazard_name):
-        st.session_state.selected_hazard = hazard_name
-    
-    def get_hazard_base(hazard_text):
-        """Extract base hazard type for Preparedness phase wording"""
-        if "fire" in hazard_text.lower():
-            return "Fire"
-        elif "accident" in hazard_text.lower():
-            return "Accident"
-        elif "spill" in hazard_text.lower():
-            return "Chemical Spill"
-        elif "shooting" in hazard_text.lower():
-            return "Shooting"
-        elif "stabbing" in hazard_text.lower():
-            return "Stabbing"
-        elif "outbreak" in hazard_text.lower():
-            return "Disease Outbreak"
+    # Generate suggestions based on selected hazards
+    suggested_names = []
+    if st.session_state.selected_hazard_types:
+        primary = st.session_state.selected_hazard_types[0]
+        if "Typhoon" in primary or "Tropical" in primary:
+            suggested_names = ["Typhoon ENTER_NAME", "Severe Tropical Storm ENTER_NAME", "Tropical Depression ENTER_NAME"]
+        elif "Monsoon" in primary:
+            suggested_names = ["Southwest Monsoon (Habagat)", "Northeast Monsoon (Amihan)"]
+        elif "Earthquake" in primary:
+            suggested_names = ["7.0 Magnitude Earthquake", "5.5 Magnitude Aftershock"]
+        elif "Fire" in primary:
+            suggested_names = ["Structural Fire at", "Forest Fire at"]
+        elif "Landslide" in primary:
+            suggested_names = ["Landslide at", "Rain-Induced Landslide at"]
+        elif "Flood" in primary:
+            suggested_names = ["Flashflood at", "Flooding at"]
         else:
-            words = hazard_text.split()[:2]
-            return " ".join(words)
+            suggested_names = [f"{primary} at", f"{primary} Incident"]
     
-    def generate_title(hazard, phase, location, sitrep_num, wording_family):
-        """Generate title based on wording family"""
-        if not hazard:
-            return None
-        
-        if wording_family == "slow_onset":
-            templates = templates_slow_onset
-            title_template = templates.get(phase, "")
-            title = title_template.format(hazard=hazard)
-            
-        elif wording_family == "sudden_onset":
-            templates = templates_sudden_onset
-            title_template = templates.get(phase, "")
-            if phase == "Preparedness":
-                hazard_base = get_hazard_base(hazard)
-                title = title_template.format(hazard=hazard, hazard_base=hazard_base)
-            else:
-                title = title_template.format(hazard=hazard)
-            
-        elif wording_family == "search":
-            templates = templates_search
-            title_template = templates.get(phase, "")
-            title = title_template.format(hazard=hazard)
-            
-        else:
-            title = f"{phase} of {hazard}"
-        
-        if location:
-            title = f"{title} ({location})"
-        
-        return f"SITREP #{sitrep_num}: {title}"
-    
-    def display_title_section(wording_family, tab_index):
-        """Display the generated title section with unique keys per tab"""
-        col1, col2 = st.columns([1, 1])
-        
-        with col1:
-            st.markdown("---")
-            st.markdown("**📍 Location (Optional):**")
-            location = st.text_input(
-                "Location",
-                value=st.session_state.location,
-                placeholder="e.g., Bontoc, Mountain Province",
-                key=f"location_input_{tab_index}"
+    col1, col2 = st.columns([3, 1])
+    with col1:
+        if suggested_names:
+            selected_suggestion = st.selectbox(
+                "Quick Select (Optional)",
+                options=["[Type custom name below]"] + suggested_names,
+                key="incident_name_suggestion",
+                label_visibility="collapsed"
             )
-            st.session_state.location = location
-            
-            st.markdown("---")
-            st.markdown(f"**Current SITREP #:** {st.session_state.sitrep_num}")
-            sitrep_num = st.number_input(
-                "SITREP # (editable)",
-                min_value=1,
-                value=st.session_state.sitrep_num,
-                step=1,
-                key=f"sitrep_num_input_{tab_index}"
-            )
-            st.session_state.sitrep_num = sitrep_num
-        
+            if selected_suggestion != "[Type custom name below]":
+                st.session_state.incident_name = selected_suggestion
         with col2:
-            st.markdown("### ✅ Generated Title")
-            
-            if st.session_state.selected_hazard:
-                full_title = generate_title(
-                    st.session_state.selected_hazard,
-                    st.session_state.selected_phase,
-                    st.session_state.location,
-                    st.session_state.sitrep_num,
-                    wording_family
-                )
-                
-                if full_title:
-                    st.success(f"## {full_title}")
-                    
-                    st.markdown("---")
-                    st.markdown("### 📊 Title Breakdown")
-                    st.markdown(f"**SITREP #:** {st.session_state.sitrep_num}")
-                    st.markdown(f"**Phase:** {st.session_state.selected_phase}")
-                    st.markdown(f"**Hazard:** {st.session_state.selected_hazard}")
-                    if st.session_state.location:
-                        st.markdown(f"**Location:** {st.session_state.location}")
-                    
-                    if st.button("📋 Copy to Clipboard", key=f"copy_btn_{wording_family}_{tab_index}"):
-                        st.code(full_title, language="text")
-                        st.balloons()
-            else:
-                st.info("👈 Click a hazard button above to generate a title")
+            st.write("")
     
-    def create_hazard_tab(tab_title, hazard_dict, wording_family, category_description, tab_index):
-        """Generic function to create a hazard tab with unique keys"""
+    incident_name = st.text_input(
+        "Incident Name",
+        value=st.session_state.incident_name,
+        placeholder="e.g., Typhoon UWAN, 7.0 Magnitude Earthquake, Structural Fire at Poblacion",
+        key="incident_name_input",
+        help="For typhoons, use the PAGASA name. For other incidents, provide a brief descriptive name."
+    )
+    st.session_state.incident_name = incident_name
+    
+    st.markdown("---")
+    
+    # ===== Row 4: Location =====
+    location = st.text_input(
+        "Location (optional)",
+        value=st.session_state.incident_location,
+        placeholder="e.g., Bontoc, Mountain Province | Barangay X, Municipality Y",
+        key="incident_location_input",
+        help="Specific location of incident. Leave blank if province-wide."
+    )
+    
+    st.markdown("---")
+    
+    # ===== Row 5: Operational Phase =====
+    st.markdown("**Operational Phase:**")
+    
+    # Determine if weather-related
+    weather_hazards = hydrometeorological_hazards
+    is_weather_related = any(h in st.session_state.selected_hazard_types for h in weather_hazards)
+    
+    if is_weather_related:
+        operational_phase = st.selectbox(
+            "Select Operational Phase",
+            options=[
+                "Monitoring of",
+                "Preparations for the Possible Effects of",
+                "Monitoring the Effects of",
+                "Impacts of",
+                "Terminal Report on the Recovery Efforts on the Impacts of"
+            ],
+            index=0,
+            key="operational_phase_weather",
+            help="Select the phase that best describes the current situation"
+        )
         
-        with tab_title:
-            st.markdown(f"### 📋 {category_description}")
-            
-            col1, col2 = st.columns([1, 1])
-            
-            with col1:
-                # Operational Phase Selection
-                st.markdown("**1. Select Operational Phase:**")
-                
-                selected_phase = st.radio(
-                    "Select Phase",
-                    options=operational_phases,
-                    index=operational_phases.index(st.session_state.selected_phase) if st.session_state.selected_phase in operational_phases else 0,
-                    key=f"phase_radio_{wording_family}_{tab_index}",
-                    horizontal=True
-                )
-                st.session_state.selected_phase = selected_phase
-                
-                st.info(f"📖 **When to use:** {phase_descriptions.get(selected_phase, '')}")
-                
-                st.markdown("---")
-                
-                # Hazard Selection Buttons
-                st.markdown("**2. Select Hazard / Event:**")
-                
-                for category, hazards in hazard_dict.items():
-                    st.markdown(f"**{category}:**")
-                    cols = st.columns(4)
-                    for idx, hazard_btn in enumerate(hazards):
-                        with cols[idx % 4]:
-                            if st.button(hazard_btn, key=f"{wording_family}_{tab_index}_{hazard_btn}", use_container_width=True):
-                                set_hazard(hazard_full_names.get(hazard_btn, hazard_btn))
-                                st.rerun()
-                
-                # Custom hazard input
-                st.markdown("---")
-                st.markdown("**Or enter custom hazard:**")
-                custom_hazard = st.text_input(
-                    "Custom Hazard",
-                    key=f"custom_hazard_{wording_family}_{tab_index}",
-                    placeholder="e.g., Enter your own hazard description"
-                )
-                if custom_hazard:
-                    st.session_state.selected_hazard = custom_hazard
-            
-            # Display the title section
-            display_title_section(wording_family, tab_index)
-    
-    # =========================================================================
-    # CREATE ALL TABS
-    # =========================================================================
-    
-    tabs = st.tabs([
-        "🌊 HYDROMETEOROLOGICAL",
-        "🌋 GEOLOGICAL",
-        "🔥 FIRE INCIDENT",
-        "🏭 TECHNOLOGICAL",
-        "🛡️ PUBLIC SAFETY",
-        "🏥 HEALTH / MEDICAL",
-        "⚡ LIFELINE DISRUPTION",
-        "🔍 SEARCH / MISSING"
-    ])
-    
-    # Tab 0: Hydrometeorological
-    with tabs[0]:
-        create_hazard_tab(
-            tabs[0],
-            hydrometeorological_hazards,
-            "slow_onset",
-            "Hydrometeorological Hazards - Atmospheric, hydrological, and oceanographic hazards",
-            0
+        if operational_phase == "Preparations for the Possible Effects of":
+            st.warning("""
+            ⚠️ **PDRA Required:** Before sending this SITREP, ensure you have:
+            1. Conducted the PDR Assessment (go to the 'PDR Assessment' tab)
+            2. Confirmed the CPA Level (Alpha/Bravo/Charlie)
+            3. Reviewed the Critical Preparedness Actions
+            """)
+    else:
+        operational_phase = st.selectbox(
+            "Select Operational Phase",
+            options=[
+                "Initial Report on",
+                "Response Operations on",
+                "Search and Rescue Operations on",
+                "Recovery Operations on",
+                "Update on",
+                "Investigation on",
+                "Final Report on",
+                "Terminal Report on"
+            ],
+            index=0,
+            key="operational_phase_nonweather",
+            help="Select the phase for this incident"
         )
     
-    # Tab 1: Geological
-    with tabs[1]:
-        create_hazard_tab(
-            tabs[1],
-            geological_hazards,
-            "slow_onset",
-            "Geological Hazards - Earthquakes, landslides, volcanic, and other geophysical hazards",
-            1
-        )
+    # Store values
+    st.session_state.sitrep_num = sitrep_number
+    st.session_state.incident_name = incident_name
+    st.session_state.incident_location = location
+    st.session_state.operational_phase = operational_phase
     
-    # Tab 2: Fire Incident
-    with tabs[2]:
-        create_hazard_tab(
-            tabs[2],
-            fire_hazards,
-            "sudden_onset",
-            "Fire Incidents - Structural fires, wildfires, and other fire-related emergencies",
-            2
-        )
-    
-    # Tab 3: Technological / Human-Induced
-    with tabs[3]:
-        create_hazard_tab(
-            tabs[3],
-            technological_hazards,
-            "sudden_onset",
-            "Technological / Human-Induced Incidents - Accidents, infrastructure failures, industrial incidents",
-            3
-        )
-    
-    # Tab 4: Public Safety / Security
-    with tabs[4]:
-        create_hazard_tab(
-            tabs[4],
-            public_safety_hazards,
-            "sudden_onset",
-            "Public Safety / Security Incidents - Violent incidents, civil unrest, security threats",
-            4
-        )
-    
-    # Tab 5: Health / Medical
-    with tabs[5]:
-        create_hazard_tab(
-            tabs[5],
-            health_hazards,
-            "sudden_onset",
-            "Health / Medical Incidents - Disease outbreaks, medical emergencies, mass casualties",
-            5
-        )
-    
-    # Tab 6: Lifeline / Service Disruption
-    with tabs[6]:
-        create_hazard_tab(
-            tabs[6],
-            lifeline_hazards,
-            "slow_onset",
-            "Lifeline / Service Disruption - Power, water, communication, transportation disruptions",
-            6
-        )
-    
-    # Tab 7: Search / Missing Person
-    with tabs[7]:
-        create_hazard_tab(
-            tabs[7],
-            search_hazards,
-            "search",
-            "Search / Missing Person Incidents - Missing persons, search and recovery operations",
-            7
-        )
-    
-    # =========================================================================
-    # RESET BUTTON
-    # =========================================================================
-    
+    # ===== Generate Subject Line Preview =====
     st.markdown("---")
-    col1, col2, col3 = st.columns([1, 1, 1])
-    with col2:
-        if st.button("🔄 START NEW SITREP", key="reset_button_sitrep", use_container_width=True):
-            st.session_state.sitrep_num = st.session_state.sitrep_num + 1
-            st.session_state.selected_hazard = ""
-            st.session_state.selected_phase = "Monitoring"
-            st.session_state.location = ""
-            st.rerun()
+    st.markdown("**📋 Subject Line Preview:**")
     
-    st.markdown("---")
-    st.caption("📌 Select a hazard category tab, click a hazard button, select a phase, and the title generates automatically.")
-    st.caption("📌 Click 'START NEW SITREP' to increment SITREP # and clear all fields for a new report.")
+    if incident_name:
+        hazard_str = ", ".join(st.session_state.selected_hazard_types) if st.session_state.selected_hazard_types else "Incident"
+        
+        if operational_phase == "Impacts of":
+            subject_line = f"SITREP #{sitrep_number}: {operational_phase} {incident_name} ({hazard_str}) - Damage & Needs Assessment"
+        elif operational_phase == "Terminal Report on the Recovery Efforts on the Impacts of":
+            subject_line = f"SITREP #{sitrep_number}: {operational_phase} {incident_name}"
+        elif location:
+            subject_line = f"SITREP #{sitrep_number}: {operational_phase} {incident_name} ({location})"
+        else:
+            subject_line = f"SITREP #{sitrep_number}: {operational_phase} {incident_name}"
+        
+        st.info(f"📋 **{subject_line}**")
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("✅ Use This Subject Line", key="use_subject_enhanced"):
+                st.session_state.generated_subject = subject_line
+                st.success("Subject line saved!")
+        with col2:
+            if st.button("➕ Next SITREP (#" + str(sitrep_number + 1) + ")", key="next_sitrep_enhanced"):
+                st.session_state.sitrep_num = sitrep_number + 1
+                st.session_state.generated_subject = ""
+                st.session_state.incident_name = ""
+                st.session_state.incident_location = ""
+                st.session_state.selected_hazard_types = []
+                st.rerun()
+    else:
+        st.warning("Please enter Incident Name to generate subject line")
+    
+    if st.session_state.generated_subject:
+        st.success(f"📋 **Current Subject Line:** {st.session_state.generated_subject}")
+    
+    # Save hazard types for PDRA compatibility
+    st.session_state.selected_hazard_type = ", ".join(st.session_state.selected_hazard_types) if st.session_state.selected_hazard_types else ""
+    st.session_state.pdra_hazard_type = st.session_state.selected_hazard_type
     
     st.markdown("---")
     

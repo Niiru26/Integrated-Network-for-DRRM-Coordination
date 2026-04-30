@@ -98,10 +98,10 @@ def show_login():
     # Sample employee list
     employees = [
         {"id": 1, "name": "Administrator", "division": "Research & Planning", "role": "admin", "password": "admin123"},
-        {"id": 2, "name": "Juan Dela Cruz", "division": "Research & Planning", "role": "employee", "password": "emp123"},
-        {"id": 3, "name": "Maria Santos", "division": "Administration & Training", "role": "employee", "password": "emp123"},
-        {"id": 4, "name": "Pedro Reyes", "division": "Operations & Warning", "role": "employee", "password": "emp123"},
-        {"id": 5, "name": "Ana Flores", "division": "Infrastructure & Rehabilitation", "role": "employee", "password": "emp123"},
+        {"id": 2, "name": "Laycha K. Marra", "division": "Research & Planning", "role": "employee", "password": "emp123"},
+        {"id": 3, "name": "Pablo A. Bagwan", "division": "Administration & Training", "role": "employee", "password": "emp123"},
+        {"id": 4, "name": "Yasser T. Soria ", "division": "Operations & Warning", "role": "employee", "password": "emp123"},
+        {"id": 5, "name": "Paul M. Lengwa", "division": "Recovery & Rehabilitation", "role": "employee", "password": "emp123"},
     ]
     
     col1, col2 = st.columns(2)
@@ -135,10 +135,10 @@ def show_employee_management():
     
     # Display current employees
     employees = [
-        {"id": 1, "name": "Juan Dela Cruz", "division": "Research & Planning", "position": "DRRM Officer I"},
-        {"id": 2, "name": "Maria Santos", "division": "Administration & Training", "position": "Administrative Officer"},
-        {"id": 3, "name": "Pedro Reyes", "division": "Operations & Warning", "position": "Operations Officer"},
-        {"id": 4, "name": "Ana Flores", "division": "Infrastructure & Rehabilitation", "position": "Infrastructure Officer"},
+        {"id": 1, "name": "Laycha K. Marra", "division": "Research & Planning", "position": "Research & Planning Officer"},
+        {"id": 2, "name": "Pablo A. Bagwan ", "division": "Administration & Training", "position": "Administration & Training Officer"},
+        {"id": 3, "name": "Yasser T. Soria", "division": "Operations & Warning", "position": "Operations & Warning Officer"},
+        {"id": 4, "name": "Paul M. Lengwa", "division": "Recovery & Rehabilitation", "position": "Recovery & Rehabilitation Officer"},
     ]
     
     df = pd.DataFrame(employees)
@@ -154,7 +154,7 @@ def show_employee_management():
                     "Research & Planning",
                     "Administration & Training",
                     "Operations & Warning",
-                    "Infrastructure & Rehabilitation"
+                    "Recovery & Rehabilitation"
                 ], key="emp_division")
             with col2:
                 position = st.text_input("Position", key="emp_position")
@@ -186,7 +186,7 @@ def show_ipcr_admin():
     # Filter controls
     col1, col2, col3 = st.columns(3)
     with col1:
-        divisions = ["All"] + ["Research & Planning", "Administration & Training", "Operations & Warning", "Infrastructure & Rehabilitation"]
+        divisions = ["All"] + ["Research & Planning", "Administration & Training", "Operations & Warning", "Recovery & Rehabilitation"]
         filter_division = st.selectbox("Filter by Division", divisions, key="ipcr_filter_division")
     with col2:
         quarters = ["All", "Q1", "Q2", "Q3", "Q4"]
@@ -197,9 +197,9 @@ def show_ipcr_admin():
     
     # Sample IPCR data
     ipcr_data = [
-        {"employee": "Juan Dela Cruz", "division": "Research & Planning", "quarter": "Q1", "year": 2026, "status": "Pending", "targets": 5, "accomplished": 4},
-        {"employee": "Maria Santos", "division": "Administration & Training", "quarter": "Q1", "year": 2026, "status": "Approved", "targets": 8, "accomplished": 7},
-        {"employee": "Pedro Reyes", "division": "Operations & Warning", "quarter": "Q1", "year": 2026, "status": "Submitted", "targets": 6, "accomplished": 5},
+        {"employee": "Laycha K. Marra", "division": "Research & Planning", "quarter": "Q1", "year": 2026, "status": "Pending", "targets": 5, "accomplished": 4},
+        {"employee": "Pablo A. Bagwan", "division": "Administration & Training", "quarter": "Q1", "year": 2026, "status": "Approved", "targets": 8, "accomplished": 7},
+        {"employee": "Yasser T. Soria", "division": "Operations & Warning", "quarter": "Q1", "year": 2026, "status": "Submitted", "targets": 6, "accomplished": 5},
     ]
     
     df = pd.DataFrame(ipcr_data)
@@ -219,7 +219,7 @@ def show_ipcr_admin():
         with st.form("add_ipcr_form"):
             col1, col2 = st.columns(2)
             with col1:
-                employee = st.selectbox("Employee", ["Juan Dela Cruz", "Maria Santos", "Pedro Reyes"], key="ipcr_employee_select")
+                employee = st.selectbox("Employee", ["Laycha K. Marra", "Pablo A. Bagwan", "Yasser T. Soria"], key="ipcr_employee_select")
                 quarter = st.selectbox("Quarter", ["Q1", "Q2", "Q3", "Q4"], key="ipcr_quarter_select")
                 year = st.number_input("Year", min_value=2024, max_value=2030, value=2026, key="ipcr_year_input")
             with col2:
@@ -261,7 +261,7 @@ def show_opcr_admin():
         {"division": "Research & Planning", "quarter": "Q1", "year": 2026, "status": "Approved", "targets": 12, "accomplished": 10},
         {"division": "Administration & Training", "quarter": "Q1", "year": 2026, "status": "Pending", "targets": 15, "accomplished": 12},
         {"division": "Operations & Warning", "quarter": "Q1", "year": 2026, "status": "Submitted", "targets": 10, "accomplished": 9},
-        {"division": "Infrastructure & Rehabilitation", "quarter": "Q1", "year": 2026, "status": "Draft", "targets": 8, "accomplished": 6},
+        {"division": "Recovery & Rehabilitation", "quarter": "Q1", "year": 2026, "status": "Draft", "targets": 8, "accomplished": 6},
     ]
     
     df = pd.DataFrame(opcr_data)
@@ -276,7 +276,7 @@ def show_opcr_admin():
                     "Research & Planning",
                     "Administration & Training",
                     "Operations & Warning",
-                    "Infrastructure & Rehabilitation"
+                    "Recovery & Rehabilitation"
                 ], key="opcr_division_select")
                 quarter = st.selectbox("Quarter", ["Q1", "Q2", "Q3", "Q4"], key="opcr_quarter_select")
                 year = st.number_input("Year", min_value=2024, max_value=2030, value=2026, key="opcr_year_input")
@@ -306,7 +306,7 @@ def show_performance_dashboard():
     st.caption("Visual analytics of individual and office performance")
     
     # Sample data
-    divisions = ["Research & Planning", "Administration & Training", "Operations & Warning", "Infrastructure & Rehabilitation"]
+    divisions = ["Research & Planning", "Administration & Training", "Operations & Warning", "Recovery & Rehabilitation"]
     completion_rates = [85, 78, 90, 72]
     
     fig = px.bar(x=divisions, y=completion_rates, title="Division Performance (Completion Rate %)",
@@ -317,9 +317,9 @@ def show_performance_dashboard():
     # Employee performance
     st.markdown("#### Top Performing Employees")
     top_employees = [
-        {"employee": "Pedro Reyes", "division": "Operations & Warning", "rating": 4.8},
-        {"employee": "Juan Dela Cruz", "division": "Research & Planning", "rating": 4.5},
-        {"employee": "Maria Santos", "division": "Administration & Training", "rating": 4.3},
+        {"employee": "Laycha K. Marra", "division": "Research & Planning", "rating": 4.8},
+        {"employee": "Yasser T. Soria", "division": "Operations & Warning", "rating": 4.5},
+        {"employee": "Pablo A. Bagwan", "division": "Administration & Training", "rating": 4.3},
     ]
     df = pd.DataFrame(top_employees)
     st.dataframe(df, use_container_width=True, hide_index=True)

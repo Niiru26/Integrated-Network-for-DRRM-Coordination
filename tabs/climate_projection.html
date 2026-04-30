@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Climate Projection System</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f0f4f8; padding: 20px; }
+        .climate-container { max-width: 1400px; margin: 0 auto; }
+        .header { background: linear-gradient(135deg, #0d47a1, #1b5e20); color: white; padding: 20px; border-radius: 15px; margin-bottom: 20px; }
+        .header h1 { font-size: 24px; margin-bottom: 5px; }
+        .header p { font-size: 12px; opacity: 0.9; }
+        .main-tabs { display: flex; gap: 5px; margin-bottom: 20px; border-bottom: 2px solid #ddd; }
+        .main-tab { padding: 10px 20px; border-radius: 10px 10px 0 0; cursor: pointer; font-weight: 600; background: #e9ecef; color: #495057; }
+        .main-tab.active { background: #0d47a1; color: white; }
+        .mun-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
+        .mun-tab { padding: 6px 14px; border-radius: 20px; cursor: pointer; font-weight: 600; background: #e9ecef; color: #495057; font-size: 12px; }
+        .mun-tab.active { background: #0d47a1; color: white; }
+        .card { background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 20px; }
+        .card-header { background: #f8f9fa; padding: 12px 20px; border-bottom: 2px solid #0d47a1; }
+        .card-header h2 { font-size: 16px; color: #0d47a1; margin: 0; }
+        .card-body { padding: 15px; }
+        .two-column { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        @media (max-width: 800px) { .two-column { grid-template-columns: 1fr; } }
+        .data-table { width: 100%; border-collapse: collapse; font-size: 11px; user-select: text; }
+        .data-table th, .data-table td { border: 1px solid #ddd; padding: 6px; text-align: center; }
+        .data-table th { background: #0d47a1; color: white; }
+        .graph-container { margin: 15px 0; padding: 10px; background: white; border-radius: 10px; border: 1px solid #e0e0e0; }
+        .graph-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px; }
+        .graph-header h3 { color: #0d47a1; font-size: 13px; margin: 0; }
+        .graph-btn { background: #0d47a1; color: white; border: none; padding: 4px 10px; border-radius: 5px; cursor: pointer; font-size: 10px; }
+        .graph-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        @media (max-width: 600px) { .graph-row { grid-template-columns: 1fr; } }
+        canvas { max-height: 250px; width: 100%; background: white; border-radius: 8px; }
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.9); }
+        .modal-content { margin: auto; display: block; width: 90%; max-width: 1000px; top: 50%; transform: translateY(-50%); position: relative; }
+        .close-modal { position: absolute; top: 15px; right: 25px; color: #fff; font-size: 35px; cursor: pointer; }
+        .btn-primary { background: #0d47a1; color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .warning-badge { background: #ff9800; color: white; padding: 2px 5px; border-radius: 4px; font-size: 9px; }
+        .rec-card { border-left: 4px solid; padding: 10px; margin-bottom: 10px; background: #f8f9fa; border-radius: 8px; }
+        .rec-card.high { border-left-color: #dc3545; background: #fff5f5; }
+        .priority-badge { padding: 3px 8px; border-radius: 20px; font-size: 10px; font-weight: 600; background: #dc3545; color: white; }
+        .project-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+        .project-table th, .project-table td { border: 1px solid #ddd; padding: 6px; text-align: left; }
+        .project-table th { background: #0d47a1; color: white; }
+        .editable-field { cursor: pointer; background: #fffef7; }
+        .info-box { background: #e8f4f8; padding: 12px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #0d47a1; }
+        .index-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; margin: 10px 0; }
+        .index-card { background: #f8f9fa; padding: 8px; border-radius: 6px; border-left: 3px solid #0d47a1; font-size: 12px; }
+        .faq-item { margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
+        .faq-question { font-weight: 700; color: #0d47a1; cursor: pointer; display: flex; justify-content: space-between; }
+        .faq-answer { margin-top: 6px; color: #555; display: none; padding-left: 12px; font-size: 12px; }
+        .faq-answer.show { display: block; }
+        .section-desc { font-size: 12px; color: #555; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid #eee; }
+    </style>
+</head>
+<body>
+<div class="climate-container">
+    <div class="header">
+        <h1><i class="fas fa-cloud-sun-rain"></i> Climate Change Projections</h1>
+        <p>DOST-PAGASA CMIP6 Downscaled Data | CLIRAM (2031-2060) | CERAM (2051-2080) | SSP5-8.5</p>
+    </div>
+
+    <div class="main-tabs">
+        <div class="main-tab active" data-tab="data">📊 Data Viewer</div>
+        <div class="main-tab" data-tab="intel">💡 Intelligence & Reports</div>
+        <div class="main-tab" data-tab="knowledge">📚 Climate Knowledge Hub</div>
+    </div>
+
+    <div id="tab-data" class="tab-content active">
+        <div class="mun-tabs" id="munTabs"></div>
+        
+        <div class="card"><div class="card-header"><h2><i class="fas fa-chart-line"></i> CERAM: Climate Extremes (2051-2080)</h2></div><div class="card-body">
+            <p class="section-desc"><i class="fas fa-info-circle"></i> Extreme climate events under SSP5-8.5. TXx = hottest day; RX1day = heaviest 1-day rainfall.</p>
+            <div><table class="data-table" id="ceramTable"><thead><tr><th>Index</th><th>Baseline</th><th>Projected</th><th>Change</th></tr></thead><tbody></tbody></table></div>
+            <div class="graph-row">
+                <div class="graph-container"><div class="graph-header"><h3>🌡️ TXx: Extreme Heat (°C)</h3><div><button class="graph-btn" onclick="expandGraph('txxChart')">Expand</button><button class="graph-btn" onclick="downloadGraph('txxChart', 'TXx_Extreme_Heat')">PNG</button></div></div><canvas id="txxChart"></canvas></div>
+                <div class="graph-container"><div class="graph-header"><h3>💧 RX1day: Extreme Rainfall (mm)</h3><div><button class="graph-btn" onclick="expandGraph('rx1Chart')">Expand</button><button class="graph-btn" onclick="downloadGraph('rx1Chart', 'RX1day_Extreme_Rainfall')">PNG</button></div></div><canvas id="rx1Chart"></canvas></div>
+            </div>
+        </div></div>
+
+        <div class="card"><div class="card-header"><h2><i class="fas fa-calendar-month"></i> CLIRAM: Monthly Projections (2031-2060)</h2></div><div class="card-body">
+            <p class="section-desc"><i class="fas fa-info-circle"></i> Monthly average changes for rainfall and temperature. Use for seasonal planning.</p>
+            <div class="graph-row">
+                <div class="graph-container"><div class="graph-header"><h3>📅 Monthly Rainfall Trend (mm)</h3><div><button class="graph-btn" onclick="expandGraph('monthlyRainChart')">Expand</button><button class="graph-btn" onclick="downloadGraph('monthlyRainChart', 'Monthly_Rainfall_Trend')">PNG</button></div></div><canvas id="monthlyRainChart"></canvas></div>
+                <div class="graph-container"><div class="graph-header"><h3>🌡️ Monthly Temperature Trend (°C)</h3><div><button class="graph-btn" onclick="expandGraph('monthlyTempChart')">Expand</button><button class="graph-btn" onclick="downloadGraph('monthlyTempChart', 'Monthly_Temperature_Trend')">PNG</button></div></div><canvas id="monthlyTempChart"></canvas></div>
+            </div>
+            <div id="monthlyRainTable"></div>
+            <div id="monthlyTempTable"></div>
+        </div></div>
+    </div>
+
+    <div id="tab-intel" class="tab-content">
+        <div class="two-column">
+            <div><div class="card"><div class="card-header"><h2><i class="fas fa-lightbulb"></i> Recommendations</h2></div><div class="card-body"><div id="recommendationsContainer"></div></div></div>
+            <div class="card"><div class="card-header"><h2><i class="fas fa-coins"></i> Project Investment List</h2><button class="btn-primary" id="addProjectBtn" style="margin:10px;">+ Add Project</button></div><div class="card-body"><table class="project-table" id="projectTable"><thead><tr><th>Project</th><th>Budget</th><th>Timeline</th><th>Priority</th><th></th></tr></thead><tbody id="projectTableBody"></tbody></table></div></div></div>
+            <div><div class="card"><div class="card-header"><h2><i class="fas fa-file-pdf"></i> Report Generator</h2></div><div class="card-body"><button class="btn-primary" id="generateReportBtn">Generate PDF Report</button><button class="btn-primary" id="saveReportBtn" style="background:#1b5e20; margin-left:10px;">Save to Archive</button><div id="reportStatus" style="margin-top:10px;"></div></div></div>
+            <div class="card"><div class="card-header"><h2><i class="fas fa-archive"></i> Saved Reports</h2></div><div class="card-body"><div id="savedReportsList"></div></div></div>
+            <div class="card"><div class="card-header"><h2><i class="fas fa-chart-pie"></i> Quick Insights</h2></div><div class="card-body"><div id="quickInsights"></div></div></div></div>
+        </div>
+    </div>
+
+    <div id="tab-knowledge" class="tab-content">
+        <div class="card"><div class="card-header"><h2><i class="fas fa-question-circle"></i> Understanding CLIRAM, CERAM & CMIP6</h2></div><div class="card-body">
+            <div class="info-box"><h3>CLIRAM</h3><p>Shows future averages — how "normal" months will change (2031-2060).</p></div>
+            <div class="info-box"><h3>CERAM</h3><p>Shows future extremes — how "worst days" will worsen (2051-2080).</p></div>
+            <div class="info-box"><h3>CMIP6</h3><p>Global climate model framework. CLIRAM and CERAM are localized versions.</p></div>
+        </div></div>
+        
+        <div class="card"><div class="card-header"><h2><i class="fas fa-tasks"></i> When to Use Which Tool</h2></div><div class="card-body">
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; margin: 15px 0;">
+                <div style="background: #f8f9fa; padding: 12px; border-radius: 8px; text-align: center;"><i class="fas fa-calendar-week" style="font-size: 24px; color: #0d47a1;"></i><br><strong>Seasonal Planning</strong><br>Use CLIRAM monthly data</div>
+                <div style="background: #f8f9fa; padding: 12px; border-radius: 8px; text-align: center;"><i class="fas fa-house-flood" style="font-size: 24px; color: #0d47a1;"></i><br><strong>Rain-Induced Landslides (RIL)</strong><br>Use CERAM <strong>RX1day</strong><br><small>Heaviest rain in 24 hours</small></div>
+                <div style="background: #f8f9fa; padding: 12px; border-radius: 8px; text-align: center;"><i class="fas fa-water" style="font-size: 24px; color: #0d47a1;"></i><br><strong>Riverine Flooding</strong><br>Use CERAM <strong>RX5day</strong><br><small>Prolonged heavy rain</small></div>
+                <div style="background: #f8f9fa; padding: 12px; border-radius: 8px; text-align: center;"><i class="fas fa-temperature-high" style="font-size: 24px; color: #0d47a1;"></i><br><strong>Heat Waves</strong><br>Use CERAM <strong>TXx</strong><br><small>Hottest day</small></div>
+                <div style="background: #f8f9fa; padding: 12px; border-radius: 8px; text-align: center;"><i class="fas fa-seedling" style="font-size: 24px; color: #0d47a1;"></i><br><strong>Agriculture / Frost</strong><br>Use CLIRAM + <strong>TNn</strong></div>
+                <div style="background: #f8f9fa; padding: 12px; border-radius: 8px; text-align: center;"><i class="fas fa-road" style="font-size: 24px; color: #0d47a1;"></i><br><strong>Infrastructure</strong><br>Use CERAM <strong>SSP5-8.5</strong></div>
+            </div>
+        </div></div>
+        
+        <div class="card"><div class="card-header"><h2><i class="fas fa-dictionary"></i> Climate Index Dictionary</h2></div><div class="card-body">
+            <div class="index-grid">
+                <div class="index-card"><strong>🌡️ TNn</strong><br>Coldest night → Frost risk</div>
+                <div class="index-card"><strong>🌙 TNm</strong><br>Avg night temp → Health</div>
+                <div class="index-card"><strong>🔥 TNx</strong><br>Warmest night → Tropical nights</div>
+                <div class="index-card"><strong>❄️ TXn</strong><br>Coolest day → Cold spells</div>
+                <div class="index-card"><strong>☀️ TXm</strong><br>Avg day temp → Warming trend</div>
+                <div class="index-card"><strong>🌡️ TXx</strong><br>Hottest day → Heat stroke</div>
+                <div class="index-card"><strong>💧 RX1day</strong><br>1-day rain → Rain-Induced Landslides</div>
+                <div class="index-card"><strong>🌊 RX5day</strong><br>5-day rain → Riverine Flooding</div>
+                <div class="index-card"><strong>🏜️ CDD</strong><br>Dry days → Drought</div>
+            </div>
+        </div></div>
+        
+        <div class="card"><div class="card-header"><h2><i class="fas fa-exclamation-triangle"></i> Impact Statements</h2></div><div class="card-body">
+            <div class="info-box" style="border-left-color:#dc3545;"><h3>💧 RX1day Increase → Rain-Induced Landslides (RIL)</h3><p>Projections indicate a consistent increase in RX1day. For Mountain Province's mountainous terrain, this directly elevates the risk of rain-induced landslides.</p></div>
+            <div class="info-box" style="border-left-color:#fd7e14;"><h3>🌊 RX5day Increase → Riverine Flooding</h3><p>Prolonged heavy rainfall increases soil saturation and river discharge, leading to riverine flooding.</p></div>
+            <div class="info-box" style="border-left-color:#e74c3c;"><h3>🌡️ TXx Increase → Heat Health Emergency</h3><p>Extreme daytime temperatures are projected to increase by 2.6–3.1°C. Heat stroke risks will rise significantly.</p></div>
+        </div></div>
+        
+        <div class="card"><div class="card-header"><h2><i class="fas fa-book"></i> References</h2></div><div class="card-body">
+            <ul style="margin-left: 20px; line-height: 1.8;">
+                <li>PAGASA (2024). Climate change projection 2024. DOST.</li>
+                <li>WCRP (2021). CMIP6. wcrp-climate.org</li>
+            </ul>
+        </div></div>
+    </div>
+</div>
+
+<div id="graphModal" class="modal"><span class="close-modal" onclick="closeModal()">&times;</span><div class="modal-content"><canvas id="expandedCanvas"></canvas></div></div>
+
+<script>
+    // Data
+    const municipalities = [
+        { name: "Barlig", code: "BAR", TNn_b:8.5, TNn_f:10.7, TXx_b:29.1, TXx_f:32.2, RX1day_b:162.5, RX1day_f:198.1 },
+        { name: "Bauko", code: "BAU", TNn_b:7.7, TNn_f:9.9, TXx_b:27.9, TXx_f:31.0, RX1day_b:197.5, RX1day_f:240.3 },
+        { name: "Besao", code: "BES", TNn_b:8.9, TNn_f:11.1, TXx_b:29.3, TXx_f:32.4, RX1day_b:190.4, RX1day_f:228.9 },
+        { name: "Bontoc", code: "BON", TNn_b:7.3, TNn_f:9.5, TXx_b:30.7, TXx_f:33.8, RX1day_b:176.5, RX1day_f:213.4 },
+        { name: "Natonin", code: "NAT", TNn_b:10.6, TNn_f:12.8, TXx_b:33.0, TXx_f:36.1, RX1day_b:0, RX1day_f:0 },
+        { name: "Paracelis", code: "PAR", TNn_b:0, TNn_f:2.2, TXx_b:37.5, TXx_f:40.5, RX1day_b:154.6, RX1day_f:184.9 },
+        { name: "Sabangan", code: "SAB", TNn_b:7.2, TNn_f:9.4, TXx_b:28.7, TXx_f:31.8, RX1day_b:189.6, RX1day_f:230.4 },
+        { name: "Sadanga", code: "SAD", TNn_b:7.7, TNn_f:9.9, TXx_b:31.2, TXx_f:34.3, RX1day_b:167.2, RX1day_f:202.1 },
+        { name: "Sagada", code: "SAG", TNn_b:8.0, TNn_f:10.2, TXx_b:29.1, TXx_f:32.2, RX1day_b:186.3, RX1day_f:225.2 },
+        { name: "Tadian", code: "TAD", TNn_b:8.4, TNn_f:10.7, TXx_b:30.6, TXx_f:33.7, RX1day_b:199.5, RX1day_f:242.1 },
+        { name: "Mountain Province", code: "MP", TNn_b:9.8, TNn_f:12.0, TXx_b:32.0, TXx_f:35.1, RX1day_b:169.0, RX1day_f:204.6 }
+    ];
+    const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+    const rainBaseline = [40.8,45.2,56.0,96.9,235.4,264.1,387.7,444.0,313.6,247.5,181.0,105.6];
+    const rainProjected = [42.4,45.7,53.1,92.1,231.0,273.0,398.6,453.9,322.0,258.3,185.1,106.3];
+    const tempBaseline = [18.8,19.5,21.0,22.5,23.0,23.2,22.7,22.6,22.4,21.6,20.7,19.5];
+    const tempProjected = [20.0,20.7,22.1,23.7,24.3,24.4,23.9,23.8,23.6,22.8,21.9,20.7];
+
+    let currentMun = municipalities[0];
+    let projects = JSON.parse(localStorage.getItem('climate_projects')) || [
+        { name: "Early Warning System for Landslides", budget: "₱2,500,000", timeline: "Short-term", priority: "High" },
+        { name: "Drainage System Upgrades", budget: "₱5,000,000", timeline: "Medium-term", priority: "High" }
+    ];
+    let charts = { txx: null, rx1: null, rain: null, temp: null };
+    let db;
+
+    function saveProjects() { localStorage.setItem('climate_projects', JSON.stringify(projects)); }
+
+    window.downloadGraph = async function(canvasId, baseName) {
+        const canvas = document.getElementById(canvasId);
+        const munCode = currentMun.code;
+        const tempCanvas = document.createElement('canvas');
+        const ctx = tempCanvas.getContext('2d');
+        const scale = 3;
+        tempCanvas.width = canvas.width * scale;
+        tempCanvas.height = canvas.height * scale;
+        ctx.scale(scale, scale);
+        ctx.drawImage(canvas, 0, 0);
+        const link = document.createElement('a');
+        link.download = munCode + '_' + baseName + '.png';
+        link.href = tempCanvas.toDataURL('image/png');
+        link.click();
+    };
+
+    window.expandGraph = function(canvasId) {
+        const sourceCanvas = document.getElementById(canvasId);
+        const modal = document.getElementById('graphModal');
+        const expandedCanvas = document.getElementById('expandedCanvas');
+        expandedCanvas.width = sourceCanvas.width;
+        expandedCanvas.height = sourceCanvas.height;
+        const ctx = expandedCanvas.getContext('2d');
+        ctx.drawImage(sourceCanvas, 0, 0);
+        modal.style.display = 'block';
+    };
+    window.closeModal = function() { document.getElementById('graphModal').style.display = 'none'; };
+
+    function initDB() { let req = indexedDB.open("ClimateReportsDB",1); req.onupgradeneeded=(e)=>{db=e.target.result;if(!db.objectStoreNames.contains("reports"))db.createObjectStore("reports",{keyPath:"id",autoIncrement:true});}; req.onsuccess=function(){loadSavedReports();}; }
+    function saveReportToDB(r){let tx=db.transaction("reports","readwrite");tx.objectStore("reports").add(r);tx.oncomplete=function(){document.getElementById("reportStatus").innerHTML="Saved!";loadSavedReports();};}
+    function loadSavedReports(){if(!db)return;let req=db.transaction("reports").objectStore("reports").getAll();req.onsuccess=function(){let reports=req.result;let container=document.getElementById("savedReportsList");if(reports.length===0){container.innerHTML='<p>No saved reports.</p>';return;}container.innerHTML=reports.map(function(r){return '<div><strong>'+r.municipality+'</strong> <small>'+r.date+'</small> <button onclick="downloadReport('+r.id+')">Download</button></div>';}).join('');};}
+    window.downloadReport=function(id){let tx=db.transaction("reports").objectStore("reports").get(id);tx.onsuccess=function(e){let r=e.target.result;if(r&&r.htmlContent){let w=window.open();w.document.write(r.htmlContent);w.document.close();}};};
+
+    function renderTabs(){
+        let container = document.getElementById("munTabs");
+        if(!container) return;
+        container.innerHTML = municipalities.map(function(m){
+            return '<div class="mun-tab '+(m.name===currentMun.name?'active':'')+'" data-mun="'+m.name+'">'+m.code+'</div>';
+        }).join('');
+        document.querySelectorAll(".mun-tab").forEach(function(t){
+            t.onclick = function(){
+                currentMun = municipalities.find(function(m){ return m.name === t.dataset.mun; });
+                renderTabs();
+                renderAll();
+            };
+        });
+    }
+    
+    function renderCeram(){
+        let tbody = document.querySelector("#ceramTable tbody");
+        if(!tbody) return;
+        let pct = currentMun.RX1day_b > 0 ? ((currentMun.RX1day_f - currentMun.RX1day_b) / currentMun.RX1day_b * 100).toFixed(1) : "N/A";
+        tbody.innerHTML = '<tr><td>TNn (Coldest night, °C)</td><td>'+(currentMun.TNn_b===0?'<span class="warning-badge">No data</span>':currentMun.TNn_b.toFixed(1))+'</td><td>'+currentMun.TNn_f.toFixed(1)+'</td><td>'+(currentMun.TNn_f-currentMun.TNn_b).toFixed(1)+'°C</td></tr>' +
+                         '<tr><td>TXx (Hottest day, °C)</td><td>'+currentMun.TXx_b.toFixed(1)+'</td><td>'+currentMun.TXx_f.toFixed(1)+'</td><td>'+(currentMun.TXx_f-currentMun.TXx_b).toFixed(1)+'°C</td></tr>' +
+                         '<tr><td>RX1day (Max 1-day rain, mm)</td><td>'+(currentMun.RX1day_b===0?'<span class="warning-badge">No data</span>':currentMun.RX1day_b.toFixed(1))+'</td><td>'+(currentMun.RX1day_f===0?'<span class="warning-badge">No data</span>':currentMun.RX1day_f.toFixed(1))+'</td><td>'+(pct==="N/A"?"N/A":pct+"%")+'</td></tr>';
+    }
+    
+    function renderGraphs(){
+        let txxCanvas = document.getElementById("txxChart");
+        let rx1Canvas = document.getElementById("rx1Chart");
+        if(txxCanvas && charts.txx) charts.txx.destroy();
+        if(rx1Canvas && charts.rx1) charts.rx1.destroy();
+        
+        if(txxCanvas){
+            charts.txx = new Chart(txxCanvas, {
+                type: 'bar',
+                data: { labels: ['Baseline','Projected'], datasets: [{ label: 'TXx (°C)', data: [currentMun.TXx_b, currentMun.TXx_f], backgroundColor: ['#1b5e20','#0d47a1'] }] }
+            });
+        }
+        if(rx1Canvas){
+            charts.rx1 = new Chart(rx1Canvas, {
+                type: 'bar',
+                data: { labels: ['Baseline','Projected'], datasets: [{ label: 'RX1day (mm)', data: [currentMun.RX1day_b||0, currentMun.RX1day_f||0], backgroundColor: ['#1b5e20','#0d47a1'] }] }
+            });
+        }
+        
+        let rainCanvas = document.getElementById("monthlyRainChart");
+        let tempCanvas = document.getElementById("monthlyTempChart");
+        if(rainCanvas && charts.rain) charts.rain.destroy();
+        if(tempCanvas && charts.temp) charts.temp.destroy();
+        
+        if(rainCanvas){
+            charts.rain = new Chart(rainCanvas, {
+                type: 'line',
+                data: { labels: months, datasets: [{ label: 'Baseline (mm)', data: rainBaseline, borderColor: '#1b5e20', borderWidth: 1.5, fill: false }, { label: 'Projected (mm)', data: rainProjected, borderColor: '#0d47a1', borderWidth: 2, fill: false }] }
+            });
+        }
+        if(tempCanvas){
+            charts.temp = new Chart(tempCanvas, {
+                type: 'line',
+                data: { labels: months, datasets: [{ label: 'Baseline (°C)', data: tempBaseline, borderColor: '#1b5e20', borderWidth: 1.5, fill: false }, { label: 'Projected (°C)', data: tempProjected, borderColor: '#0d47a1', borderWidth: 2, fill: false }] }
+            });
+        }
+    }
+    
+    function renderMonthlyTables(){
+        let rainTable = document.getElementById("monthlyRainTable");
+        let tempTable = document.getElementById("monthlyTempTable");
+        if(rainTable){
+            rainTable.innerHTML = '<h4>Rainfall (mm) - '+currentMun.name+'</h4><table class="data-table"><thead><tr><th>Month</th>'+months.map(function(m){return '<th>'+m+'</th>';}).join('')+'</tr></thead><tbody>' +
+                '<tr><td><strong>Baseline</strong></td>'+rainBaseline.map(function(v){return '<td>'+v.toFixed(1)+'</td>';}).join('')+'</tr>' +
+                '<tr><td><strong>Projected</strong></td>'+rainProjected.map(function(v){return '<td>'+v.toFixed(1)+'</td>';}).join('')+'</tr>' +
+                '<tr><td><strong>Change</strong></td>'+rainBaseline.map(function(v,i){return '<td>'+((rainProjected[i]-v)/v*100).toFixed(1)+'%</td>';}).join('')+'</tr>' +
+                '</tbody></table>';
+        }
+        if(tempTable){
+            tempTable.innerHTML = '<h4>Temperature (°C) - '+currentMun.name+'</h4><table class="data-table"><thead><tr><th>Month</th>'+months.map(function(m){return '<th>'+m+'</th>';}).join('')+'</tr></thead><tbody>' +
+                '<tr><td><strong>Baseline</strong></td>'+tempBaseline.map(function(v){return '<td>'+v.toFixed(1)+'</td>';}).join('')+'</tr>' +
+                '<tr><td><strong>Projected</strong></td>'+tempProjected.map(function(v){return '<td>'+v.toFixed(1)+'</td>';}).join('')+'</tr>' +
+                '<tr><td><strong>Change</strong></td>'+tempBaseline.map(function(v,i){return '<td>+'+(tempProjected[i]-v).toFixed(1)+'°C</td>';}).join('')+'</tr>' +
+                '</tbody></table>';
+        }
+    }
+    
+    function generateRecommendations(){
+        let rxPct = currentMun.RX1day_b > 0 ? ((currentMun.RX1day_f - currentMun.RX1day_b) / currentMun.RX1day_b * 100) : 0;
+        let txInc = currentMun.TXx_f - currentMun.TXx_b;
+        let recs = [];
+        if(rxPct > 20) recs.push({title:"Critical Landslide Risk Reduction", desc:"Prioritize slope protection and early warning systems.", priority:"high"});
+        if(txInc > 3) recs.push({title:"Extreme Heat Action Plan", desc:"Establish cooling centers and heat health protocols.", priority:"high"});
+        if(recs.length === 0) recs.push({title:"Monitor Climate Trends", desc:"Continue regular CDRA updates.", priority:"low"});
+        
+        let recContainer = document.getElementById("recommendationsContainer");
+        if(recContainer){
+            recContainer.innerHTML = recs.map(function(r){
+                return '<div class="rec-card '+r.priority+'"><strong>'+r.title+'</strong><br>'+r.desc+'<span class="priority-badge">'+r.priority.toUpperCase()+'</span></div>';
+            }).join('');
+        }
+        
+        let insightsContainer = document.getElementById("quickInsights");
+        if(insightsContainer){
+            insightsContainer.innerHTML = '<p><strong>'+currentMun.name+'</strong><br>TXx: '+currentMun.TXx_b+'°C → '+currentMun.TXx_f+'°C (+'+txInc.toFixed(1)+'°C)<br>RX1day: '+(currentMun.RX1day_b===0?'No data':currentMun.RX1day_b)+'mm → '+(currentMun.RX1day_f===0?'No data':currentMun.RX1day_f)+'mm</p>';
+        }
+    }
+    
+    function renderProjectTable(){
+        let tableBody = document.getElementById("projectTableBody");
+        if(!tableBody) return;
+        tableBody.innerHTML = projects.map(function(p,idx){
+            return '<tr><td class="editable-field" onclick="editField('+idx+',\'name\')">'+p.name+'</td><td class="editable-field" onclick="editField('+idx+',\'budget\')">'+p.budget+'</td><td class="editable-field" onclick="editField('+idx+',\'timeline\')">'+p.timeline+'</td><td>'+p.priority+'</td><td><button onclick="deleteProject('+idx+')">🗑️</button></td></tr>';
+        }).join('');
+    }
+    
+    window.editField = function(idx,field){
+        let val = prompt('Edit '+field+':', projects[idx][field]);
+        if(val){ projects[idx][field] = val; saveProjects(); renderProjectTable(); }
+    };
+    window.deleteProject = function(idx){
+        projects.splice(idx,1);
+        saveProjects();
+        renderProjectTable();
+    };
+    
+    document.getElementById("addProjectBtn").onclick = function(){
+        projects.push({name:"New Project", budget:"₱0", timeline:"TBD", priority:"Medium"});
+        saveProjects();
+        renderProjectTable();
+    };
+    
+    async function generateProfessionalReport() {
+        const txxImg = document.getElementById('txxChart').toDataURL('image/png');
+        const rx1Img = document.getElementById('rx1Chart').toDataURL('image/png');
+        const rainImg = document.getElementById('monthlyRainChart').toDataURL('image/png');
+        const tempImg = document.getElementById('monthlyTempChart').toDataURL('image/png');
+        return '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Climate Report</title></head><body><h1>Climate Report - '+currentMun.name+'</h1><img src="'+txxImg+'"><img src="'+rx1Img+'"><img src="'+rainImg+'"><img src="'+tempImg+'"></body></html>';
+    }
+    
+    document.getElementById("generateReportBtn").onclick = async function() {
+        const html = await generateProfessionalReport();
+        const el = document.createElement('div');
+        el.innerHTML = html;
+        html2pdf().set({ margin: 0.5, filename: 'Climate_Report_'+currentMun.code+'.pdf' }).from(el).save();
+    };
+    document.getElementById("saveReportBtn").onclick = async function() {
+        const html = await generateProfessionalReport();
+        saveReportToDB({ municipality: currentMun.name, date: new Date().toLocaleString(), htmlContent: html });
+    };
+    
+    // Tab switching
+    document.querySelectorAll(".main-tab").forEach(function(tab){
+        tab.onclick = function(){
+            document.querySelectorAll(".main-tab").forEach(function(t){ t.classList.remove("active"); });
+            this.classList.add("active");
+            document.querySelectorAll(".tab-content").forEach(function(c){ c.classList.remove("active"); });
+            document.getElementById("tab-"+this.dataset.tab).classList.add("active");
+        };
+    });
+    
+    function renderAll(){
+        renderCeram();
+        renderGraphs();
+        renderMonthlyTables();
+        generateRecommendations();
+    }
+    
+    // Initialize
+    renderTabs();
+    renderProjectTable();
+    initDB();
+    renderAll();
+</script>
+</body>
+</html>
